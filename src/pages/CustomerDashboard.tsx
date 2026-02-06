@@ -9,97 +9,110 @@ import {
   Package, 
   ClipboardList, 
   ArrowRight,
-  AlertTriangle,
-  Clock
+  Clock,
+  Truck
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useRole } from "@/contexts/RoleContext";
 
-// Mock data for demonstration
+// Datos simulados ENTALPIA - Tubería de cobre
 const marketIndicators = [
-  { label: "LME Copper", value: 8432.50, change: 2.3 },
-  { label: "LME Aluminum", value: 2245.00, change: -0.8 },
+  { label: "LME Cobre", value: 8432.50, change: 2.3 },
   { label: "EUR/USD", value: 1.0842, change: 0.1 },
 ];
 
 const products = [
   { 
-    id: "CU-T-15", 
-    name: "Copper Tube 15mm", 
-    category: "Copper Tubing",
-    price: 12.45, 
+    id: "ENT-CU-15", 
+    name: "Tubo Cobre 15mm - Rollo 50m", 
+    category: "Tubería Cobre",
+    price: 245.80, 
     priceChange: 2.3, 
-    stock: 2450, 
-    unit: "meters" 
+    stock: 1250, 
+    unit: "rollos",
+    status: "available" as const
   },
   { 
-    id: "CU-T-22", 
-    name: "Copper Tube 22mm", 
-    category: "Copper Tubing",
-    price: 18.90, 
+    id: "ENT-CU-18", 
+    name: "Tubo Cobre 18mm - Rollo 50m", 
+    category: "Tubería Cobre",
+    price: 312.50, 
     priceChange: 1.8, 
-    stock: 1820, 
-    unit: "meters" 
-  },
-  { 
-    id: "CU-T-28", 
-    name: "Copper Tube 28mm", 
-    category: "Copper Tubing",
-    price: 24.30, 
-    priceChange: 2.1, 
     stock: 890, 
-    unit: "meters" 
+    unit: "rollos",
+    status: "available" as const
   },
   { 
-    id: "CU-S-1.5", 
-    name: "Copper Sheet 1.5mm", 
-    category: "Copper Sheets",
-    price: 42.80, 
+    id: "ENT-CU-22", 
+    name: "Tubo Cobre 22mm - Rollo 25m", 
+    category: "Tubería Cobre",
+    price: 198.90, 
+    priceChange: 2.1, 
+    stock: 420, 
+    unit: "rollos",
+    status: "available" as const
+  },
+  { 
+    id: "ENT-CU-28", 
+    name: "Tubo Cobre 28mm - Barra 5m", 
+    category: "Tubería Cobre",
+    price: 89.40, 
+    priceChange: 1.5, 
+    stock: 85, 
+    unit: "barras",
+    status: "low" as const
+  },
+  { 
+    id: "ENT-CU-35", 
+    name: "Tubo Cobre 35mm - Barra 5m", 
+    category: "Tubería Cobre",
+    price: 142.60, 
     priceChange: -0.5, 
-    stock: 45, 
-    unit: "sheets" 
+    stock: 12, 
+    unit: "barras",
+    status: "low" as const
   },
   { 
-    id: "CU-S-2.0", 
-    name: "Copper Sheet 2.0mm", 
-    category: "Copper Sheets",
-    price: 56.20, 
+    id: "ENT-CU-42", 
+    name: "Tubo Cobre 42mm - Barra 5m", 
+    category: "Tubería Cobre",
+    price: 178.30, 
     priceChange: 0.0, 
-    stock: 8, 
-    unit: "sheets" 
-  },
-  { 
-    id: "AL-T-20", 
-    name: "Aluminum Tube 20mm", 
-    category: "Aluminum Tubing",
-    price: 8.75, 
-    priceChange: -1.2, 
-    stock: 3200, 
-    unit: "meters" 
+    stock: 0, 
+    unit: "barras",
+    status: "out" as const
   },
 ];
 
 const recentOrders = [
-  { id: "ORD-2024-0142", date: "2024-01-15", status: "processing", total: 4250.00 },
-  { id: "ORD-2024-0138", date: "2024-01-14", status: "shipped", total: 8920.50 },
-  { id: "ORD-2024-0131", date: "2024-01-12", status: "delivered", total: 2180.00 },
+  { id: "PED-2024-0142", date: "15/01/2024", status: "procesando", total: 4250.00 },
+  { id: "PED-2024-0138", date: "14/01/2024", status: "enviado", total: 8920.50 },
+  { id: "PED-2024-0131", date: "12/01/2024", status: "entregado", total: 2180.00 },
+];
+
+const inTransitStock = [
+  { product: "Tubo Cobre 42mm", quantity: 200, arrival: "18/01/2024" },
+  { product: "Tubo Cobre 35mm", quantity: 150, arrival: "20/01/2024" },
 ];
 
 export default function CustomerDashboard() {
+  const { isInterno } = useRole();
+
   return (
-    <AppLayout userRole="customer" userName="Marcus Chen" companyName="Metro Distributors">
+    <AppLayout>
       <div className="space-y-6 max-w-7xl">
         {/* Page Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+            <h1 className="text-2xl font-bold text-foreground">Panel Principal</h1>
             <p className="text-muted-foreground">
-              Today's pricing and stock overview
+              Precios y stock actualizados del día
             </p>
           </div>
           <Link to="/order/new">
             <Button className="gap-2">
               <Package className="h-4 w-4" />
-              Create Order
+              Crear Pedido
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
@@ -117,26 +130,26 @@ export default function CustomerDashboard() {
           ))}
           <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
             <Clock className="h-3 w-3" />
-            Last updated: 08:30 CET
+            Última actualización: 08:30 CET
           </div>
         </div>
 
         {/* Metrics Row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <MetricCard
-            label="Available Products"
-            value="124"
+            label="Productos Disponibles"
+            value="24"
             icon={<Package className="h-5 w-5" />}
           />
           <MetricCard
-            label="Open Orders"
+            label="Pedidos Abiertos"
             value="3"
             icon={<ClipboardList className="h-5 w-5" />}
           />
           <MetricCard
-            label="Avg. Price Change"
+            label="Variación Media"
             value="+1.8%"
-            change={{ value: "vs. yesterday", trend: "up" }}
+            change={{ value: "vs. ayer", trend: "up" }}
             icon={<TrendingUp className="h-5 w-5" />}
           />
         </div>
@@ -145,13 +158,13 @@ export default function CustomerDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Product Pricing Table */}
           <DataCard 
-            title="Daily Pricing" 
-            subtitle="Updated prices for today"
+            title="Precios del Día" 
+            subtitle="Catálogo ENTALPIA actualizado"
             className="lg:col-span-2"
             action={
               <Link to="/order/new">
                 <Button variant="ghost" size="sm" className="text-primary">
-                  View All
+                  Ver Todo
                 </Button>
               </Link>
             }
@@ -161,9 +174,9 @@ export default function CustomerDashboard() {
               <table className="data-table">
                 <thead>
                   <tr className="bg-muted/30">
-                    <th>Product</th>
-                    <th>Category</th>
-                    <th className="text-right">Price</th>
+                    <th>Producto</th>
+                    <th>Categoría</th>
+                    <th className="text-right">Precio</th>
                     <th className="text-right">Stock</th>
                     <th></th>
                   </tr>
@@ -202,8 +215,8 @@ export default function CustomerDashboard() {
                       </td>
                       <td>
                         <Link to="/order/new">
-                          <Button variant="ghost" size="sm">
-                            Order
+                          <Button variant="ghost" size="sm" disabled={product.status === "out"}>
+                            {product.status === "out" ? "Agotado" : "Pedir"}
                           </Button>
                         </Link>
                       </td>
@@ -217,15 +230,35 @@ export default function CustomerDashboard() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Low Stock Alert */}
-            <DataCard title="Stock Alerts" subtitle="Items with low availability">
+            <DataCard title="Alertas de Stock" subtitle="Productos con disponibilidad limitada">
               <div className="space-y-3">
-                {products.filter(p => p.stock < 100).map((product) => (
+                {products.filter(p => p.status !== "available").map((product) => (
                   <div key={product.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                     <div>
                       <p className="text-sm font-medium">{product.name}</p>
                       <p className="text-xs text-muted-foreground">{product.id}</p>
                     </div>
-                    <StockBadge status={product.stock <= 10 ? "out" : "low"} />
+                    <StockBadge status={product.status} />
+                  </div>
+                ))}
+              </div>
+            </DataCard>
+
+            {/* In Transit */}
+            <DataCard title="Stock en Tránsito" subtitle="Próximas llegadas">
+              <div className="space-y-3">
+                {inTransitStock.map((item, index) => (
+                  <div key={index} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                    <div className="flex items-center gap-2">
+                      <Truck className="h-4 w-4 text-primary" />
+                      <div>
+                        <p className="text-sm font-medium">{item.product}</p>
+                        <p className="text-xs text-muted-foreground">{item.quantity} unidades</p>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {item.arrival}
+                    </Badge>
                   </div>
                 ))}
               </div>
@@ -233,12 +266,12 @@ export default function CustomerDashboard() {
 
             {/* Recent Orders */}
             <DataCard 
-              title="Recent Orders" 
-              subtitle="Your last 3 orders"
+              title="Pedidos Recientes" 
+              subtitle="Tus últimos 3 pedidos"
               action={
                 <Link to="/orders">
                   <Button variant="ghost" size="sm" className="text-primary">
-                    View All
+                    Ver Todos
                   </Button>
                 </Link>
               }
@@ -255,8 +288,8 @@ export default function CustomerDashboard() {
                       <Badge 
                         variant="outline" 
                         className={
-                          order.status === "delivered" ? "border-status-available text-status-available" :
-                          order.status === "shipped" ? "border-primary text-primary" :
+                          order.status === "entregado" ? "border-status-available text-status-available" :
+                          order.status === "enviado" ? "border-primary text-primary" :
                           "border-status-low text-status-low"
                         }
                       >

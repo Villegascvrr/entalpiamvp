@@ -28,17 +28,17 @@ export function StockIndicator({
 
   const statusConfig = {
     available: {
-      label: "In Stock",
+      label: "Disponible",
       className: "stock-available",
       dotClassName: "bg-status-available",
     },
     low: {
-      label: "Low Stock",
+      label: "Stock Bajo",
       className: "stock-low",
       dotClassName: "bg-status-low",
     },
     out: {
-      label: "Out of Stock",
+      label: "Agotado",
       className: "stock-out",
       dotClassName: "bg-status-out",
     },
@@ -69,15 +69,15 @@ interface StockBadgeProps {
 export function StockBadge({ status, className }: StockBadgeProps) {
   const config = {
     available: {
-      label: "Available",
+      label: "Disponible",
       className: "bg-status-available/10 text-status-available border-status-available/20",
     },
     low: {
-      label: "Low Stock",
+      label: "Stock Bajo",
       className: "bg-status-low/10 text-status-low border-status-low/20",
     },
     out: {
-      label: "Out of Stock",
+      label: "Agotado",
       className: "bg-status-out/10 text-status-out border-status-out/20",
     },
   };

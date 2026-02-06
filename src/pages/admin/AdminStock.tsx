@@ -14,7 +14,8 @@ import {
   Search,
   AlertCircle,
   Plus,
-  Minus
+  Minus,
+  Truck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,15 +28,17 @@ interface StockEntry {
   minStock: number;
   location: string;
   lastReceived: string;
+  inTransit?: number;
+  transitArrival?: string;
 }
 
 const initialStock: StockEntry[] = [
-  { id: "CU-T-15", name: "Copper Tube 15mm", category: "Copper Tubing", quantity: 2450, unit: "meters", minStock: 500, location: "Warehouse A", lastReceived: "2024-01-10" },
-  { id: "CU-T-22", name: "Copper Tube 22mm", category: "Copper Tubing", quantity: 1820, unit: "meters", minStock: 500, location: "Warehouse A", lastReceived: "2024-01-12" },
-  { id: "CU-T-28", name: "Copper Tube 28mm", category: "Copper Tubing", quantity: 890, unit: "meters", minStock: 300, location: "Warehouse A", lastReceived: "2024-01-08" },
-  { id: "CU-S-1.5", name: "Copper Sheet 1.5mm", category: "Copper Sheets", quantity: 45, unit: "sheets", minStock: 50, location: "Warehouse B", lastReceived: "2024-01-05" },
-  { id: "CU-S-2.0", name: "Copper Sheet 2.0mm", category: "Copper Sheets", quantity: 8, unit: "sheets", minStock: 20, location: "Warehouse B", lastReceived: "2024-01-02" },
-  { id: "AL-T-20", name: "Aluminum Tube 20mm", category: "Aluminum Tubing", quantity: 3200, unit: "meters", minStock: 1000, location: "Warehouse C", lastReceived: "2024-01-14" },
+  { id: "ENT-CU-15", name: "Tubo Cobre 15mm - Rollo 50m", category: "Rollos", quantity: 1250, unit: "rollos", minStock: 200, location: "Almacén A", lastReceived: "10/01/2024" },
+  { id: "ENT-CU-18", name: "Tubo Cobre 18mm - Rollo 50m", category: "Rollos", quantity: 890, unit: "rollos", minStock: 150, location: "Almacén A", lastReceived: "12/01/2024" },
+  { id: "ENT-CU-22", name: "Tubo Cobre 22mm - Rollo 25m", category: "Rollos", quantity: 420, unit: "rollos", minStock: 100, location: "Almacén A", lastReceived: "08/01/2024" },
+  { id: "ENT-CU-28", name: "Tubo Cobre 28mm - Barra 5m", category: "Barras", quantity: 85, unit: "barras", minStock: 100, location: "Almacén B", lastReceived: "05/01/2024" },
+  { id: "ENT-CU-35", name: "Tubo Cobre 35mm - Barra 5m", category: "Barras", quantity: 12, unit: "barras", minStock: 50, location: "Almacén B", lastReceived: "02/01/2024", inTransit: 150, transitArrival: "20/01/2024" },
+  { id: "ENT-CU-42", name: "Tubo Cobre 42mm - Barra 5m", category: "Barras", quantity: 0, unit: "barras", minStock: 30, location: "Almacén B", lastReceived: "28/12/2023", inTransit: 200, transitArrival: "18/01/2024" },
 ];
 
 export default function AdminStock() {
@@ -88,22 +91,22 @@ export default function AdminStock() {
   };
 
   return (
-    <AppLayout userRole="admin" userName="Sarah Admin" companyName="Industrial Corp">
+    <AppLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Stock Management</h1>
-            <p className="text-muted-foreground">Monitor and update inventory levels</p>
+            <h1 className="text-2xl font-bold text-foreground">Gestión de Stock</h1>
+            <p className="text-muted-foreground">Monitoriza y actualiza niveles de inventario</p>
           </div>
           <div className="flex gap-3">
             <Button variant="outline" className="gap-2">
               <Upload className="h-4 w-4" />
-              Import Stock
+              Importar Stock
             </Button>
             <Button className="gap-2" disabled={!hasChanges}>
               <Save className="h-4 w-4" />
-              Save Changes
+              Guardar Cambios
             </Button>
           </div>
         </div>
@@ -112,7 +115,7 @@ export default function AdminStock() {
         {lowStockCount > 0 && (
           <div className="flex items-center gap-2 px-4 py-3 rounded-md bg-status-low/10 text-status-low border border-status-low/30">
             <AlertCircle className="h-4 w-4" />
-            <span className="text-sm">{lowStockCount} product(s) have low or no stock. Consider reordering.</span>
+            <span className="text-sm">{lowStockCount} producto(s) tienen stock bajo o agotado. Considera realizar un pedido de reposición.</span>
           </div>
         )}
 
@@ -120,7 +123,7 @@ export default function AdminStock() {
         <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search products..."
+            placeholder="Buscar productos..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -128,19 +131,20 @@ export default function AdminStock() {
         </div>
 
         {/* Stock Table */}
-        <DataCard title="Inventory Levels" bodyClassName="p-0">
+        <DataCard title="Niveles de Inventario" bodyClassName="p-0">
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr className="bg-muted/30">
-                  <th>Product</th>
-                  <th>Category</th>
-                  <th className="text-right">Quantity</th>
-                  <th className="text-right">Min. Stock</th>
-                  <th>Status</th>
-                  <th>Location</th>
-                  <th>Last Received</th>
-                  <th>Quick Adjust</th>
+                  <th>Producto</th>
+                  <th>Categoría</th>
+                  <th className="text-right">Cantidad</th>
+                  <th className="text-right">Stock Mín.</th>
+                  <th>Estado</th>
+                  <th>En Tránsito</th>
+                  <th>Ubicación</th>
+                  <th>Última Recepción</th>
+                  <th>Ajuste Rápido</th>
                   <th></th>
                 </tr>
               </thead>
@@ -174,15 +178,28 @@ export default function AdminStock() {
                             status === "out" && "text-destructive",
                             status === "low" && "text-status-low"
                           )}>
-                            {entry.quantity.toLocaleString()} {entry.unit}
+                            {entry.quantity.toLocaleString("es-ES")} {entry.unit}
                           </span>
                         )}
                       </td>
                       <td className="text-right font-mono text-muted-foreground">
-                        {entry.minStock.toLocaleString()} {entry.unit}
+                        {entry.minStock.toLocaleString("es-ES")} {entry.unit}
                       </td>
                       <td>
                         <StockBadge status={status} />
+                      </td>
+                      <td>
+                        {entry.inTransit ? (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Truck className="h-4 w-4 text-primary" />
+                            <div>
+                              <span className="font-mono">{entry.inTransit}</span>
+                              <span className="text-xs text-muted-foreground ml-1">({entry.transitArrival})</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
                       </td>
                       <td className="text-muted-foreground">{entry.location}</td>
                       <td className="text-muted-foreground">{entry.lastReceived}</td>
@@ -192,7 +209,7 @@ export default function AdminStock() {
                             variant="outline"
                             size="icon"
                             className="h-7 w-7"
-                            onClick={() => adjustStock(entry.id, -100)}
+                            onClick={() => adjustStock(entry.id, -10)}
                           >
                             <Minus className="h-3 w-3" />
                           </Button>
@@ -200,7 +217,7 @@ export default function AdminStock() {
                             variant="outline"
                             size="icon"
                             className="h-7 w-7"
-                            onClick={() => adjustStock(entry.id, 100)}
+                            onClick={() => adjustStock(entry.id, 10)}
                           >
                             <Plus className="h-3 w-3" />
                           </Button>

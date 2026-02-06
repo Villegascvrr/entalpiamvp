@@ -14,9 +14,11 @@ import {
   AlertTriangle, 
   CheckCircle,
   ArrowRight,
-  Package
+  Package,
+  Truck,
+  AlertCircle
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 interface Product {
@@ -35,18 +37,20 @@ interface OrderItem {
   quantity: number;
 }
 
+// Productos ENTALPIA - Tubería de cobre
 const products: Product[] = [
-  { id: "CU-T-15", name: "Copper Tube 15mm", category: "Copper Tubing", price: 12.45, priceChange: 2.3, stock: 2450, unit: "meters", minOrder: 100 },
-  { id: "CU-T-22", name: "Copper Tube 22mm", category: "Copper Tubing", price: 18.90, priceChange: 1.8, stock: 1820, unit: "meters", minOrder: 100 },
-  { id: "CU-T-28", name: "Copper Tube 28mm", category: "Copper Tubing", price: 24.30, priceChange: 2.1, stock: 890, unit: "meters", minOrder: 50 },
-  { id: "CU-S-1.5", name: "Copper Sheet 1.5mm", category: "Copper Sheets", price: 42.80, priceChange: -0.5, stock: 45, unit: "sheets", minOrder: 5 },
-  { id: "CU-S-2.0", name: "Copper Sheet 2.0mm", category: "Copper Sheets", price: 56.20, priceChange: 0.0, stock: 8, unit: "sheets", minOrder: 5 },
-  { id: "AL-T-20", name: "Aluminum Tube 20mm", category: "Aluminum Tubing", price: 8.75, priceChange: -1.2, stock: 3200, unit: "meters", minOrder: 200 },
-  { id: "AL-T-25", name: "Aluminum Tube 25mm", category: "Aluminum Tubing", price: 11.20, priceChange: -0.8, stock: 2100, unit: "meters", minOrder: 200 },
-  { id: "AL-S-1.0", name: "Aluminum Sheet 1.0mm", category: "Aluminum Sheets", price: 28.50, priceChange: 0.5, stock: 120, unit: "sheets", minOrder: 10 },
+  { id: "ENT-CU-15", name: "Tubo Cobre 15mm - Rollo 50m", category: "Rollos", price: 245.80, priceChange: 2.3, stock: 1250, unit: "rollos", minOrder: 10 },
+  { id: "ENT-CU-18", name: "Tubo Cobre 18mm - Rollo 50m", category: "Rollos", price: 312.50, priceChange: 1.8, stock: 890, unit: "rollos", minOrder: 10 },
+  { id: "ENT-CU-22", name: "Tubo Cobre 22mm - Rollo 25m", category: "Rollos", price: 198.90, priceChange: 2.1, stock: 420, unit: "rollos", minOrder: 5 },
+  { id: "ENT-CU-28", name: "Tubo Cobre 28mm - Barra 5m", category: "Barras", price: 89.40, priceChange: 1.5, stock: 85, unit: "barras", minOrder: 20 },
+  { id: "ENT-CU-35", name: "Tubo Cobre 35mm - Barra 5m", category: "Barras", price: 142.60, priceChange: -0.5, stock: 12, unit: "barras", minOrder: 10 },
+  { id: "ENT-CU-42", name: "Tubo Cobre 42mm - Barra 5m", category: "Barras", price: 178.30, priceChange: 0.0, stock: 0, unit: "barras", minOrder: 10 },
+  { id: "ENT-CU-54", name: "Tubo Cobre 54mm - Barra 5m", category: "Barras", price: 234.20, priceChange: 1.2, stock: 45, unit: "barras", minOrder: 5 },
+  { id: "ENT-ACC-01", name: "Codo Cobre 90° 15mm", category: "Accesorios", price: 2.45, priceChange: 0.8, stock: 5000, unit: "unidades", minOrder: 100 },
 ];
 
 const MINIMUM_ORDER_TOTAL = 500;
+const CONTAINER_WEIGHT_LIMIT = 24000; // kg
 
 export default function OrderBuilder() {
   const navigate = useNavigate();
@@ -102,42 +106,52 @@ export default function OrderBuilder() {
   }, [orderItems]);
 
   const validationErrors = useMemo(() => {
-    const errors: string[] = [];
+    const errors: { type: "error" | "warning"; message: string }[] = [];
     
     orderItems.forEach(item => {
       if (item.quantity < item.product.minOrder) {
-        errors.push(`${item.product.name}: Minimum order is ${item.product.minOrder} ${item.product.unit}`);
+        errors.push({ 
+          type: "error", 
+          message: `${item.product.name}: Pedido mínimo de ${item.product.minOrder} ${item.product.unit}` 
+        });
       }
       if (item.quantity > item.product.stock) {
-        errors.push(`${item.product.name}: Only ${item.product.stock} ${item.product.unit} available`);
+        errors.push({ 
+          type: "error", 
+          message: `${item.product.name}: Solo ${item.product.stock} ${item.product.unit} disponibles` 
+        });
       }
     });
 
     if (orderItems.length > 0 && orderTotal < MINIMUM_ORDER_TOTAL) {
-      errors.push(`Minimum order total is €${MINIMUM_ORDER_TOTAL}. Add €${(MINIMUM_ORDER_TOTAL - orderTotal).toFixed(2)} more.`);
+      errors.push({ 
+        type: "warning", 
+        message: `Pedido mínimo €${MINIMUM_ORDER_TOTAL}. Faltan €${(MINIMUM_ORDER_TOTAL - orderTotal).toFixed(2)}` 
+      });
     }
 
     return errors;
   }, [orderItems, orderTotal]);
 
-  const canProceed = orderItems.length > 0 && validationErrors.length === 0;
+  const hasErrors = validationErrors.some(e => e.type === "error");
+  const canProceed = orderItems.length > 0 && !hasErrors && orderTotal >= MINIMUM_ORDER_TOTAL;
 
   return (
-    <AppLayout userRole="customer" userName="Marcus Chen" companyName="Metro Distributors">
+    <AppLayout>
       <div className="h-full flex gap-6">
         {/* Product Selection Panel */}
         <div className="flex-1 flex flex-col min-w-0">
           <div className="mb-4">
-            <h1 className="text-2xl font-bold text-foreground">Create Order</h1>
-            <p className="text-muted-foreground">Select products and configure quantities</p>
+            <h1 className="text-2xl font-bold text-foreground">Crear Pedido</h1>
+            <p className="text-muted-foreground">Selecciona productos y configura cantidades</p>
           </div>
 
           {/* Search and Filters */}
-          <div className="flex gap-3 mb-4">
-            <div className="relative flex-1">
+          <div className="flex gap-3 mb-4 flex-wrap">
+            <div className="relative flex-1 min-w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search products..."
+                placeholder="Buscar productos..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -149,7 +163,7 @@ export default function OrderBuilder() {
                 size="sm"
                 onClick={() => setSelectedCategory(null)}
               >
-                All
+                Todos
               </Button>
               {categories.map(category => (
                 <Button
@@ -170,13 +184,15 @@ export default function OrderBuilder() {
               {filteredProducts.map(product => {
                 const inOrder = orderItems.find(item => item.product.id === product.id);
                 const isLowStock = product.stock < 100;
+                const isOutOfStock = product.stock === 0;
                 
                 return (
                   <div 
                     key={product.id}
                     className={cn(
                       "industrial-card p-4 transition-all",
-                      inOrder && "ring-2 ring-primary"
+                      inOrder && "ring-2 ring-primary",
+                      isOutOfStock && "opacity-60"
                     )}
                   >
                     <div className="flex items-start justify-between mb-3">
@@ -201,10 +217,10 @@ export default function OrderBuilder() {
                       <StockIndicator
                         quantity={product.stock}
                         unit={product.unit}
-                        showLabel={isLowStock}
+                        showLabel={isLowStock || isOutOfStock}
                       />
                       <p className="text-xs text-muted-foreground">
-                        Min. order: {product.minOrder} {product.unit}
+                        Pedido mín.: {product.minOrder} {product.unit}
                       </p>
                     </div>
 
@@ -238,10 +254,10 @@ export default function OrderBuilder() {
                         variant="outline"
                         className="w-full"
                         onClick={() => addToOrder(product)}
-                        disabled={product.stock < product.minOrder}
+                        disabled={isOutOfStock}
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        Add to Order
+                        {isOutOfStock ? "Agotado" : "Añadir al Pedido"}
                       </Button>
                     )}
                   </div>
@@ -251,11 +267,11 @@ export default function OrderBuilder() {
           </div>
         </div>
 
-        {/* Order Summary Panel */}
+        {/* Order Summary Panel - Always Visible Sidebar */}
         <div className="w-96 flex-shrink-0 flex flex-col">
           <DataCard 
-            title="Order Configuration" 
-            subtitle={`${orderItems.length} item(s) selected`}
+            title="Resumen del Pedido" 
+            subtitle={`${orderItems.length} artículo(s) seleccionado(s)`}
             className="flex-1 flex flex-col"
             bodyClassName="flex-1 flex flex-col p-0"
           >
@@ -263,8 +279,8 @@ export default function OrderBuilder() {
               <div className="flex-1 flex items-center justify-center p-8">
                 <div className="text-center">
                   <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground">No products selected</p>
-                  <p className="text-sm text-muted-foreground">Add products from the list to configure your order</p>
+                  <p className="text-muted-foreground">Sin productos seleccionados</p>
+                  <p className="text-sm text-muted-foreground">Añade productos de la lista para configurar tu pedido</p>
                 </div>
               </div>
             ) : (
@@ -303,9 +319,20 @@ export default function OrderBuilder() {
                 {validationErrors.length > 0 && (
                   <div className="px-4 space-y-2">
                     {validationErrors.map((error, index) => (
-                      <div key={index} className="validation-warning">
-                        <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-                        <span>{error}</span>
+                      <div 
+                        key={index} 
+                        className={cn(
+                          "flex items-start gap-2 px-3 py-2 rounded-md text-sm",
+                          error.type === "error" 
+                            ? "bg-destructive/10 text-destructive border border-destructive/30" 
+                            : "bg-status-low/10 text-status-low border border-status-low/30"
+                        )}
+                      >
+                        {error.type === "error" 
+                          ? <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                          : <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                        }
+                        <span>{error.message}</span>
                       </div>
                     ))}
                   </div>
@@ -315,15 +342,23 @@ export default function OrderBuilder() {
                   <div className="px-4">
                     <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-status-available/10 text-status-available text-sm border border-status-available/30">
                       <CheckCircle className="h-4 w-4 flex-shrink-0" />
-                      <span>Order configuration valid</span>
+                      <span>Configuración del pedido válida</span>
                     </div>
                   </div>
                 )}
 
+                {/* Logistics Info */}
+                <div className="px-4 py-3 border-t border-border">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Truck className="h-4 w-4" />
+                    <span>Entrega estimada: 3-5 días laborables</span>
+                  </div>
+                </div>
+
                 {/* Order Total and Actions */}
-                <div className="p-4 border-t border-border space-y-4">
+                <div className="p-4 border-t border-border space-y-4 bg-muted/20">
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Order Total</span>
+                    <span className="text-muted-foreground">Total Pedido</span>
                     <span className="text-2xl font-bold font-mono">€{orderTotal.toFixed(2)}</span>
                   </div>
                   
@@ -333,7 +368,7 @@ export default function OrderBuilder() {
                     disabled={!canProceed}
                     onClick={() => navigate("/order/preview", { state: { orderItems, orderTotal } })}
                   >
-                    Review Order
+                    Revisar Pedido
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </div>

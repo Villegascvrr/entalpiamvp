@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { 
   Search, 
-  Filter, 
   Eye,
   Clock,
   CheckCircle,
@@ -18,38 +17,38 @@ import { cn } from "@/lib/utils";
 interface Order {
   id: string;
   date: string;
-  status: "pending" | "processing" | "shipped" | "delivered";
+  status: "pendiente" | "procesando" | "enviado" | "entregado";
   items: number;
   total: number;
 }
 
 const orders: Order[] = [
-  { id: "ORD-2024-0142", date: "2024-01-15", status: "processing", items: 4, total: 4250.00 },
-  { id: "ORD-2024-0138", date: "2024-01-14", status: "shipped", items: 2, total: 8920.50 },
-  { id: "ORD-2024-0131", date: "2024-01-12", status: "delivered", items: 6, total: 2180.00 },
-  { id: "ORD-2024-0125", date: "2024-01-10", status: "delivered", items: 3, total: 5640.25 },
-  { id: "ORD-2024-0118", date: "2024-01-08", status: "delivered", items: 5, total: 12450.00 },
-  { id: "ORD-2024-0112", date: "2024-01-05", status: "delivered", items: 2, total: 890.50 },
+  { id: "PED-2024-0142", date: "15/01/2024", status: "procesando", items: 4, total: 4250.00 },
+  { id: "PED-2024-0138", date: "14/01/2024", status: "enviado", items: 2, total: 8920.50 },
+  { id: "PED-2024-0131", date: "12/01/2024", status: "entregado", items: 6, total: 2180.00 },
+  { id: "PED-2024-0125", date: "10/01/2024", status: "entregado", items: 3, total: 5640.25 },
+  { id: "PED-2024-0118", date: "08/01/2024", status: "entregado", items: 5, total: 12450.00 },
+  { id: "PED-2024-0112", date: "05/01/2024", status: "entregado", items: 2, total: 890.50 },
 ];
 
 const statusConfig = {
-  pending: { 
-    label: "Pending", 
+  pendiente: { 
+    label: "Pendiente", 
     icon: Clock, 
     className: "bg-status-low/10 text-status-low border-status-low/20" 
   },
-  processing: { 
-    label: "Processing", 
+  procesando: { 
+    label: "Procesando", 
     icon: Package, 
     className: "bg-primary/10 text-primary border-primary/20" 
   },
-  shipped: { 
-    label: "Shipped", 
+  enviado: { 
+    label: "Enviado", 
     icon: Truck, 
     className: "bg-primary/10 text-primary border-primary/20" 
   },
-  delivered: { 
-    label: "Delivered", 
+  entregado: { 
+    label: "Entregado", 
     icon: CheckCircle, 
     className: "bg-status-available/10 text-status-available border-status-available/20" 
   },
@@ -66,31 +65,31 @@ export default function MyOrders() {
   });
 
   return (
-    <AppLayout userRole="customer" userName="Marcus Chen" companyName="Metro Distributors">
+    <AppLayout>
       <div className="max-w-5xl mx-auto space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">My Orders</h1>
-          <p className="text-muted-foreground">Track and manage your orders</p>
+          <h1 className="text-2xl font-bold text-foreground">Mis Pedidos</h1>
+          <p className="text-muted-foreground">Seguimiento y gestión de tus pedidos</p>
         </div>
 
         {/* Filters */}
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by order number..."
+              placeholder="Buscar por número de pedido..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button
               variant={selectedStatus === null ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedStatus(null)}
             >
-              All
+              Todos
             </Button>
             {Object.entries(statusConfig).map(([status, config]) => (
               <Button
@@ -108,14 +107,14 @@ export default function MyOrders() {
         </div>
 
         {/* Orders List */}
-        <DataCard title="Order History" bodyClassName="p-0">
+        <DataCard title="Historial de Pedidos" bodyClassName="p-0">
           <table className="data-table">
             <thead>
               <tr className="bg-muted/30">
-                <th>Order Number</th>
-                <th>Date</th>
-                <th>Items</th>
-                <th>Status</th>
+                <th>Nº Pedido</th>
+                <th>Fecha</th>
+                <th>Artículos</th>
+                <th>Estado</th>
                 <th className="text-right">Total</th>
                 <th></th>
               </tr>
@@ -131,7 +130,7 @@ export default function MyOrders() {
                       <span className="font-mono font-medium">{order.id}</span>
                     </td>
                     <td className="text-muted-foreground">{order.date}</td>
-                    <td>{order.items} items</td>
+                    <td>{order.items} artículos</td>
                     <td>
                       <Badge variant="outline" className={cn("gap-1", status.className)}>
                         <StatusIcon className="h-3 w-3" />
@@ -144,7 +143,7 @@ export default function MyOrders() {
                     <td>
                       <Button variant="ghost" size="sm" className="gap-1">
                         <Eye className="h-3 w-3" />
-                        View
+                        Ver
                       </Button>
                     </td>
                   </tr>
@@ -155,7 +154,7 @@ export default function MyOrders() {
           
           {filteredOrders.length === 0 && (
             <div className="p-8 text-center text-muted-foreground">
-              No orders found matching your criteria
+              No se encontraron pedidos con los criterios seleccionados
             </div>
           )}
         </DataCard>
