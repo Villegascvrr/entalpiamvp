@@ -13,7 +13,8 @@ import {
   Edit2,
   Check,
   X,
-  AlertCircle
+  AlertCircle,
+  Calculator
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,12 +31,12 @@ interface PriceEntry {
 }
 
 const initialPrices: PriceEntry[] = [
-  { id: "CU-T-15", name: "Copper Tube 15mm", category: "Copper Tubing", basePrice: 10.20, marketIndex: 1.15, margin: 1.08, finalPrice: 12.45, lastUpdated: "08:30", change: 2.3 },
-  { id: "CU-T-22", name: "Copper Tube 22mm", category: "Copper Tubing", basePrice: 15.50, marketIndex: 1.15, margin: 1.06, finalPrice: 18.90, lastUpdated: "08:30", change: 1.8 },
-  { id: "CU-T-28", name: "Copper Tube 28mm", category: "Copper Tubing", basePrice: 20.00, marketIndex: 1.15, margin: 1.06, finalPrice: 24.30, lastUpdated: "08:30", change: 2.1 },
-  { id: "CU-S-1.5", name: "Copper Sheet 1.5mm", category: "Copper Sheets", basePrice: 38.00, marketIndex: 1.08, margin: 1.04, finalPrice: 42.80, lastUpdated: "08:30", change: -0.5 },
-  { id: "CU-S-2.0", name: "Copper Sheet 2.0mm", category: "Copper Sheets", basePrice: 50.00, marketIndex: 1.08, margin: 1.04, finalPrice: 56.20, lastUpdated: "08:30", change: 0.0 },
-  { id: "AL-T-20", name: "Aluminum Tube 20mm", category: "Aluminum Tubing", basePrice: 8.00, marketIndex: 1.02, margin: 1.07, finalPrice: 8.75, lastUpdated: "08:30", change: -1.2 },
+  { id: "ENT-CU-15", name: "Tubo Cobre 15mm - Rollo 50m", category: "Rollos", basePrice: 198.50, marketIndex: 1.15, margin: 1.08, finalPrice: 245.80, lastUpdated: "08:30", change: 2.3 },
+  { id: "ENT-CU-18", name: "Tubo Cobre 18mm - Rollo 50m", category: "Rollos", basePrice: 252.40, marketIndex: 1.15, margin: 1.08, finalPrice: 312.50, lastUpdated: "08:30", change: 1.8 },
+  { id: "ENT-CU-22", name: "Tubo Cobre 22mm - Rollo 25m", category: "Rollos", basePrice: 160.60, marketIndex: 1.15, margin: 1.08, finalPrice: 198.90, lastUpdated: "08:30", change: 2.1 },
+  { id: "ENT-CU-28", name: "Tubo Cobre 28mm - Barra 5m", category: "Barras", basePrice: 72.20, marketIndex: 1.15, margin: 1.08, finalPrice: 89.40, lastUpdated: "08:30", change: 1.5 },
+  { id: "ENT-CU-35", name: "Tubo Cobre 35mm - Barra 5m", category: "Barras", basePrice: 115.20, marketIndex: 1.15, margin: 1.08, finalPrice: 142.60, lastUpdated: "08:30", change: -0.5 },
+  { id: "ENT-CU-42", name: "Tubo Cobre 42mm - Barra 5m", category: "Barras", basePrice: 144.00, marketIndex: 1.15, margin: 1.08, finalPrice: 178.30, lastUpdated: "08:30", change: 0.0 },
 ];
 
 export default function AdminPricing() {
@@ -43,6 +44,7 @@ export default function AdminPricing() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<{ margin: number } | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
+  const [lmeIndex, setLmeIndex] = useState("1.15");
 
   const startEdit = (entry: PriceEntry) => {
     setEditingId(entry.id);
@@ -70,38 +72,36 @@ export default function AdminPricing() {
     setHasChanges(true);
   };
 
-  const applyMarketIndex = (index: number) => {
+  const applyMarketIndex = () => {
+    const index = parseFloat(lmeIndex) || 1.15;
     setPrices(prices.map(p => {
-      if (p.category.includes("Copper")) {
-        const newFinalPrice = p.basePrice * index * p.margin;
-        return { ...p, marketIndex: index, finalPrice: newFinalPrice };
-      }
-      return p;
+      const newFinalPrice = p.basePrice * index * p.margin;
+      return { ...p, marketIndex: index, finalPrice: newFinalPrice };
     }));
     setHasChanges(true);
   };
 
   return (
-    <AppLayout userRole="admin" userName="Sarah Admin" companyName="Industrial Corp">
+    <AppLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Pricing Management</h1>
-            <p className="text-muted-foreground">Configure daily prices and margins</p>
+            <h1 className="text-2xl font-bold text-foreground">Gestión de Precios</h1>
+            <p className="text-muted-foreground">Configura los precios diarios y márgenes</p>
           </div>
           <div className="flex gap-3">
             <Button variant="outline" className="gap-2">
               <Upload className="h-4 w-4" />
-              Import CSV
+              Importar CSV
             </Button>
             <Button variant="outline" className="gap-2">
               <RefreshCw className="h-4 w-4" />
-              Sync Market Data
+              Sincronizar LME
             </Button>
             <Button className="gap-2" disabled={!hasChanges}>
               <Save className="h-4 w-4" />
-              Publish Prices
+              Publicar Precios
             </Button>
           </div>
         </div>
@@ -109,43 +109,42 @@ export default function AdminPricing() {
         {hasChanges && (
           <div className="flex items-center gap-2 px-4 py-3 rounded-md bg-status-low/10 text-status-low border border-status-low/30">
             <AlertCircle className="h-4 w-4" />
-            <span className="text-sm">You have unpublished price changes. Click "Publish Prices" to make them visible to customers.</span>
+            <span className="text-sm">Tienes cambios de precios sin publicar. Haz clic en "Publicar Precios" para hacerlos visibles a los clientes.</span>
           </div>
         )}
 
         {/* Market Index Controls */}
-        <DataCard title="Market Index" subtitle="Apply global market adjustments">
+        <DataCard title="Índice de Mercado LME" subtitle="Aplicar ajuste global de mercado">
           <div className="flex items-center gap-6">
             <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">LME Copper Index</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Cotización LME Cobre</p>
+              <div className="flex items-center gap-2">
+                <span className="font-mono font-semibold text-lg">$8,432.50 USD/t</span>
+                <Badge variant="outline" className="text-market-up bg-market-up/10 border-0">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  +2.3%
+                </Badge>
+              </div>
+            </div>
+            <div className="h-10 w-px bg-border" />
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Factor de Índice</p>
               <div className="flex items-center gap-2">
                 <Input
                   type="number"
                   step="0.01"
-                  defaultValue="1.15"
+                  value={lmeIndex}
+                  onChange={(e) => setLmeIndex(e.target.value)}
                   className="w-24 font-mono"
                 />
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => applyMarketIndex(1.15)}
+                  onClick={applyMarketIndex}
+                  className="gap-1"
                 >
-                  Apply to Copper
-                </Button>
-              </div>
-            </div>
-            <div className="h-8 w-px bg-border" />
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">LME Aluminum Index</p>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  step="0.01"
-                  defaultValue="1.02"
-                  className="w-24 font-mono"
-                />
-                <Button variant="outline" size="sm">
-                  Apply to Aluminum
+                  <Calculator className="h-4 w-4" />
+                  Aplicar a Todos
                 </Button>
               </div>
             </div>
@@ -153,19 +152,19 @@ export default function AdminPricing() {
         </DataCard>
 
         {/* Pricing Table */}
-        <DataCard title="Product Prices" subtitle="Edit margins and view calculated prices" bodyClassName="p-0">
+        <DataCard title="Tabla de Precios" subtitle="Edita márgenes y visualiza precios calculados" bodyClassName="p-0">
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr className="bg-muted/30">
-                  <th>Product</th>
-                  <th>Category</th>
-                  <th className="text-right">Base Price</th>
-                  <th className="text-right">Market Index</th>
-                  <th className="text-right">Margin</th>
-                  <th className="text-right">Final Price</th>
-                  <th className="text-right">Change</th>
-                  <th className="text-center">Last Updated</th>
+                  <th>Producto</th>
+                  <th>Categoría</th>
+                  <th className="text-right">Precio Base</th>
+                  <th className="text-right">Índice LME</th>
+                  <th className="text-right">Margen</th>
+                  <th className="text-right">Precio Final</th>
+                  <th className="text-right">Variación</th>
+                  <th className="text-center">Actualizado</th>
                   <th></th>
                 </tr>
               </thead>

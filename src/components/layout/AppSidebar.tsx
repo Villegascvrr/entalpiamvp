@@ -4,11 +4,9 @@ import {
   LayoutDashboard,
   Package,
   ClipboardList,
-  Settings,
   TrendingUp,
   Warehouse,
   FileText,
-  LogOut,
   ChevronLeft,
   ChevronRight,
   User,
@@ -16,6 +14,8 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { RoleSwitcher } from "./RoleSwitcher";
+import { useRole } from "@/contexts/RoleContext";
 
 interface NavItem {
   title: string;
@@ -24,30 +24,21 @@ interface NavItem {
 }
 
 const customerNav: NavItem[] = [
-  { title: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-  { title: "Create Order", icon: Package, href: "/order/new" },
-  { title: "My Orders", icon: ClipboardList, href: "/orders" },
+  { title: "Panel Principal", icon: LayoutDashboard, href: "/dashboard" },
+  { title: "Crear Pedido", icon: Package, href: "/order/new" },
+  { title: "Mis Pedidos", icon: ClipboardList, href: "/orders" },
 ];
 
 const adminNav: NavItem[] = [
-  { title: "Pricing", icon: TrendingUp, href: "/admin/pricing" },
-  { title: "Stock", icon: Warehouse, href: "/admin/stock" },
-  { title: "Orders", icon: FileText, href: "/admin/orders" },
+  { title: "Gestión Precios", icon: TrendingUp, href: "/admin/pricing" },
+  { title: "Gestión Stock", icon: Warehouse, href: "/admin/stock" },
+  { title: "Pedidos Recibidos", icon: FileText, href: "/admin/orders" },
 ];
 
-interface AppSidebarProps {
-  userRole?: "customer" | "admin";
-  userName?: string;
-  companyName?: string;
-}
-
-export function AppSidebar({ 
-  userRole = "customer", 
-  userName = "John Doe",
-  companyName = "Industrial Corp"
-}: AppSidebarProps) {
+export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const { isInterno } = useRole();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -86,8 +77,8 @@ export function AppSidebar({
               <Package className="h-4 w-4 text-sidebar-primary-foreground" />
             </div>
             <div>
-              <h1 className="font-semibold text-sidebar-foreground text-sm">OrderFlow</h1>
-              <p className="text-xs text-sidebar-muted">Industrial Platform</p>
+              <h1 className="font-semibold text-sidebar-foreground text-sm">ENTALPIA</h1>
+              <p className="text-xs text-sidebar-muted">Plataforma Comercial</p>
             </div>
           </div>
         )}
@@ -100,12 +91,19 @@ export function AppSidebar({
 
       <Separator className="bg-sidebar-border" />
 
+      {/* Role Switcher */}
+      {!collapsed && (
+        <div className="p-3">
+          <RoleSwitcher />
+        </div>
+      )}
+
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-thin">
         {/* Customer Section */}
         {!collapsed && (
           <p className="px-3 py-2 text-xs font-medium text-sidebar-muted uppercase tracking-wider">
-            Operations
+            Operaciones
           </p>
         )}
         {customerNav.map((item) => (
@@ -113,12 +111,12 @@ export function AppSidebar({
         ))}
 
         {/* Admin Section */}
-        {userRole === "admin" && (
+        {isInterno && (
           <>
             <div className="pt-4">
               {!collapsed && (
                 <p className="px-3 py-2 text-xs font-medium text-sidebar-muted uppercase tracking-wider">
-                  Administration
+                  Administración
                 </p>
               )}
               {adminNav.map((item) => (
@@ -143,8 +141,12 @@ export function AppSidebar({
           </div>
           {!collapsed && (
             <div className="overflow-hidden">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">{userName}</p>
-              <p className="text-xs text-sidebar-muted truncate">{companyName}</p>
+              <p className="text-sm font-medium text-sidebar-foreground truncate">
+                {isInterno ? "Antonio García" : "Distribuidor Demo"}
+              </p>
+              <p className="text-xs text-sidebar-muted truncate">
+                {isInterno ? "ENTALPIA Europe" : "Cliente Ejemplo S.L."}
+              </p>
             </div>
           )}
         </div>
@@ -164,19 +166,10 @@ export function AppSidebar({
           ) : (
             <>
               <ChevronLeft className="h-4 w-4 mr-2" />
-              <span className="text-xs">Collapse</span>
+              <span className="text-xs">Colapsar</span>
             </>
           )}
         </Button>
-
-        {/* Logout */}
-        <NavLink
-          to="/login"
-          className="flex items-center gap-3 px-3 py-2 rounded-md text-sidebar-muted hover:text-destructive hover:bg-destructive/10 transition-colors"
-        >
-          <LogOut className="h-5 w-5 flex-shrink-0" />
-          {!collapsed && <span className="text-sm">Sign Out</span>}
-        </NavLink>
       </div>
     </aside>
   );

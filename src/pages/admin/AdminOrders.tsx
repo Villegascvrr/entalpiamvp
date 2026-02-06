@@ -13,7 +13,8 @@ import {
   Package,
   FileText,
   Download,
-  XCircle
+  XCircle,
+  AlertCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,43 +23,43 @@ interface Order {
   customer: string;
   company: string;
   date: string;
-  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  status: "pendiente" | "procesando" | "enviado" | "entregado" | "cancelado";
   items: number;
   total: number;
 }
 
 const orders: Order[] = [
-  { id: "ORD-2024-0145", customer: "Marcus Chen", company: "Metro Distributors", date: "2024-01-15 09:45", status: "pending", items: 3, total: 2450.00 },
-  { id: "ORD-2024-0144", customer: "Lisa Wong", company: "Eastern Supply Co", date: "2024-01-15 08:30", status: "pending", items: 5, total: 8920.50 },
-  { id: "ORD-2024-0142", customer: "Marcus Chen", company: "Metro Distributors", date: "2024-01-15 07:15", status: "processing", items: 4, total: 4250.00 },
-  { id: "ORD-2024-0138", customer: "James Park", company: "Pacific Trade", date: "2024-01-14 16:20", status: "shipped", items: 2, total: 1890.00 },
-  { id: "ORD-2024-0131", customer: "Anna Smith", company: "Continental Dist", date: "2024-01-14 11:00", status: "delivered", items: 6, total: 12180.00 },
-  { id: "ORD-2024-0125", customer: "Robert Lee", company: "Global Materials", date: "2024-01-13 14:30", status: "cancelled", items: 3, total: 5640.25 },
+  { id: "PED-2024-0145", customer: "Carlos Martínez", company: "Distribuciones Norte S.L.", date: "15/01/2024 09:45", status: "pendiente", items: 3, total: 2450.00 },
+  { id: "PED-2024-0144", customer: "María López", company: "Suministros Este S.A.", date: "15/01/2024 08:30", status: "pendiente", items: 5, total: 8920.50 },
+  { id: "PED-2024-0142", customer: "Carlos Martínez", company: "Distribuciones Norte S.L.", date: "15/01/2024 07:15", status: "procesando", items: 4, total: 4250.00 },
+  { id: "PED-2024-0138", customer: "José García", company: "Comercial Sur", date: "14/01/2024 16:20", status: "enviado", items: 2, total: 1890.00 },
+  { id: "PED-2024-0131", customer: "Ana Fernández", company: "Instalaciones Oeste", date: "14/01/2024 11:00", status: "entregado", items: 6, total: 12180.00 },
+  { id: "PED-2024-0125", customer: "Roberto Sánchez", company: "Materiales Centro", date: "13/01/2024 14:30", status: "cancelado", items: 3, total: 5640.25 },
 ];
 
 const statusConfig = {
-  pending: { 
-    label: "Pending", 
+  pendiente: { 
+    label: "Pendiente", 
     icon: Clock, 
     className: "bg-status-low/10 text-status-low border-status-low/20" 
   },
-  processing: { 
-    label: "Processing", 
+  procesando: { 
+    label: "Procesando", 
     icon: Package, 
     className: "bg-primary/10 text-primary border-primary/20" 
   },
-  shipped: { 
-    label: "Shipped", 
+  enviado: { 
+    label: "Enviado", 
     icon: Truck, 
     className: "bg-primary/10 text-primary border-primary/20" 
   },
-  delivered: { 
-    label: "Delivered", 
+  entregado: { 
+    label: "Entregado", 
     icon: CheckCircle, 
     className: "bg-status-available/10 text-status-available border-status-available/20" 
   },
-  cancelled: { 
-    label: "Cancelled", 
+  cancelado: { 
+    label: "Cancelado", 
     icon: XCircle, 
     className: "bg-destructive/10 text-destructive border-destructive/20" 
   },
@@ -77,44 +78,52 @@ export default function AdminOrders() {
     return matchesSearch && matchesStatus;
   });
 
-  const pendingCount = orders.filter(o => o.status === "pending").length;
-  const todayTotal = orders.filter(o => o.date.startsWith("2024-01-15")).reduce((sum, o) => sum + o.total, 0);
-  const todayOrders = orders.filter(o => o.date.startsWith("2024-01-15")).length;
+  const pendingCount = orders.filter(o => o.status === "pendiente").length;
+  const todayTotal = orders.filter(o => o.date.startsWith("15/01/2024")).reduce((sum, o) => sum + o.total, 0);
+  const todayOrders = orders.filter(o => o.date.startsWith("15/01/2024")).length;
 
   return (
-    <AppLayout userRole="admin" userName="Sarah Admin" companyName="Industrial Corp">
+    <AppLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Order Management</h1>
-            <p className="text-muted-foreground">Review and process incoming orders</p>
+            <h1 className="text-2xl font-bold text-foreground">Gestión de Pedidos</h1>
+            <p className="text-muted-foreground">Revisa y procesa los pedidos entrantes</p>
           </div>
           <Button variant="outline" className="gap-2">
             <Download className="h-4 w-4" />
-            Export Orders
+            Exportar Pedidos
           </Button>
         </div>
+
+        {/* Pending Alert */}
+        {pendingCount > 0 && (
+          <div className="flex items-center gap-2 px-4 py-3 rounded-md bg-status-low/10 text-status-low border border-status-low/30">
+            <AlertCircle className="h-4 w-4" />
+            <span className="text-sm">Tienes {pendingCount} pedido(s) pendientes de procesar.</span>
+          </div>
+        )}
 
         {/* Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <MetricCard
-            label="Pending Orders"
+            label="Pedidos Pendientes"
             value={pendingCount}
             icon={<Clock className="h-5 w-5" />}
           />
           <MetricCard
-            label="Today's Orders"
+            label="Pedidos de Hoy"
             value={todayOrders}
             icon={<FileText className="h-5 w-5" />}
           />
           <MetricCard
-            label="Today's Volume"
-            value={`€${todayTotal.toLocaleString()}`}
+            label="Volumen de Hoy"
+            value={`€${todayTotal.toLocaleString("es-ES")}`}
             icon={<Package className="h-5 w-5" />}
           />
           <MetricCard
-            label="Avg. Order Value"
+            label="Pedido Medio"
             value={`€${(todayTotal / todayOrders).toFixed(0)}`}
             icon={<CheckCircle className="h-5 w-5" />}
           />
@@ -125,7 +134,7 @@ export default function AdminOrders() {
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search orders, customers..."
+              placeholder="Buscar pedidos, clientes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -137,7 +146,7 @@ export default function AdminOrders() {
               size="sm"
               onClick={() => setSelectedStatus(null)}
             >
-              All
+              Todos
             </Button>
             {Object.entries(statusConfig).map(([status, config]) => (
               <Button
@@ -155,15 +164,15 @@ export default function AdminOrders() {
         </div>
 
         {/* Orders Table */}
-        <DataCard title="Orders" bodyClassName="p-0">
+        <DataCard title="Lista de Pedidos" bodyClassName="p-0">
           <table className="data-table">
             <thead>
               <tr className="bg-muted/30">
-                <th>Order ID</th>
-                <th>Customer</th>
-                <th>Date & Time</th>
-                <th>Items</th>
-                <th>Status</th>
+                <th>Nº Pedido</th>
+                <th>Cliente</th>
+                <th>Fecha y Hora</th>
+                <th>Artículos</th>
+                <th>Estado</th>
                 <th className="text-right">Total</th>
                 <th></th>
               </tr>
@@ -185,7 +194,7 @@ export default function AdminOrders() {
                       </div>
                     </td>
                     <td className="text-muted-foreground">{order.date}</td>
-                    <td>{order.items} items</td>
+                    <td>{order.items} artículos</td>
                     <td>
                       <Badge variant="outline" className={cn("gap-1", status.className)}>
                         <StatusIcon className="h-3 w-3" />
@@ -199,11 +208,11 @@ export default function AdminOrders() {
                       <div className="flex gap-1">
                         <Button variant="ghost" size="sm" className="gap-1">
                           <Eye className="h-3 w-3" />
-                          View
+                          Ver
                         </Button>
-                        {order.status === "pending" && (
+                        {order.status === "pendiente" && (
                           <Button variant="default" size="sm">
-                            Process
+                            Procesar
                           </Button>
                         )}
                       </div>
@@ -216,7 +225,7 @@ export default function AdminOrders() {
           
           {filteredOrders.length === 0 && (
             <div className="p-8 text-center text-muted-foreground">
-              No orders found matching your criteria
+              No se encontraron pedidos con los criterios seleccionados
             </div>
           )}
         </DataCard>
