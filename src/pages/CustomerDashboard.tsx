@@ -55,7 +55,7 @@ export default function CustomerDashboard() {
             HERO SECTION - Acción Principal Destacada
         ═══════════════════════════════════════════════════════════ */}
         <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-xl p-4 border border-primary/20">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-lg font-bold text-foreground">
                 Buenos días, Distribuidor Demo
@@ -88,17 +88,19 @@ export default function CustomerDashboard() {
             </div>
 
             {/* CTA Principal */}
-            <div className="flex gap-3">
-              <Link to="/order/new" state={{ openCustomDialog: true }}>
-                <Button size="sm" variant="outline" className="h-10 px-4 text-sm gap-2 border-primary/30 hover:bg-primary/5 text-primary">
+            <div className="flex gap-3 w-full md:w-auto">
+              <Link to="/order/new" state={{ openCustomDialog: true }} className="flex-1 md:flex-none">
+                <Button size="sm" variant="outline" className="h-10 px-4 text-sm gap-2 border-primary/30 hover:bg-primary/5 text-primary w-full md:w-auto">
                   <FileEdit className="h-4 w-4" />
-                  Solicitar Personalizado
+                  <span className="md:hidden">Personalizado</span>
+                  <span className="hidden md:inline">Solicitar Personalizado</span>
                 </Button>
               </Link>
-              <Link to="/order/new">
-                <Button size="sm" className="h-10 px-6 text-sm gap-2 shadow-sm">
+              <Link to="/order/new" className="flex-1 md:flex-none">
+                <Button size="sm" className="h-10 px-6 text-sm gap-2 shadow-sm w-full md:w-auto">
                   <Package className="h-4 w-4" />
-                  Crear Nuevo Pedido
+                  <span className="md:hidden">Crear Pedido</span>
+                  <span className="hidden md:inline">Crear Nuevo Pedido</span>
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
@@ -109,10 +111,13 @@ export default function CustomerDashboard() {
         {/* ═══════════════════════════════════════════════════════════
             GRID PRINCIPAL - 2 Columnas Claras
         ═══════════════════════════════════════════════════════════ */}
-        <div className="grid grid-cols-3 gap-6">
+        {/* ═══════════════════════════════════════════════════════════
+            GRID PRINCIPAL - Responsive (1 col móvil, 3 cols desktop)
+        ═══════════════════════════════════════════════════════════ */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           {/* COLUMNA IZQUIERDA - Precios Rápidos */}
-          <div className="col-span-2 space-y-6">
+          <div className="col-span-1 lg:col-span-2 space-y-6">
             <DataCard
               title="Precios del Día"
               subtitle="5 productos más solicitados"

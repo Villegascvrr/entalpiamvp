@@ -41,7 +41,7 @@ const internoNav: NavItem[] = [
   { title: "Gestión Stock", icon: Warehouse, href: "/admin/stock" },
 ];
 
-export function AppSidebar() {
+export function AppSidebar({ className, onNavigate }: { className?: string, onNavigate?: () => void }) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const { isInterno } = useRole();
@@ -55,6 +55,7 @@ export function AppSidebar() {
   const NavItem = ({ item }: { item: NavItem }) => (
     <NavLink
       to={item.href}
+      onClick={onNavigate}
       className={cn(
         "flex items-center gap-2.5 px-2.5 py-2 rounded transition-all duration-200 group text-[13px]",
         isActive(item.href)
@@ -75,8 +76,9 @@ export function AppSidebar() {
   return (
     <aside
       className={cn(
-        "h-screen bg-sidebar flex flex-col border-r border-sidebar-border transition-all duration-300",
-        collapsed ? "w-14" : "w-56"
+        "bg-sidebar flex flex-col border-r border-sidebar-border transition-all duration-300 h-full",
+        collapsed ? "w-14" : "w-56",
+        className
       )}
     >
       {/* Header - Compact */}

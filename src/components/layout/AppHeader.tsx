@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, Calendar, RefreshCw, TrendingUp, TrendingDown, Check, X, Info, Package, Truck, AlertTriangle } from "lucide-react";
+import { Bell, Calendar, RefreshCw, TrendingUp, TrendingDown, Check, X, Info, Package, Truck, AlertTriangle, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -11,6 +11,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { AppSidebar } from "./AppSidebar";
 
 // Mock Notifications
 const initialNotifications = [
@@ -116,24 +118,40 @@ export function AppHeader() {
 
 
   return (
-    <header className="h-14 border-b border-border bg-card px-6 flex items-center justify-between flex-shrink-0">
+
+    <header className="h-14 border-b border-border bg-card px-4 md:px-6 flex items-center justify-between flex-shrink-0 sticky top-0 z-10 w-full">
       {/* Left side - Date and market info */}
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        {/* Mobile Menu Trigger */}
+        <div className="md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="-ml-2">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 border-0 w-64 bg-sidebar text-sidebar-foreground">
+              <AppSidebar className="border-0 w-full" onNavigate={() => document.body.click()} />
+              {/* Note: In a real app we'd control open state, but click-to-close via outside click or simple callback works for MVP */}
+            </SheetContent>
+          </Sheet>
+        </div>
+
+        <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
           <Calendar className="h-4 w-4" />
           <span className="capitalize">{today}</span>
         </div>
-        <div className="h-4 w-px bg-border" />
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-muted-foreground uppercase tracking-wider">LME Cobre:</span>
+        <div className="hidden md:block h-4 w-px bg-border" />
+        <div className="flex items-center gap-2 md:gap-3">
+          <span className="text-xs text-muted-foreground uppercase tracking-wider hidden sm:inline">LME Cobre:</span>
           <div className="flex items-center gap-2">
-            <span className="font-mono font-semibold text-foreground">
-              ${lmeData.price.toLocaleString("es-ES", { maximumFractionDigits: 2, minimumFractionDigits: 2 })} USD/t
+            <span className="font-mono font-semibold text-foreground text-sm md:text-base">
+              ${lmeData.price.toLocaleString("es-ES", { maximumFractionDigits: 2, minimumFractionDigits: 2 })}
             </span>
             <Badge
               variant="outline"
               className={cn(
-                "gap-1 border-0 text-xs",
+                "gap-1 border-0 text-[10px] md:text-xs px-1.5",
                 lmeData.change >= 0 ? "text-market-up bg-market-up/10" : "text-market-down bg-market-down/10"
               )}
             >
