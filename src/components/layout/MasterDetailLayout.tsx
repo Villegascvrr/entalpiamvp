@@ -1,25 +1,92 @@
+import { ReactNode } from "react";
+import { cn } from "@/lib/utils";
+import {
+    ResizablePanelGroup,
+    ResizablePanel,
+    ResizableHandle,
+} from "@/components/ui/resizable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// ... (inside MasterDetailLayout)
+interface MasterDetailLayoutProps {
+    /** Content for the master panel (left side - lists, navigation) */
+    master: ReactNode;
+    /** Content for the detail panel (right side - workspace, editing) */
+    detail: ReactNode;
+    /** Default size of master panel as percentage (default: 30) */
+    masterDefaultSize?: number;
+    /** Minimum size of master panel as percentage (default: 20) */
+    masterMinSize?: number;
+    /** Maximum size of master panel as percentage (default: 40) */
+    masterMaxSize?: number;
+    /** Additional class names for the container */
+    className?: string;
+}
 
-{/* Mobile View - Tabs */ }
-<div className="md:hidden h-full flex flex-col">
-    <Tabs defaultValue="master" className="h-full flex flex-col">
-        <div className="px-4 py-2 bg-muted/20 border-b">
-            <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="master">Lista / Menú</TabsTrigger>
-                <TabsTrigger value="detail">Detalle / Área de Trabajo</TabsTrigger>
-            </TabsList>
+/**
+ * MasterDetailLayout - Industrial pattern for list + workspace views
+ * 
+ * Used for high-density operational interfaces where users need to:
+ * - Browse a list of items (master)
+ * - Work on details of selected item (detail)
+ * 
+ * The panels are resizable to accommodate different workflows.
+ * On mobile, it switches to a Tabbed view.
+ */
+export function MasterDetailLayout({
+    master,
+    detail,
+    masterDefaultSize = 30,
+    masterMinSize = 20,
+    masterMaxSize = 40,
+    className,
+}: MasterDetailLayoutProps) {
+    return (
+        <div className={cn("h-full w-full", className)}>
+            {/* Desktop View */}
+            <div className="hidden md:block h-full">
+                <ResizablePanelGroup direction="horizontal" className="h-full">
+                    {/* Master Panel - List/Navigation */}
+                    <ResizablePanel
+                        defaultSize={masterDefaultSize}
+                        minSize={masterMinSize}
+                        maxSize={masterMaxSize}
+                        className="bg-muted/20"
+                    >
+                        <div className="h-full overflow-auto scrollbar-thin">
+                            {master}
+                        </div>
+                    </ResizablePanel>
+
+                    {/* Resize Handle */}
+                    <ResizableHandle withHandle className="bg-border/50 hover:bg-border" />
+
+                    {/* Detail Panel - Workspace */}
+                    <ResizablePanel defaultSize={100 - masterDefaultSize} minSize={50}>
+                        <div className="h-full overflow-auto scrollbar-thin">
+                            {detail}
+                        </div>
+                    </ResizablePanel>
+                </ResizablePanelGroup>
+            </div>
+
+            {/* Mobile View - Tabs */}
+            <div className="md:hidden h-full flex flex-col">
+                <Tabs defaultValue="master" className="h-full flex flex-col">
+                    <div className="px-4 py-2 bg-muted/20 border-b flex-shrink-0">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="master">Lista / Menú</TabsTrigger>
+                            <TabsTrigger value="detail">Detalle / Trabajo</TabsTrigger>
+                        </TabsList>
+                    </div>
+                    <TabsContent value="master" className="flex-1 overflow-auto mt-0 h-full">
+                        {master}
+                    </TabsContent>
+                    <TabsContent value="detail" className="flex-1 overflow-auto mt-0 bg-background h-full">
+                        {detail}
+                    </TabsContent>
+                </Tabs>
+            </div>
         </div>
-        <TabsContent value="master" className="flex-1 overflow-auto mt-0">
-            {master}
-        </TabsContent>
-        <TabsContent value="detail" className="flex-1 overflow-auto mt-0 bg-background">
-            {detail}
-        </TabsContent>
-    </Tabs>
-</div>
-        </div >
     );
 }
 
