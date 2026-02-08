@@ -172,7 +172,7 @@ export function AppHeader() {
           disabled={isUpdating}
         >
           <RefreshCw className={cn("h-4 w-4", isUpdating && "animate-spin")} />
-          <span className="text-xs">{isUpdating ? "Actualizando..." : "Actualizar Precios"}</span>
+          <span className="hidden md:inline text-xs">{isUpdating ? "Actualizando..." : "Actualizar Precios"}</span>
         </Button>
         <div className="h-4 w-px bg-border" />
 

@@ -90,16 +90,16 @@ export default function CustomerDashboard() {
             {/* CTA Principal */}
             <div className="flex gap-3 w-full md:w-auto">
               <Link to="/order/new" state={{ openCustomDialog: true }} className="flex-1 md:flex-none">
-                <Button size="sm" variant="outline" className="h-10 px-4 text-sm gap-2 border-primary/30 hover:bg-primary/5 text-primary w-full md:w-auto">
+                <Button size="sm" variant="outline" className="h-10 px-3 md:px-4 text-sm gap-2 border-primary/30 hover:bg-primary/5 text-primary w-full md:w-auto">
                   <FileEdit className="h-4 w-4" />
                   <span className="md:hidden">Personalizado</span>
                   <span className="hidden md:inline">Solicitar Personalizado</span>
                 </Button>
               </Link>
               <Link to="/order/new" className="flex-1 md:flex-none">
-                <Button size="sm" className="h-10 px-6 text-sm gap-2 shadow-sm w-full md:w-auto">
+                <Button size="sm" className="h-10 px-3 md:px-6 text-sm gap-2 shadow-sm w-full md:w-auto">
                   <Package className="h-4 w-4" />
-                  <span className="md:hidden">Crear Pedido</span>
+                  <span className="md:hidden">Pedido</span>
                   <span className="hidden md:inline">Crear Nuevo Pedido</span>
                   <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -124,7 +124,8 @@ export default function CustomerDashboard() {
               action={
                 <Link to="/order/new">
                   <Button variant="outline" size="sm" className="gap-1">
-                    Ver Catálogo Completo
+                    <span className="md:hidden">Catálogo</span>
+                    <span className="hidden md:inline">Ver Catálogo Completo</span>
                     <ArrowRight className="h-3.5 w-3.5" />
                   </Button>
                 </Link>
@@ -135,33 +136,35 @@ export default function CustomerDashboard() {
                   <div
                     key={product.id}
                     className={cn(
-                      "flex items-center justify-between py-3 px-4 rounded-lg hover:bg-muted/50 transition-colors",
+                      "flex items-center justify-between py-3 px-3 md:px-4 rounded-lg hover:bg-muted/50 transition-colors",
                       product.stock === "bajo" && "bg-amber-500/5"
                     )}
                   >
-                    <div className="flex items-center gap-4">
-                      <span className="font-mono text-sm text-muted-foreground w-24">{product.id}</span>
-                      <span className="font-medium">{product.name}</span>
-                      {product.stock === "bajo" && (
-                        <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/20">
-                          Stock Bajo
-                        </Badge>
-                      )}
+                    <div className="flex items-center gap-2 md:gap-4">
+                      <span className="hidden md:inline-block font-mono text-sm text-muted-foreground w-24">{product.id}</span>
+                      <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
+                        <span className="font-medium text-sm md:text-base">{product.name}</span>
+                        {product.stock === "bajo" && (
+                          <Badge variant="outline" className="w-fit text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/20 px-1 py-0 h-5">
+                            Stock Bajo
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 md:gap-4">
                       <div className="text-right">
-                        <span className="font-mono text-lg font-semibold">€{product.price.toFixed(2)}</span>
-                        <span className={cn(
-                          "ml-2 font-mono text-sm",
+                        <span className="font-mono text-base md:text-lg font-semibold">€{product.price.toFixed(2)}</span>
+                        <div className={cn(
+                          "font-mono text-[10px] md:text-sm",
                           product.change > 0 ? "text-green-600" : product.change < 0 ? "text-red-500" : "text-muted-foreground"
                         )}>
                           {product.change > 0 ? "↑" : product.change < 0 ? "↓" : ""}{Math.abs(product.change)}%
-                        </span>
+                        </div>
                       </div>
                       <Link to="/order/new">
-                        <Button size="sm" variant="ghost" className="gap-1">
-                          Pedir
-                          <ArrowRight className="h-3.5 w-3.5" />
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 md:h-9 md:w-auto md:px-3 gap-1">
+                          <ArrowRight className="h-4 w-4" />
+                          <span className="hidden md:inline">Pedir</span>
                         </Button>
                       </Link>
                     </div>
