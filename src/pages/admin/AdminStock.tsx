@@ -5,9 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { StockBadge } from "@/components/ui/stock-indicator";
-import { 
-  Upload, 
-  Save, 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Upload,
+  Save,
   Edit2,
   Check,
   X,
@@ -15,7 +25,8 @@ import {
   AlertCircle,
   Plus,
   Minus,
-  Truck
+  Truck,
+  Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +58,7 @@ export default function AdminStock() {
   const [editValues, setEditValues] = useState<{ quantity: number } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
+  const [deletingProduct, setDeletingProduct] = useState<StockEntry | null>(null);
 
   const getStockStatus = (entry: StockEntry): "available" | "low" | "out" => {
     if (entry.quantity <= 0) return "out";
@@ -56,7 +68,7 @@ export default function AdminStock() {
 
   const lowStockCount = stock.filter(s => getStockStatus(s) !== "available").length;
 
-  const filteredStock = stock.filter(entry => 
+  const filteredStock = stock.filter(entry =>
     entry.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     entry.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -73,21 +85,29 @@ export default function AdminStock() {
 
   const saveEdit = (id: string) => {
     if (!editValues) return;
-    
-    setStock(stock.map(s => 
+
+    setStock(stock.map(s =>
       s.id === id ? { ...s, quantity: editValues.quantity } : s
     ));
-    
+
     setEditingId(null);
     setEditValues(null);
     setHasChanges(true);
   };
 
   const adjustStock = (id: string, delta: number) => {
-    setStock(stock.map(s => 
+    setStock(stock.map(s =>
       s.id === id ? { ...s, quantity: Math.max(0, s.quantity + delta) } : s
     ));
     setHasChanges(true);
+  };
+
+  const confirmDelete = () => {
+    if (deletingProduct) {
+      setStock(stock.filter(s => s.id !== deletingProduct.id));
+      setDeletingProduct(null);
+      setHasChanges(true);
+    }
   };
 
   return (
@@ -151,7 +171,7 @@ export default function AdminStock() {
               <tbody>
                 {filteredStock.map(entry => {
                   const status = getStockStatus(entry);
-                  
+
                   return (
                     <tr key={entry.id} className={status === "out" ? "bg-destructive/5" : status === "low" ? "bg-status-low/5" : ""}>
                       <td>
@@ -244,14 +264,24 @@ export default function AdminStock() {
                             </Button>
                           </div>
                         ) : (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => startEdit(entry)}
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => startEdit(entry)}
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => setDeletingProduct(entry)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         )}
                       </td>
                     </tr>
@@ -261,6 +291,23 @@ export default function AdminStock() {
             </table>
           </div>
         </DataCard>
+
+        <AlertDialog open={!!deletingProduct} onOpenChange={(open) => !open && setDeletingProduct(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta acción eliminará permanentemente <span className="font-semibold text-foreground">{deletingProduct?.name}</span> del inventario. Esta acción no se puede deshacer.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Eliminar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AppLayout>
   );

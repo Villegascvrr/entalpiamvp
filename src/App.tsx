@@ -11,6 +11,7 @@ import CustomerDashboard from "./pages/CustomerDashboard";
 import OrderBuilder from "./pages/OrderBuilder";
 import OrderPreview from "./pages/OrderPreview";
 import MyOrders from "./pages/MyOrders";
+import OrderHistory from "./pages/OrderHistory";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminPricing from "./pages/admin/AdminPricing";
 import AdminStock from "./pages/admin/AdminStock";
@@ -31,16 +32,17 @@ const App = () => (
             <Route path="/order/new" element={<OrderBuilder />} />
             <Route path="/order/preview" element={<OrderPreview />} />
             <Route path="/orders" element={<MyOrders />} />
-            
+            <Route path="/orders/history" element={<OrderHistory />} />
+
             {/* Admin Routes */}
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/pricing" element={<AdminPricing />} />
             <Route path="/admin/stock" element={<AdminStock />} />
             <Route path="/admin/orders" element={<AdminOrders />} />
-            
+
             {/* Redirects */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            
+
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>

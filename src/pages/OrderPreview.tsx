@@ -3,18 +3,20 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { 
-  ArrowLeft, 
-  Send, 
-  FileText, 
+import {
+  ArrowLeft,
+  Send,
+  FileText,
   Calendar,
   Building,
   Package,
   CheckCircle,
   Printer,
-  Truck
+  Truck,
+  AlertCircle
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { useRole } from "@/contexts/RoleContext";
 
 interface OrderItem {
@@ -24,8 +26,10 @@ interface OrderItem {
     category: string;
     price: number;
     unit: string;
+    isCustom?: boolean;
   };
   quantity: number;
+  notes?: string;
 }
 
 export default function OrderPreview() {
@@ -36,6 +40,8 @@ export default function OrderPreview() {
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const orderItems: OrderItem[] = location.state?.orderItems || [];
+  // Recalculate total or use passed total (custom items might make it partial)
+  const hasCustomItems = orderItems.some(i => i.product.isCustom);
   const orderTotal: number = location.state?.orderTotal || 0;
 
   const orderNumber = `PED-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
@@ -48,9 +54,13 @@ export default function OrderPreview() {
 
   const handleSubmit = () => {
     setIsSubmitting(true);
+    // Simulate API call
     setTimeout(() => {
       setIsSubmitting(false);
       setIsSubmitted(true);
+      toast.success(hasCustomItems ? "Solicitud enviada correctamente" : "Pedido enviado correctamente", {
+        description: `Referencia: ${orderNumber}`,
+      });
     }, 1500);
   };
 
@@ -79,12 +89,17 @@ export default function OrderPreview() {
             <div className="h-16 w-16 rounded-full bg-status-available/10 flex items-center justify-center mx-auto mb-4">
               <CheckCircle className="h-8 w-8 text-status-available" />
             </div>
-            <h2 className="text-2xl font-bold mb-2">¡Pedido Enviado!</h2>
+            <h2 className="text-2xl font-bold mb-2">
+              {hasCustomItems ? "¡Solicitud Enviada!" : "¡Pedido Enviado!"}
+            </h2>
             <p className="text-muted-foreground mb-2">
-              Tu pedido <span className="font-mono font-semibold text-foreground">{orderNumber}</span> ha sido enviado correctamente.
+              Tu {hasCustomItems ? "solicitud" : "pedido"} <span className="font-mono font-semibold text-foreground">{orderNumber}</span> ha sido {hasCustomItems ? "enviada" : "enviado"} correctamente.
             </p>
             <p className="text-sm text-muted-foreground mb-6">
-              Recibirás una confirmación por email en breve. Nuestro equipo procesará tu pedido en las próximas 24 horas.
+              {hasCustomItems
+                ? "Revisaremos tu solicitud y te enviaremos un presupuesto formal en breve."
+                : "Recibirás una confirmación por email en breve. Nuestro equipo procesará tu pedido en las próximas 24 horas."
+              }
             </p>
             <div className="flex gap-3 justify-center">
               <Link to="/orders">
@@ -102,13 +117,13 @@ export default function OrderPreview() {
 
   return (
     <AppLayout>
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6 py-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => navigate(-1)}
               className="gap-2"
             >
@@ -116,8 +131,10 @@ export default function OrderPreview() {
               Volver
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Vista Previa del Pedido</h1>
-              <p className="text-muted-foreground">Revisa tu pedido antes de enviarlo</p>
+              <h1 className="text-2xl font-bold text-foreground">
+                {hasCustomItems ? "Revisar Solicitud de Presupuesto" : "Vista Previa del Pedido"}
+              </h1>
+              <p className="text-muted-foreground">Revisa los detalles antes de enviar</p>
             </div>
           </div>
           <Button variant="outline" size="sm" className="gap-2">
@@ -127,7 +144,7 @@ export default function OrderPreview() {
         </div>
 
         {/* Order Document */}
-        <div className="industrial-card">
+        <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
           {/* Document Header */}
           <div className="p-6 border-b border-border bg-muted/20">
             <div className="flex items-start justify-between">
@@ -137,13 +154,15 @@ export default function OrderPreview() {
                 </div>
                 <div>
                   <h2 className="font-semibold text-lg">ENTALPIA Europe</h2>
-                  <p className="text-sm text-muted-foreground">Orden de Compra</p>
+                  <p className="text-sm text-muted-foreground">
+                    {hasCustomItems ? "Solicitud de Presupuesto" : "Orden de Compra"}
+                  </p>
                 </div>
               </div>
               <div className="text-right">
                 <p className="font-mono font-semibold text-lg">{orderNumber}</p>
-                <Badge variant="outline" className="border-status-low text-status-low">
-                  Borrador
+                <Badge variant="outline" className={hasCustomItems ? "border-amber-500 text-amber-600" : "border-status-low text-status-low"}>
+                  {hasCustomItems ? "Pendiente Cotización" : "Borrador"}
                 </Badge>
               </div>
             </div>
@@ -165,7 +184,7 @@ export default function OrderPreview() {
               <div className="flex items-start gap-3">
                 <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Fecha del Pedido</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Fecha</p>
                   <p className="font-medium capitalize">{today}</p>
                 </div>
               </div>
@@ -173,7 +192,9 @@ export default function OrderPreview() {
                 <Truck className="h-4 w-4 text-muted-foreground mt-0.5" />
                 <div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Entrega Estimada</p>
-                  <p className="font-medium">3-5 días laborables</p>
+                  <p className="font-medium">
+                    {hasCustomItems ? "A confirmar tras revisión" : "3-5 días laborables"}
+                  </p>
                 </div>
               </div>
             </div>
@@ -183,34 +204,40 @@ export default function OrderPreview() {
           <div className="p-6 border-b border-border">
             <h3 className="font-semibold mb-4 flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Artículos del Pedido
+              Artículos
             </h3>
-            <table className="data-table">
+            <table className="w-full text-sm">
               <thead>
-                <tr className="bg-muted/30">
-                  <th>Producto</th>
-                  <th className="text-center">Cantidad</th>
-                  <th className="text-right">Precio Unitario</th>
-                  <th className="text-right">Total</th>
+                <tr className="bg-muted/30 border-b border-border text-left">
+                  <th className="py-2 px-3 font-medium text-muted-foreground">Producto</th>
+                  <th className="py-2 px-3 font-medium text-muted-foreground text-center">Cantidad</th>
+                  <th className="py-2 px-3 font-medium text-muted-foreground text-right">Precio Unitario</th>
+                  <th className="py-2 px-3 font-medium text-muted-foreground text-right">Total</th>
                 </tr>
               </thead>
               <tbody>
                 {orderItems.map((item) => (
-                  <tr key={item.product.id}>
-                    <td>
+                  <tr key={item.product.id} className="border-b border-border last:border-0 hover:bg-muted/5">
+                    <td className="py-3 px-3">
                       <div>
+                        {item.product.isCustom && (
+                          <Badge variant="outline" className="mb-1 text-[10px] border-amber-200 text-amber-700 bg-amber-50">
+                            Personalizado
+                          </Badge>
+                        )}
                         <p className="font-medium">{item.product.name}</p>
                         <p className="text-xs text-muted-foreground font-mono">{item.product.id}</p>
+                        {item.notes && <p className="text-xs text-muted-foreground italic mt-0.5">Nota: {item.notes}</p>}
                       </div>
                     </td>
-                    <td className="text-center font-mono">
+                    <td className="py-3 px-3 text-center font-mono align-top pt-4">
                       {item.quantity.toLocaleString("es-ES")} {item.product.unit}
                     </td>
-                    <td className="text-right font-mono">
-                      €{item.product.price.toFixed(2)}
+                    <td className="py-3 px-3 text-right font-mono align-top pt-4">
+                      {item.product.isCustom ? <span className="text-xs text-muted-foreground">--</span> : `€${item.product.price.toFixed(2)}`}
                     </td>
-                    <td className="text-right font-mono font-semibold">
-                      €{(item.quantity * item.product.price).toFixed(2)}
+                    <td className="py-3 px-3 text-right font-mono font-semibold align-top pt-4">
+                      {item.product.isCustom ? <span className="text-xs text-amber-600">A Cotizar</span> : `€${(item.quantity * item.product.price).toFixed(2)}`}
                     </td>
                   </tr>
                 ))}
@@ -224,19 +251,26 @@ export default function OrderPreview() {
               <div className="w-64 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-mono">€{orderTotal.toFixed(2)}</span>
+                  <span className="font-mono">
+                    {hasCustomItems ? "--" : `€${orderTotal.toFixed(2)}`}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Transporte</span>
                   <span className="font-mono text-muted-foreground">A determinar</span>
                 </div>
-                <Separator />
+                <Separator className="bg-border/50" />
                 <div className="flex justify-between text-lg font-semibold">
-                  <span>Total Pedido</span>
-                  <span className="font-mono">€{orderTotal.toFixed(2)}</span>
+                  <span>Total Estimado</span>
+                  <span className="font-mono">
+                    {hasCustomItems ? <span className="text-amber-600 text-base">A Cotizar</span> : `€${orderTotal.toFixed(2)}`}
+                  </span>
                 </div>
-                <p className="text-xs text-muted-foreground text-right">
-                  * Precio final confirmado tras aceptación del pedido
+                <p className="text-xs text-muted-foreground text-right mt-1">
+                  {hasCustomItems
+                    ? "* Precio final sujeto a valoración técnica"
+                    : "* Precio final confirmado tras aceptación del pedido"
+                  }
                 </p>
               </div>
             </div>
@@ -245,17 +279,21 @@ export default function OrderPreview() {
 
         {/* Actions */}
         <div className="flex items-center justify-between p-4 bg-card rounded-lg border border-border">
-          <p className="text-sm text-muted-foreground">
-            Al enviar este pedido, aceptas los precios y disponibilidad de stock del día actual.
+          <p className="text-sm text-muted-foreground flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            {hasCustomItems
+              ? "Al enviar, un agente revisará tu solicitud y te contactará."
+              : "Al enviar, aceptas los precios y disponibilidad de stock del día actual."
+            }
           </p>
           <div className="flex gap-3">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => navigate(-1)}
             >
-              Editar Pedido
+              Editar {hasCustomItems ? "Solicitud" : "Pedido"}
             </Button>
-            <Button 
+            <Button
               onClick={handleSubmit}
               disabled={isSubmitting}
               className="gap-2"
@@ -268,7 +306,7 @@ export default function OrderPreview() {
               ) : (
                 <>
                   <Send className="h-4 w-4" />
-                  Enviar Pedido
+                  Enviar {hasCustomItems ? "Solicitud" : "Pedido"}
                 </>
               )}
             </Button>

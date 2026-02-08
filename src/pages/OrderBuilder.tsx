@@ -1,22 +1,37 @@
 import { useState, useMemo } from "react";
+import { useLocation } from "react-router-dom"; // Add import
 import { AppLayout } from "@/components/layout/AppLayout";
+import { MasterDetailLayout, MasterPanel, DetailPanel } from "@/components/layout/MasterDetailLayout";
 import { DataCard } from "@/components/ui/data-card";
 import { StockIndicator } from "@/components/ui/stock-indicator";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Search, 
-  Plus, 
-  Minus, 
-  Trash2, 
-  AlertTriangle, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Search,
+  Plus,
+  Minus,
+  Trash2,
+  AlertTriangle,
   CheckCircle,
   ArrowRight,
   Package,
   Truck,
-  AlertCircle
+  AlertCircle,
+  TrendingUp,
+  TrendingDown,
+  FileEdit
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -30,11 +45,13 @@ interface Product {
   stock: number;
   unit: string;
   minOrder: number;
+  isCustom?: boolean;
 }
 
 interface OrderItem {
   product: Product;
   quantity: number;
+  notes?: string;
 }
 
 // Productos ENTALPIA - Tubería de cobre
@@ -53,18 +70,35 @@ const products: Product[] = [
 
 const MINIMUM_ORDER_TOTAL = 500;
 
+// Simulated LME price data
+const lmeData = {
+  price: 8432.50,
+  change: 2.3,
+  currency: "USD/t",
+  updated: "15/01 09:00"
+};
+
 export default function OrderBuilder() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
 
+  // Custom Item State
+  const [isCustomDialogOpen, setIsCustomDialogOpen] = useState(false);
+  const [customItem, setCustomItem] = useState({
+    name: "",
+    quantity: 1,
+    unit: "uds",
+    notes: ""
+  });
+
   const categories = [...new Set(products.map(p => p.category))];
 
   const filteredProducts = useMemo(() => {
     return products.filter(product => {
       const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          product.id.toLowerCase().includes(searchQuery.toLowerCase());
+        product.id.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = !selectedCategory || product.category === selectedCategory;
       return matchesSearch && matchesCategory;
     });
@@ -73,14 +107,37 @@ export default function OrderBuilder() {
   const addToOrder = (product: Product) => {
     const existing = orderItems.find(item => item.product.id === product.id);
     if (existing) {
-      setOrderItems(orderItems.map(item => 
-        item.product.id === product.id 
+      setOrderItems(orderItems.map(item =>
+        item.product.id === product.id
           ? { ...item, quantity: item.quantity + product.minOrder }
           : item
       ));
     } else {
       setOrderItems([...orderItems, { product, quantity: product.minOrder }]);
     }
+  };
+
+  const addCustomItem = () => {
+    const newProduct: Product = {
+      id: `CUSTOM-${Date.now()}`,
+      name: customItem.name,
+      category: "Personalizado",
+      price: 0, // A cotizar
+      priceChange: 0,
+      stock: 9999,
+      unit: customItem.unit,
+      minOrder: 1,
+      isCustom: true
+    };
+
+    setOrderItems([...orderItems, {
+      product: newProduct,
+      quantity: customItem.quantity,
+      notes: customItem.notes
+    }]);
+
+    setIsCustomDialogOpen(false);
+    setCustomItem({ name: "", quantity: 1, unit: "uds", notes: "" });
   };
 
   const updateQuantity = (productId: string, newQuantity: number) => {
@@ -105,26 +162,28 @@ export default function OrderBuilder() {
 
   const validationErrors = useMemo(() => {
     const errors: { type: "error" | "warning"; message: string }[] = [];
-    
+
     orderItems.forEach(item => {
+      if (item.product.isCustom) return; // Skip validation for custom items
+
       if (item.quantity < item.product.minOrder) {
-        errors.push({ 
-          type: "error", 
-          message: `${item.product.id}: Mín. ${item.product.minOrder} ${item.product.unit}` 
+        errors.push({
+          type: "error",
+          message: `${item.product.id}: Mín. ${item.product.minOrder} ${item.product.unit}`
         });
       }
       if (item.quantity > item.product.stock) {
-        errors.push({ 
-          type: "error", 
-          message: `${item.product.id}: Solo ${item.product.stock} disponibles` 
+        errors.push({
+          type: "error",
+          message: `${item.product.id}: Solo ${item.product.stock} disponibles`
         });
       }
     });
 
-    if (orderItems.length > 0 && orderTotal < MINIMUM_ORDER_TOTAL) {
-      errors.push({ 
-        type: "warning", 
-        message: `Pedido mínimo €${MINIMUM_ORDER_TOTAL}` 
+    if (orderItems.length > 0 && orderTotal < MINIMUM_ORDER_TOTAL && !orderItems.some(i => i.product.isCustom)) {
+      errors.push({
+        type: "warning",
+        message: `Pedido mínimo €${MINIMUM_ORDER_TOTAL}`
       });
     }
 
@@ -132,297 +191,480 @@ export default function OrderBuilder() {
   }, [orderItems, orderTotal]);
 
   const hasErrors = validationErrors.some(e => e.type === "error");
-  const canProceed = orderItems.length > 0 && !hasErrors && orderTotal >= MINIMUM_ORDER_TOTAL;
+  const canProceed = orderItems.length > 0 && !hasErrors && (orderTotal >= MINIMUM_ORDER_TOTAL || orderItems.some(i => i.product.isCustom));
   const progressPercentage = Math.min((orderTotal / MINIMUM_ORDER_TOTAL) * 100, 100);
 
-  return (
-    <AppLayout>
-      <div className="h-full flex gap-4">
-        {/* Panel Principal - Tabla de Productos */}
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Header */}
-          <div className="mb-3">
-            <h1 className="text-xl font-semibold text-foreground">Crear Pedido</h1>
-            <p className="text-sm text-muted-foreground">Configura productos y cantidades</p>
-          </div>
-
-          {/* Filtros Compactos */}
-          <div className="flex gap-2 mb-3">
-            <div className="relative flex-1 max-w-xs">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                placeholder="Buscar productos..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 h-8 text-sm"
-              />
+  // ─────────────────────────────────────────────────────────────
+  // MASTER PANEL: Product Catalog
+  // ─────────────────────────────────────────────────────────────
+  const masterContent = (
+    <div className="flex flex-col h-full">
+      {/* LME Price Context */}
+      <div className="px-4 py-3 border-b bg-muted/30">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-6 rounded bg-amber-500/20 flex items-center justify-center">
+              <span className="text-[10px] font-bold text-amber-600">Cu</span>
             </div>
-            <div className="flex gap-1">
-              <Button
-                variant={selectedCategory === null ? "default" : "outline"}
-                size="sm"
-                className="h-8 text-xs"
-                onClick={() => setSelectedCategory(null)}
-              >
-                Todos
-              </Button>
-              {categories.map(category => (
-                <Button
-                  key={category}
-                  variant={selectedCategory === category ? "default" : "outline"}
-                  size="sm"
-                  className="h-8 text-xs"
-                  onClick={() => setSelectedCategory(category)}
-                >
-                  {category}
-                </Button>
-              ))}
+            <div>
+              <p className="text-[10px] text-muted-foreground">LME Cobre</p>
+              <div className="flex items-center gap-1">
+                <span className="text-sm font-mono font-semibold">${lmeData.price.toLocaleString()}</span>
+                <span className={cn(
+                  "text-[10px] font-mono flex items-center",
+                  lmeData.change > 0 ? "text-green-600" : "text-red-500"
+                )}>
+                  {lmeData.change > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                  {lmeData.change > 0 ? "+" : ""}{lmeData.change}%
+                </span>
+              </div>
             </div>
           </div>
-
-          {/* Tabla de Productos */}
-          <DataCard title="Catálogo" className="flex-1 overflow-hidden" bodyClassName="p-0 overflow-auto">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-card z-10">
-                <tr className="border-b border-border bg-muted/50">
-                  <th className="text-left font-medium text-muted-foreground text-[10px] uppercase tracking-wider py-2 px-3">Código</th>
-                  <th className="text-left font-medium text-muted-foreground text-[10px] uppercase tracking-wider py-2 px-3">Producto</th>
-                  <th className="text-left font-medium text-muted-foreground text-[10px] uppercase tracking-wider py-2 px-3">Cat.</th>
-                  <th className="text-right font-medium text-muted-foreground text-[10px] uppercase tracking-wider py-2 px-3">Precio</th>
-                  <th className="text-center font-medium text-muted-foreground text-[10px] uppercase tracking-wider py-2 px-3">Mín.</th>
-                  <th className="text-right font-medium text-muted-foreground text-[10px] uppercase tracking-wider py-2 px-3">Stock</th>
-                  <th className="text-center font-medium text-muted-foreground text-[10px] uppercase tracking-wider py-2 px-3 w-36">Cantidad</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredProducts.map(product => {
-                  const inOrder = orderItems.find(item => item.product.id === product.id);
-                  const isOutOfStock = product.stock === 0;
-                  
-                  return (
-                    <tr 
-                      key={product.id} 
-                      className={cn(
-                        "border-b border-border last:border-0 hover:bg-muted/30 transition-colors",
-                        inOrder && "bg-primary/5",
-                        isOutOfStock && "opacity-50"
-                      )}
-                    >
-                      <td className="py-1.5 px-3">
-                        <span className="font-mono text-[11px] text-muted-foreground">{product.id}</span>
-                      </td>
-                      <td className="py-1.5 px-3">
-                        <span className="text-xs font-medium">{product.name}</span>
-                      </td>
-                      <td className="py-1.5 px-3">
-                        <Badge variant="secondary" className="text-[10px] h-5 font-normal">
-                          {product.category}
-                        </Badge>
-                      </td>
-                      <td className="py-1.5 px-3 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <span className="font-mono text-xs font-semibold">€{product.price.toFixed(2)}</span>
-                          <span className={cn(
-                            "font-mono text-[9px]",
-                            product.priceChange > 0 ? "text-status-available" : 
-                            product.priceChange < 0 ? "text-destructive" : "text-muted-foreground"
-                          )}>
-                            {product.priceChange > 0 ? "↑" : product.priceChange < 0 ? "↓" : ""}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-1.5 px-3 text-center">
-                        <span className="text-[10px] text-muted-foreground">{product.minOrder}</span>
-                      </td>
-                      <td className="py-1.5 px-3 text-right">
-                        <StockIndicator quantity={product.stock} unit={product.unit} showLabel={false} />
-                      </td>
-                      <td className="py-1.5 px-3">
-                        {inOrder ? (
-                          <div className="flex items-center gap-1 justify-center">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={() => updateQuantity(product.id, inOrder.quantity - product.minOrder)}
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <Input
-                              type="number"
-                              value={inOrder.quantity}
-                              onChange={(e) => updateQuantity(product.id, parseInt(e.target.value) || 0)}
-                              className="h-6 w-14 text-center font-mono text-xs px-1"
-                            />
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={() => updateQuantity(product.id, inOrder.quantity + product.minOrder)}
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 text-[10px] w-full"
-                            onClick={() => addToOrder(product)}
-                            disabled={isOutOfStock}
-                          >
-                            <Plus className="h-3 w-3 mr-1" />
-                            {isOutOfStock ? "Agotado" : "Añadir"}
-                          </Button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </DataCard>
+          <span className="text-[9px] text-muted-foreground">{lmeData.updated}</span>
         </div>
+      </div>
 
-        {/* Sidebar Resumen - Siempre Visible */}
-        <div className="w-80 flex-shrink-0 flex flex-col">
-          <DataCard 
-            title="Resumen del Pedido" 
-            subtitle={`${orderItems.length} producto(s)`}
-            className="flex-1 flex flex-col"
-            bodyClassName="flex-1 flex flex-col p-0"
+      {/* Search & Filters */}
+      <div className="p-3 border-b space-y-2">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Buscar productos..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8 h-8 text-sm"
+          />
+        </div>
+        <div className="flex gap-1 flex-wrap">
+          <Button
+            variant={selectedCategory === null ? "default" : "outline"}
+            size="sm"
+            className="h-6 text-[10px] px-2"
+            onClick={() => setSelectedCategory(null)}
           >
-            {orderItems.length === 0 ? (
-              <div className="flex-1 flex items-center justify-center p-6">
-                <div className="text-center">
-                  <Package className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Sin productos</p>
-                  <p className="text-xs text-muted-foreground">Añade desde la tabla</p>
+            Todos
+          </Button>
+          {categories.map(category => (
+            <Button
+              key={category}
+              variant={selectedCategory === category ? "default" : "outline"}
+              size="sm"
+              className="h-6 text-[10px] px-2"
+              onClick={() => setSelectedCategory(category)}
+            >
+              {category}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Custom Item Action */}
+      <div className="px-3 py-2 bg-primary/5 border-b flex items-center justify-between">
+        <div className="text-xs font-medium text-primary">¿No encuentras lo que buscas?</div>
+        <Dialog open={isCustomDialogOpen} onOpenChange={setIsCustomDialogOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" variant="outline" className="h-7 text-xs gap-1 border-primary/20 text-primary hover:bg-primary/10">
+              <FileEdit className="h-3.5 w-3.5" />
+              Solicitar Personalizado
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Solicitar Artículo Personalizado</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="name">Descripción del Producto</Label>
+                <Input
+                  id="name"
+                  placeholder="Ej: Tubo especial 45mm corte a medida"
+                  value={customItem.name}
+                  onChange={(e) => setCustomItem({ ...customItem, name: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="quantity">Cantidad</Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    min="1"
+                    value={customItem.quantity}
+                    onChange={(e) => setCustomItem({ ...customItem, quantity: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="unit">Unidad</Label>
+                  <Input
+                    id="unit"
+                    placeholder="Ej: metros, piezas, kg"
+                    value={customItem.unit}
+                    onChange={(e) => setCustomItem({ ...customItem, unit: e.target.value })}
+                  />
                 </div>
               </div>
-            ) : (
-              <>
-                {/* Lista de Items */}
-                <div className="flex-1 overflow-auto scrollbar-thin p-3 space-y-2">
-                  {orderItems.map(item => {
-                    const hasMinError = item.quantity < item.product.minOrder;
-                    const hasStockError = item.quantity > item.product.stock;
-                    
-                    return (
-                      <div 
-                        key={item.product.id} 
-                        className={cn(
-                          "flex items-start gap-2 p-2 rounded border",
-                          hasMinError || hasStockError 
-                            ? "bg-destructive/5 border-destructive/30" 
-                            : "bg-muted/30 border-transparent"
-                        )}
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[11px] font-medium truncate">{item.product.name}</p>
-                          <p className="text-[10px] text-muted-foreground font-mono">{item.product.id}</p>
-                          <div className="flex items-center gap-1 mt-0.5">
-                            <span className="text-[10px] text-muted-foreground">
-                              {item.quantity} × €{item.product.price.toFixed(2)}
-                            </span>
-                          </div>
-                          {hasMinError && (
-                            <p className="text-[9px] text-destructive mt-0.5">Mín: {item.product.minOrder}</p>
-                          )}
-                          {hasStockError && (
-                            <p className="text-[9px] text-destructive mt-0.5">Stock: {item.product.stock}</p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold font-mono text-xs">
-                            €{(item.quantity * item.product.price).toFixed(2)}
-                          </p>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:text-destructive h-5 px-1 mt-0.5"
-                            onClick={() => removeFromOrder(item.product.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+              <div className="grid gap-2">
+                <Label htmlFor="notes">Notas Adicionales (Opcional)</Label>
+                <Textarea
+                  id="notes"
+                  placeholder="Especificaciones técnicas, tolerancias, fecha requerida..."
+                  value={customItem.notes}
+                  onChange={(e) => setCustomItem({ ...customItem, notes: e.target.value })}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={addCustomItem} disabled={!customItem.name || customItem.quantity <= 0}>
+                Añadir al Pedido
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
 
-                {/* Progreso hacia Pedido Mínimo */}
-                <div className="px-3 py-2 border-t border-border">
-                  <div className="flex items-center justify-between text-[10px] mb-1">
-                    <span className="text-muted-foreground">Progreso hacia mínimo (€{MINIMUM_ORDER_TOTAL})</span>
+      {/* Product Table */}
+      <div className="flex-1 min-h-0">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 bg-background z-10">
+            <tr className="border-b border-border bg-muted/50">
+              <th className="text-left font-medium text-muted-foreground text-[10px] uppercase tracking-wider py-2 px-3">Producto</th>
+              <th className="text-right font-medium text-muted-foreground text-[10px] uppercase tracking-wider py-2 px-3">Precio</th>
+              <th className="text-right font-medium text-muted-foreground text-[10px] uppercase tracking-wider py-2 px-3 w-24">Stock</th>
+              <th className="text-center font-medium text-muted-foreground text-[10px] uppercase tracking-wider py-2 px-3 w-12"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredProducts.map(product => {
+              const inOrder = orderItems.find(item => item.product.id === product.id);
+              const isOutOfStock = product.stock === 0;
+
+              return (
+                <tr
+                  key={product.id}
+                  className={cn(
+                    "border-b border-border last:border-0 hover:bg-muted/30 transition-colors",
+                    inOrder && "bg-primary/10 border-l-2 border-l-primary",
+                    isOutOfStock && "opacity-50"
+                  )}
+                >
+                  <td className="py-2 px-3">
+                    <div>
+                      <p className="text-xs font-medium truncate">{product.name}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="font-mono text-[10px] text-muted-foreground">{product.id}</span>
+                        <Badge variant="outline" className="text-[9px] h-4 font-normal">
+                          {product.category}
+                        </Badge>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-2 px-3 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <span className="font-mono text-xs font-semibold">€{product.price.toFixed(2)}</span>
+                      {product.priceChange !== 0 && (
+                        <span className={cn(
+                          "font-mono text-[9px]",
+                          product.priceChange > 0 ? "text-green-600" : "text-red-500"
+                        )}>
+                          {product.priceChange > 0 ? "↑" : "↓"}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[9px] text-muted-foreground">mín. {product.minOrder}</p>
+                  </td>
+                  <td className="py-2 px-3 text-right">
+                    <StockIndicator quantity={product.stock} unit={product.unit} showLabel={false} />
+                  </td>
+                  <td className="py-2 px-3 text-center">
+                    {inOrder ? (
+                      <Badge variant="secondary" className="text-[10px]">
+                        ×{inOrder.quantity}
+                      </Badge>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => addToOrder(product)}
+                        disabled={isOutOfStock}
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Footer Stats */}
+      <div className="px-3 py-2 border-t bg-muted/20 text-[10px] text-muted-foreground">
+        {filteredProducts.length} productos • {filteredProducts.filter(p => p.stock > 0).length} disponibles
+      </div>
+    </div>
+  );
+
+  // ─────────────────────────────────────────────────────────────
+  // DETAIL PANEL: Order Workspace
+  // ─────────────────────────────────────────────────────────────
+  const detailContent = (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="px-6 py-4 border-b bg-background">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-semibold text-foreground">Configurar Pedido</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {orderItems.length === 0
+                ? "Selecciona productos del catálogo"
+                : `${orderItems.length} producto(s) · ${orderItems.reduce((sum, i) => sum + i.quantity, 0)} unidades`}
+            </p>
+          </div>
+          {orderItems.length > 0 && (
+            <div className="text-right">
+              <p className="text-2xl font-bold font-mono">
+                {orderItems.every(i => !i.product.isCustom)
+                  ? `€${orderTotal.toFixed(2)}`
+                  : <span className="text-amber-600 text-lg">A Cotizar</span>}
+              </p>
+              <p className="text-[10px] text-muted-foreground">IVA no incluido</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-auto p-6">
+        {orderItems.length === 0 ? (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center">
+              <Package className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
+              <p className="text-muted-foreground">Sin productos seleccionados</p>
+              <p className="text-sm text-muted-foreground/60 mt-1">
+                Haz clic en <Plus className="h-3 w-3 inline" /> en el catálogo para añadir
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Order Items */}
+            <DataCard title="Productos Seleccionados" bodyClassName="p-0">
+              <div className="divide-y divide-border">
+                {orderItems.map(item => {
+                  const isCustom = item.product.isCustom;
+                  const hasMinError = !isCustom && item.quantity < item.product.minOrder;
+                  const hasStockError = !isCustom && item.quantity > item.product.stock;
+                  const lineTotal = item.quantity * item.product.price;
+
+                  return (
+                    <div
+                      key={item.product.id}
+                      className={cn(
+                        "flex items-center gap-4 p-4 transition-colors",
+                        isCustom ? "bg-amber-50/50" : (hasMinError || hasStockError) && "bg-destructive/5"
+                      )}
+                    >
+                      {/* Product Info */}
+                      <div className="flex-1 min-w-0">
+                        {isCustom && (
+                          <Badge variant="outline" className="mb-1 text-[10px] border-amber-200 text-amber-700 bg-amber-50">
+                            Personalizado
+                          </Badge>
+                        )}
+                        <p className="text-sm font-medium">{item.product.name}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="font-mono text-[11px] text-muted-foreground">{item.product.id}</span>
+                          {!isCustom && <span className="text-[11px] text-muted-foreground">€{item.product.price.toFixed(2)}/{item.product.unit}</span>}
+                        </div>
+                        {item.notes && (
+                          <p className="text-xs text-muted-foreground mt-1 italic">
+                            Nota: {item.notes}
+                          </p>
+                        )}
+                        {hasMinError && (
+                          <p className="text-[10px] text-destructive mt-1 flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" />
+                            Mínimo: {item.product.minOrder} {item.product.unit}
+                          </p>
+                        )}
+                        {hasStockError && (
+                          <p className="text-[10px] text-destructive mt-1 flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" />
+                            Stock disponible: {item.product.stock}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Quantity Controls */}
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => updateQuantity(item.product.id, item.quantity - (isCustom ? 1 : item.product.minOrder))}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <Input
+                          type="number"
+                          value={item.quantity}
+                          onChange={(e) => updateQuantity(item.product.id, parseInt(e.target.value) || 0)}
+                          className="h-8 w-20 text-center font-mono"
+                        />
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => updateQuantity(item.product.id, item.quantity + (isCustom ? 1 : item.product.minOrder))}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      {/* Line Total */}
+                      <div className="text-right w-28">
+                        {isCustom ? (
+                          <p className="text-xs font-medium text-amber-600">A Cotizar</p>
+                        ) : (
+                          <p className="font-mono font-semibold">€{lineTotal.toFixed(2)}</p>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive h-6 px-2 mt-1"
+                          onClick={() => removeFromOrder(item.product.id)}
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          <span className="text-[10px]">Quitar</span>
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </DataCard>
+
+            {/* Validation Panel */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Progress */}
+              <DataCard title="Estado del Pedido" className="col-span-1">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Progreso Mínimo</span>
                     <span className={cn(
                       "font-mono font-medium",
-                      orderTotal >= MINIMUM_ORDER_TOTAL ? "text-status-available" : "text-status-low"
+                      orderItems.some(i => i.product.isCustom) || orderTotal >= MINIMUM_ORDER_TOTAL ? "text-green-600" : "text-amber-500"
                     )}>
-                      {Math.round(progressPercentage)}%
+                      {orderItems.some(i => i.product.isCustom) ? "Personalizado" : `€${orderTotal.toFixed(2)} / €${MINIMUM_ORDER_TOTAL}`}
                     </span>
                   </div>
-                  <Progress value={progressPercentage} className="h-1.5" />
-                  {orderTotal < MINIMUM_ORDER_TOTAL && (
-                    <p className="text-[10px] text-status-low mt-1">
-                      Faltan €{(MINIMUM_ORDER_TOTAL - orderTotal).toFixed(2)}
+                  {!orderItems.some(i => i.product.isCustom) && (
+                    <>
+                      <Progress value={progressPercentage} className="h-2" />
+                      {orderTotal < MINIMUM_ORDER_TOTAL && (
+                        <p className="text-[11px] text-amber-600">
+                          Faltan €{(MINIMUM_ORDER_TOTAL - orderTotal).toFixed(2)} para el pedido mínimo
+                        </p>
+                      )}
+                    </>
+                  )}
+                  {(orderTotal >= MINIMUM_ORDER_TOTAL || orderItems.some(i => i.product.isCustom)) && (
+                    <p className="text-[11px] text-green-600 flex items-center gap-1">
+                      <CheckCircle className="h-3 w-3" />
+                      Listos para procesar
                     </p>
                   )}
                 </div>
+              </DataCard>
 
-                {/* Mensajes de Validación */}
-                {validationErrors.length > 0 && (
-                  <div className="px-3 space-y-1.5">
-                    {validationErrors.filter(e => e.type === "error").slice(0, 3).map((error, index) => (
-                      <div 
-                        key={index} 
-                        className="flex items-start gap-1.5 px-2 py-1 rounded bg-destructive/10 text-destructive text-[10px] border border-destructive/20"
-                      >
-                        <AlertCircle className="h-3 w-3 flex-shrink-0 mt-0.5" />
-                        <span>{error.message}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {validationErrors.length === 0 && orderItems.length > 0 && (
-                  <div className="px-3">
-                    <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-status-available/10 text-status-available text-[10px] border border-status-available/20">
-                      <CheckCircle className="h-3 w-3 flex-shrink-0" />
-                      <span>Configuración válida</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Logística */}
-                <div className="px-3 py-2 border-t border-border">
-                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                    <Truck className="h-3 w-3" />
-                    <span>Entrega: 3-5 días laborables</span>
+              {/* Delivery Info */}
+              <DataCard title="Información de Entrega" className="col-span-1">
+                <div className="flex items-start gap-3">
+                  <Truck className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium">Entrega estándar</p>
+                    <p className="text-[11px] text-muted-foreground">3-5 días laborables</p>
+                    {orderItems.some(i => i.product.isCustom) && (
+                      <p className="text-[10px] text-amber-600 mt-1 font-medium">
+                        * Ítems personalizados pueden demorar más
+                      </p>
+                    )}
                   </div>
                 </div>
+              </DataCard>
+            </div>
 
-                {/* Total y Acciones */}
-                <div className="p-3 border-t border-border space-y-3 bg-muted/20">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Total Pedido</span>
-                    <span className="text-xl font-bold font-mono">€{orderTotal.toFixed(2)}</span>
-                  </div>
-                  
-                  <Button 
-                    className="w-full h-9" 
-                    disabled={!canProceed}
-                    onClick={() => navigate("/order/preview", { state: { orderItems, orderTotal } })}
+            {/* Validation Alerts */}
+            {validationErrors.length > 0 && (
+              <div className="space-y-2">
+                {validationErrors.map((error, index) => (
+                  <div
+                    key={index}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2 rounded-lg text-sm",
+                      error.type === "error"
+                        ? "bg-destructive/10 text-destructive border border-destructive/20"
+                        : "bg-amber-500/10 text-amber-700 border border-amber-500/20"
+                    )}
                   >
-                    Revisar Pedido
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </div>
-              </>
+                    {error.type === "error" ? <AlertCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+                    <span>{error.message}</span>
+                  </div>
+                ))}
+              </div>
             )}
-          </DataCard>
-        </div>
+
+            {/* Success State */}
+            {validationErrors.length === 0 && orderItems.length > 0 && (
+              <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-green-500/10 text-green-700 border border-green-500/20">
+                <CheckCircle className="h-5 w-5" />
+                <div>
+                  <p className="font-medium">Configuración válida</p>
+                  <p className="text-[11px]">Todo listo para solicitar presupuesto</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Footer Actions */}
+      {orderItems.length > 0 && (
+        <div className="p-4 border-t bg-muted/30">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Total Estimado</p>
+              <p className="text-2xl font-bold font-mono">
+                {orderItems.some(i => i.product.isCustom) ? "A Cotizar" : `€${orderTotal.toFixed(2)}`}
+              </p>
+            </div>
+            <Button
+              size="lg"
+              className="px-8"
+              disabled={!canProceed}
+              onClick={() => navigate("/order/preview", { state: { orderItems, orderTotal } })}
+            >
+              {orderItems.some(i => i.product.isCustom) ? "Solicitar Presupuesto" : "Revisar Pedido"}
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <AppLayout>
+      <MasterDetailLayout
+        master={masterContent}
+        detail={detailContent}
+        masterDefaultSize={35}
+        masterMinSize={25}
+        masterMaxSize={45}
+        className="h-full"
+      />
     </AppLayout>
   );
 }

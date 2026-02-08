@@ -11,12 +11,12 @@ interface StockIndicatorProps {
   className?: string;
 }
 
-export function StockIndicator({ 
-  quantity, 
-  unit = "units",
-  threshold = { low: 100, out: 10 },
+export function StockIndicator({
+  quantity,
+  unit = "uds",
+  threshold = { low: 50, out: 10 },
   showLabel = true,
-  className 
+  className
 }: StockIndicatorProps) {
   const getStatus = () => {
     if (quantity <= threshold.out) return "out";
@@ -28,35 +28,30 @@ export function StockIndicator({
 
   const statusConfig = {
     available: {
-      label: "Disponible",
-      className: "stock-available",
-      dotClassName: "bg-status-available",
+      label: "OK",
+      className: "text-green-600",
+      dotClassName: "bg-green-500",
     },
     low: {
-      label: "Stock Bajo",
-      className: "stock-low",
-      dotClassName: "bg-status-low",
+      label: "Bajo",
+      className: "text-amber-600",
+      dotClassName: "bg-amber-500",
     },
     out: {
       label: "Agotado",
-      className: "stock-out",
-      dotClassName: "bg-status-out",
+      className: "text-red-500",
+      dotClassName: "bg-red-500",
     },
   };
 
   const config = statusConfig[status];
 
   return (
-    <div className={cn("flex items-center gap-2", className)}>
-      <span className={cn("h-2 w-2 rounded-full", config.dotClassName)} />
-      <span className={cn("font-mono text-sm", config.className)}>
-        {quantity.toLocaleString()} {unit}
+    <div className={cn("flex items-center justify-end gap-1.5", className)}>
+      <span className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", config.dotClassName)} />
+      <span className={cn("text-sm", config.className)}>
+        {quantity > 0 ? quantity.toLocaleString() : "0"}
       </span>
-      {showLabel && (
-        <span className={cn("text-xs", config.className)}>
-          ({config.label})
-        </span>
-      )}
     </div>
   );
 }
@@ -69,16 +64,16 @@ interface StockBadgeProps {
 export function StockBadge({ status, className }: StockBadgeProps) {
   const config = {
     available: {
-      label: "Disponible",
-      className: "bg-status-available/10 text-status-available border-status-available/20",
+      label: "OK",
+      className: "bg-green-500/10 text-green-600 border-green-500/20",
     },
     low: {
-      label: "Stock Bajo",
-      className: "bg-status-low/10 text-status-low border-status-low/20",
+      label: "Bajo",
+      className: "bg-amber-500/10 text-amber-600 border-amber-500/20",
     },
     out: {
       label: "Agotado",
-      className: "bg-status-out/10 text-status-out border-status-out/20",
+      className: "bg-red-500/10 text-red-500 border-red-500/20",
     },
   };
 

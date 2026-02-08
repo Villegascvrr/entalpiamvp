@@ -3,7 +3,7 @@ import { DataCard, MetricCard } from "@/components/ui/data-card";
 import { PriceTicker } from "@/components/ui/price-display";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
+import {
   Clock,
   AlertTriangle,
   TrendingUp,
@@ -12,8 +12,8 @@ import {
   FileText,
   Eye,
   Truck,
-  Activity,
-  ArrowRight
+  ArrowRight,
+  Activity
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -39,13 +39,6 @@ const lmeHistory = [
   { date: "11/01", value: 8121.25, change: -1.1 },
 ];
 
-const recentActivity = [
-  { action: "Pedido procesado", detail: "PED-2024-0142 → Distribuciones Norte", time: "09:45" },
-  { action: "Stock actualizado", detail: "Tubo Cobre 15mm +500 rollos", time: "09:30" },
-  { action: "Precio ajustado", detail: "Margen Rollos → 12.5%", time: "08:45" },
-  { action: "Pedido recibido", detail: "PED-2024-0145 desde Distribuciones Norte", time: "08:30" },
-];
-
 export default function AdminDashboard() {
   const pendingCount = pendingOrders.length;
   const criticalStock = stockAlerts.filter(s => s.status === "out" || s.status === "critical").length;
@@ -54,204 +47,162 @@ export default function AdminDashboard() {
 
   return (
     <AppLayout>
-      <div className="space-y-4">
-        {/* Header Compacto */}
-        <div className="flex items-center justify-between">
+      <div className="max-w-6xl mx-auto space-y-6 py-2">
+        {/* Header con Contexto Global */}
+        <div className="flex items-center justify-between border-b pb-4">
           <div>
-            <h1 className="text-xl font-semibold text-foreground">Resumen Operativo</h1>
-            <p className="text-sm text-muted-foreground">Estado actual de operaciones ENTALPIA</p>
+            <h1 className="text-2xl font-bold text-foreground">Panel de Control</h1>
+            <p className="text-sm text-muted-foreground">Vista general operativa • Domingo, 8 de Febrero</p>
           </div>
-          <div className="flex items-center gap-2">
-            <PriceTicker label="LME Cobre" value={8432.50} change={2.3} />
-            <PriceTicker label="EUR/USD" value={1.0842} change={0.1} />
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-lg border">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">LME Cobre</span>
+              <span className="font-mono font-semibold">${lmeHistory[0].value.toLocaleString("en-US")}</span>
+              <span className={cn(
+                "text-xs font-mono flex items-center",
+                lmeChange > 0 ? "text-green-600" : "text-red-500"
+              )}>
+                {lmeChange > 0 ? "↑" : "↓"}{Math.abs(lmeChange)}%
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Alert Banner - Urgente */}
-        {(pendingCount > 0 || criticalStock > 0) && (
-          <div className="flex items-center justify-between gap-4 px-3 py-2 rounded bg-status-low/10 border border-status-low/30">
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="h-4 w-4 text-status-low" />
-              <span className="text-sm text-status-low font-medium">
-                {pendingCount} pedidos pendientes · {criticalStock} alertas de stock crítico
-              </span>
-            </div>
-            <div className="flex gap-2">
-              <Link to="/admin/orders">
-                <Button variant="outline" size="sm" className="h-7 text-xs">
-                  Ver Pedidos
-                </Button>
-              </Link>
-              <Link to="/admin/stock">
-                <Button variant="outline" size="sm" className="h-7 text-xs">
-                  Ver Stock
-                </Button>
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {/* Métricas Principales */}
-        <div className="grid grid-cols-4 gap-3">
+        {/* KPIs Principales */}
+        <div className="grid grid-cols-4 gap-4">
           <MetricCard
             label="Pedidos Pendientes"
             value={pendingCount}
-            icon={<Clock className="h-4 w-4" />}
-            className="py-3"
+            icon={<Clock className="h-4 w-4 text-amber-600" />}
+            className="border-amber-200 bg-amber-50/50 dark:bg-amber-900/10 dark:border-amber-800"
           />
           <MetricCard
             label="Volumen Hoy"
             value={`€${todayVolume.toLocaleString("es-ES", { minimumFractionDigits: 0 })}`}
-            icon={<Package className="h-4 w-4" />}
-            className="py-3"
-          />
-          <MetricCard
-            label="LME Cobre"
-            value={`$${lmeHistory[0].value.toLocaleString("en-US")}`}
-            change={{ 
-              value: `${lmeChange > 0 ? '+' : ''}${lmeChange}%`, 
-              trend: lmeChange > 0 ? "up" : "down" 
-            }}
-            icon={lmeChange > 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-            className="py-3"
+            icon={<Activity className="h-4 w-4 text-blue-600" />}
           />
           <MetricCard
             label="Alertas Stock"
-            value={stockAlerts.length}
-            icon={<AlertTriangle className="h-4 w-4" />}
-            className="py-3"
+            value={criticalStock}
+            icon={<AlertTriangle className="h-4 w-4 text-red-600" />}
+            className={criticalStock > 0 ? "border-red-200 bg-red-50/50 dark:bg-red-900/10 dark:border-red-800" : ""}
+          />
+          <MetricCard
+            label="Envíos en Ruta"
+            value="12"
+            icon={<Truck className="h-4 w-4 text-green-600" />}
           />
         </div>
 
-        {/* Grid Principal */}
-        <div className="grid grid-cols-3 gap-4">
-          {/* Pedidos Pendientes - Columna Principal */}
-          <DataCard 
-            title="Pedidos Pendientes" 
-            subtitle="Requieren procesamiento"
-            className="col-span-2"
-            action={
-              <Link to="/admin/orders">
-                <Button variant="ghost" size="sm" className="h-7 text-xs text-primary gap-1">
-                  Ver Todos <ArrowRight className="h-3 w-3" />
-                </Button>
-              </Link>
-            }
-            bodyClassName="p-0"
-          >
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left font-medium text-muted-foreground text-xs py-2 px-3">Pedido</th>
-                  <th className="text-left font-medium text-muted-foreground text-xs py-2 px-3">Cliente</th>
-                  <th className="text-left font-medium text-muted-foreground text-xs py-2 px-3">Tiempo</th>
-                  <th className="text-right font-medium text-muted-foreground text-xs py-2 px-3">Total</th>
-                  <th className="py-2 px-3"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {pendingOrders.map((order) => (
-                  <tr key={order.id} className="border-b border-border last:border-0 hover:bg-muted/30">
-                    <td className="py-2 px-3">
-                      <div className="flex items-center gap-2">
-                        <div className={cn(
-                          "w-1.5 h-1.5 rounded-full",
-                          order.priority === "high" ? "bg-destructive" :
-                          order.priority === "medium" ? "bg-status-low" : "bg-muted-foreground"
-                        )} />
-                        <span className="font-mono text-xs font-medium">{order.id}</span>
-                      </div>
-                    </td>
-                    <td className="py-2 px-3 text-xs">{order.customer}</td>
-                    <td className="py-2 px-3 text-xs text-muted-foreground">{order.time}</td>
-                    <td className="py-2 px-3 text-right font-mono text-xs font-medium">€{order.total.toFixed(2)}</td>
-                    <td className="py-2 px-3">
-                      <Button variant="ghost" size="sm" className="h-6 px-2 text-xs gap-1">
-                        <Eye className="h-3 w-3" />
-                        Ver
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </DataCard>
+        {/* Grid de Contenido */}
+        <div className="grid grid-cols-3 gap-6">
 
-          {/* Sidebar Derecha */}
-          <div className="space-y-4">
-            {/* Alertas de Stock */}
-            <DataCard 
-              title="Alertas Stock" 
-              subtitle="Productos con disponibilidad limitada"
+          {/* Columna Izquierda (2/3) - Operaciones */}
+          <div className="col-span-2 space-y-6">
+
+            {/* Pedidos Pendientes */}
+            <DataCard
+              title="Cola de Procesamiento"
+              subtitle="Pedidos que requieren atención inmediata"
               action={
-                <Link to="/admin/stock">
-                  <Button variant="ghost" size="sm" className="h-6 text-xs text-primary">
-                    Gestionar
+                <Link to="/admin/orders">
+                  <Button size="sm" className="gap-2">
+                    Gestionar Pedidos
+                    <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
               }
             >
-              <div className="space-y-2">
-                {stockAlerts.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
-                    <div>
-                      <p className="text-xs font-medium">{item.product}</p>
-                      <p className="text-[10px] text-muted-foreground font-mono">{item.id}</p>
+              <div className="space-y-1">
+                {pendingOrders.map((order) => (
+                  <div key={order.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors bg-card">
+                    <div className="flex items-center gap-4">
+                      <div className={cn(
+                        "w-2 h-2 rounded-full",
+                        order.priority === "high" ? "bg-red-500 animate-pulse" :
+                          order.priority === "medium" ? "bg-amber-500" : "bg-blue-500"
+                      )} />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm font-semibold">{order.id}</span>
+                          <span className="text-xs text-muted-foreground">• {order.time}</span>
+                        </div>
+                        <p className="text-sm font-medium">{order.customer}</p>
+                      </div>
                     </div>
-                    <Badge 
-                      variant="outline" 
-                      className={cn(
-                        "text-[10px] h-5",
-                        item.status === "out" ? "border-destructive text-destructive" :
-                        item.status === "critical" ? "border-destructive text-destructive" :
-                        "border-status-low text-status-low"
-                      )}
-                    >
-                      {item.status === "out" ? "Agotado" : `${item.stock} uds`}
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <p className="font-mono text-sm font-semibold">€{order.total.toFixed(2)}</p>
+                        <p className="text-xs text-muted-foreground">{order.items} items</p>
+                      </div>
+                      <Link to="/admin/orders">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </DataCard>
+
+          </div>
+
+          {/* Columna Derecha (1/3) - Resumen & Alertas */}
+          <div className="space-y-6">
+
+            {/* Stock Crítico */}
+            <DataCard
+              title="Stock Crítico"
+              subtitle="Inventario bajo mínimos"
+              className="border-red-200 dark:border-red-900"
+              headerClassName="bg-red-50/50 dark:bg-red-900/10 text-red-700 dark:text-red-400"
+            >
+              <div className="space-y-3">
+                {stockAlerts.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between py-1 border-b border-red-100 last:border-0 dark:border-red-900/30">
+                    <div>
+                      <p className="text-sm font-medium">{item.product}</p>
+                      <p className="text-xs text-muted-foreground font-mono">{item.id}</p>
+                    </div>
+                    <Badge variant="outline" className={cn(
+                      "font-mono text-xs",
+                      item.status === "out" ? "bg-red-100 text-red-700 border-red-200" : "bg-amber-100 text-amber-700 border-amber-200"
+                    )}>
+                      {item.stock} uds
                     </Badge>
                   </div>
                 ))}
+                <Link to="/admin/stock" className="block mt-2">
+                  <Button variant="ghost" size="sm" className="w-full text-xs text-red-600 hover:text-red-700 hover:bg-red-50">
+                    Ver todo el inventario
+                  </Button>
+                </Link>
               </div>
             </DataCard>
 
-            {/* Historial LME */}
-            <DataCard title="Evolución LME" subtitle="Últimos 5 días">
-              <div className="space-y-1.5">
-                {lmeHistory.map((day, i) => (
-                  <div key={day.date} className={cn(
-                    "flex items-center justify-between py-1 px-2 rounded text-xs",
-                    i === 0 && "bg-muted/50"
-                  )}>
-                    <span className="text-muted-foreground">{day.date}</span>
-                    <span className="font-mono font-medium">${day.value.toLocaleString("en-US")}</span>
-                    <span className={cn(
-                      "font-mono text-[10px]",
-                      day.change > 0 ? "text-status-available" : day.change < 0 ? "text-destructive" : "text-muted-foreground"
-                    )}>
-                      {day.change > 0 ? "+" : ""}{day.change}%
-                    </span>
+            {/* Accesos Rápidos */}
+            <DataCard title="Accesos Rápidos">
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" className="justify-start gap-2 h-auto py-3">
+                  <FileText className="h-4 w-4 text-primary" />
+                  <div className="text-left">
+                    <span className="block text-xs font-semibold">Reportes</span>
+                    <span className="block text-[10px] text-muted-foreground">Ventas Mensuales</span>
                   </div>
-                ))}
+                </Button>
+                <Button variant="outline" className="justify-start gap-2 h-auto py-3">
+                  <Package className="h-4 w-4 text-blue-600" />
+                  <div className="text-left">
+                    <span className="block text-xs font-semibold">Catálogo</span>
+                    <span className="block text-[10px] text-muted-foreground">Gestionar Productos</span>
+                  </div>
+                </Button>
               </div>
             </DataCard>
+
           </div>
         </div>
-
-        {/* Actividad Reciente - Footer */}
-        <DataCard title="Actividad Reciente" subtitle="Últimas operaciones registradas" bodyClassName="py-2">
-          <div className="flex gap-6">
-            {recentActivity.map((activity, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs">
-                <Activity className="h-3 w-3 text-primary" />
-                <span className="font-medium">{activity.action}</span>
-                <span className="text-muted-foreground">·</span>
-                <span className="text-muted-foreground">{activity.detail}</span>
-                <span className="text-muted-foreground">·</span>
-                <span className="text-muted-foreground font-mono">{activity.time}</span>
-              </div>
-            ))}
-          </div>
-        </DataCard>
       </div>
     </AppLayout>
   );

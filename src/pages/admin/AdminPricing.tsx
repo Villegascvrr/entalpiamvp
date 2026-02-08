@@ -1,14 +1,15 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { DataCard } from "@/components/ui/data-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Upload, 
-  Save, 
-  RefreshCw, 
-  TrendingUp, 
+import {
+  Upload,
+  Save,
+  RefreshCw,
+  TrendingUp,
   TrendingDown,
   Edit2,
   Check,
@@ -45,6 +46,8 @@ export default function AdminPricing() {
   const [editValues, setEditValues] = useState<{ margin: number } | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [lmeIndex, setLmeIndex] = useState("1.15");
+  const [isImporting, setIsImporting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const startEdit = (entry: PriceEntry) => {
     setEditingId(entry.id);
@@ -58,7 +61,7 @@ export default function AdminPricing() {
 
   const saveEdit = (id: string) => {
     if (!editValues) return;
-    
+
     setPrices(prices.map(p => {
       if (p.id === id) {
         const newFinalPrice = p.basePrice * p.marketIndex * editValues.margin;
@@ -66,7 +69,7 @@ export default function AdminPricing() {
       }
       return p;
     }));
-    
+
     setEditingId(null);
     setEditValues(null);
     setHasChanges(true);
@@ -81,6 +84,43 @@ export default function AdminPricing() {
     setHasChanges(true);
   };
 
+  const handleImportCSV = () => {
+    setIsImporting(true);
+    toast.info("Importando archivo...", { description: "Analizando precios_2024.csv" });
+
+    setTimeout(() => {
+      setIsImporting(false);
+      setPrices(prev => prev.map(p => ({
+        ...p,
+        basePrice: p.basePrice * (1 + (Math.random() * 0.05 - 0.025))
+      })));
+      setHasChanges(true);
+      toast.success("Importación completada", { description: "Se han actualizado 6 productos." });
+    }, 1500);
+  };
+
+  const handleSyncLME = () => {
+    setIsSyncing(true);
+    toast.info("Conectando con LME...", { description: "Obteniendo últimas cotizaciones" });
+
+    setTimeout(() => {
+      setIsSyncing(false);
+      const newIndex = (parseFloat(lmeIndex) + (Math.random() * 0.02 - 0.01)).toFixed(2);
+      setLmeIndex(newIndex);
+      applyMarketIndex(); // Re-apply with new index
+      toast.success("Sincronización LME completada", {
+        description: `Nuevo índice de mercado: ${newIndex}x`
+      });
+    }, 2000);
+  };
+
+  const handlePublish = () => {
+    toast.success("Precios publicados correctamente", {
+      description: "Los clientes verán las nuevas tarifas inmediatamente."
+    });
+    setHasChanges(false);
+  };
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -91,15 +131,29 @@ export default function AdminPricing() {
             <p className="text-muted-foreground">Configura los precios diarios y márgenes</p>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline" className="gap-2">
-              <Upload className="h-4 w-4" />
-              Importar CSV
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={handleImportCSV}
+              disabled={isImporting}
+            >
+              <Upload className={cn("h-4 w-4", isImporting && "animate-bounce")} />
+              {isImporting ? "Importando..." : "Importar CSV"}
             </Button>
-            <Button variant="outline" className="gap-2">
-              <RefreshCw className="h-4 w-4" />
-              Sincronizar LME
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={handleSyncLME}
+              disabled={isSyncing}
+            >
+              <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
+              {isSyncing ? "Sincronizando..." : "Sincronizar LME"}
             </Button>
-            <Button className="gap-2" disabled={!hasChanges}>
+            <Button
+              className="gap-2"
+              disabled={!hasChanges}
+              onClick={handlePublish}
+            >
               <Save className="h-4 w-4" />
               Publicar Precios
             </Button>
@@ -137,8 +191,8 @@ export default function AdminPricing() {
                   onChange={(e) => setLmeIndex(e.target.value)}
                   className="w-24 font-mono"
                 />
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={applyMarketIndex}
                   className="gap-1"
