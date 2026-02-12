@@ -38,7 +38,7 @@ export class MockOrderRepository implements OrderRepository {
 
         // Simulate RLS: customers only see their own orders
         if (session.role === "customer") {
-            return this._orders.filter(o => o.customer === session.name);
+            return this._orders.filter(o => o.customer.name === session.name);
         }
         return [...this._orders];
     }
@@ -64,7 +64,10 @@ export class MockOrderRepository implements OrderRepository {
             date: new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" }),
             total: orderData.total ?? 0,
             items: orderData.items ?? [],
-            customer: session.name,
+            customer: {
+                id: session.actorId,
+                name: session.name
+            },
             company: orderData.company ?? "Sin empresa",
             notes: orderData.notes ?? "",
             ...orderData

@@ -86,6 +86,16 @@ export default function AdminOrders() {
     }
   }
 
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="h-full flex items-center justify-center">
+          <p className="text-muted-foreground">Cargando pedidos...</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
   const handleStatusChange = async (orderId: string, newStatus: Order["status"], notes?: string) => {
     try {
       await updateOrderStatus(orderId, newStatus);
@@ -116,7 +126,7 @@ export default function AdminOrders() {
   const filteredOrders = orders.filter(order => {
     const matchesSearch =
       order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.company.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = !statusFilter || statusFilter === "all" || order.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -238,7 +248,7 @@ export default function AdminOrders() {
                     </Badge>
                   </div>
                   <p className="text-xs font-medium mt-1 truncate">{order.company}</p>
-                  <p className="text-[10px] text-muted-foreground">{order.customer}</p>
+                  <p className="text-[10px] text-muted-foreground">{order.customer.name}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="font-mono text-sm font-semibold">€{order.total.toFixed(2)}</p>
@@ -310,7 +320,7 @@ export default function AdminOrders() {
                     <User className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div>
-                    <p className="font-medium">{selectedOrder.customer}</p>
+                    <p className="font-medium">{selectedOrder.customer.name}</p>
                     <div className="flex items-center gap-1 text-sm text-muted-foreground mt-0.5">
                       <Building2 className="h-3.5 w-3.5" />
                       {selectedOrder.company}
@@ -443,15 +453,10 @@ export default function AdminOrders() {
           )}
         </>
       ) : (
-        <div className="h-full flex items-center justify-center">
-          <div className="flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">{selectedOrder.customer}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <User className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Comercial: Antonio García</span>
-          </div>
+        <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-2">
+          <Package className="h-12 w-12 opacity-20" />
+          <p className="font-medium">Seleccione un pedido</p>
+          <p className="text-sm">Haga clic en un pedido de la lista para ver los detalles</p>
         </div>
       )}
     </div>

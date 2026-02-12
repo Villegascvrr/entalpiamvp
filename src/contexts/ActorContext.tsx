@@ -82,28 +82,43 @@ async function resolveActor(authUserId: string, email: string): Promise<ActorSes
 
     console.log("[ActorContext] ✅ Actor resolved:", data.name, "role:", data.role);
 
+    // Force tenant separation based on Data Mode (Dev Tool)
+    let effectiveTenantId = data.tenant_id;
+
+    if (appConfig.mode === "development") {
+        effectiveTenantId = "entalpia-demo";
+    } else if (appConfig.mode === "production") {
+        effectiveTenantId = "entalpia-real-dev";
+    }
+
+    console.log(`[ActorContext] 🌍 Tenant Override: ${data.tenant_id} -> ${effectiveTenantId} (Mode: ${appConfig.mode})`);
+
     return {
         actorId: data.id,
         role: data.role as ActorRole,
-        tenantId: data.tenant_id,
+        tenantId: effectiveTenantId,
         name: data.name,
         email,
     };
 }
 
 export function ActorProvider({ children }: { children: ReactNode }) {
-    const [session, setSession] = useState<ActorSession | null>(
-        appConfig.mode === "demo" ? MOCK_SESSION : null
-    );
-    const [isLoading, setIsLoading] = useState(appConfig.mode !== "demo");
+    const [session, setSession] = useState<ActorSession | null>(null); // Start unauthenticated even in demo
+    const [isLoading, setIsLoading] = useState(true);
     const initCompleteRef = useRef(false);
     const mountedRef = useRef(true);
     const loginInProgressRef = useRef(false);
 
     useEffect(() => {
-        if (appConfig.mode === "demo") return;
+        // In demo mode, we just stop loading.
+        if (appConfig.mode === "demo") {
+            setIsLoading(false);
+            return;
+        }
 
         mountedRef.current = true;
+
+        // ... (rest of useEffect logic unchanged) ...
 
         // ═══════════════════════════════════════════════════════
         // SAFETY TIMEOUT — absolute maximum wait of 3 seconds.
@@ -239,6 +254,31 @@ export function ActorProvider({ children }: { children: ReactNode }) {
         console.log("[ActorContext] 🔑 login() called for:", email);
         loginInProgressRef.current = true;
         setIsLoading(true);
+
+        // MOCK MODE LOGIN
+        if (appConfig.mode === "demo") {
+            // Simulate network delay
+            await new Promise(r => setTimeout(r, 800));
+
+            // Simple mock logic based on email
+            let role: ActorRole = "customer";
+            if (email.includes("admin")) role = "admin";
+            if (email.includes("comercial")) role = "commercial";
+            if (email.includes("logistica")) role = "logistics";
+
+            const mockSession: ActorSession = {
+                actorId: "usr_mock_" + role,
+                role: role,
+                tenantId: "tnt_mock",
+                name: "Mock " + role.toUpperCase(),
+                email: email
+            };
+
+            setSession(mockSession);
+            setIsLoading(false);
+            loginInProgressRef.current = false;
+            return;
+        }
 
         try {
             const { data, error } = await supabase.auth.signInWithPassword({ email, password });

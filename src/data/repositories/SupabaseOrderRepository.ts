@@ -40,6 +40,9 @@ export class SupabaseOrderRepository implements OrderRepository {
                 shipping_address,
                 shipping_date,
                 actor_id,
+                actors (
+                    name
+                ),
                 order_items (
                     id,
                     name,
@@ -59,7 +62,10 @@ export class SupabaseOrderRepository implements OrderRepository {
         // Map DB rows → frontend Order shape
         return (data ?? []).map(row => ({
             id: row.reference,                        // UI uses reference as display ID
-            customer: row.customer_name,
+            customer: {
+                id: row.actor_id as string,
+                name: (row.actors as any)?.name || row.customer_name as string
+            },
             company: row.company_name,
             date: new Date(row.created_at).toLocaleDateString("es-ES", {
                 day: "2-digit", month: "2-digit", year: "numeric"
@@ -219,7 +225,10 @@ export class SupabaseOrderRepository implements OrderRepository {
         // 5. Return full Order mapped to frontend shape
         return {
             id: orderRow.reference,
-            customer: orderRow.customer_name,
+            customer: {
+                id: session.actorId,
+                name: orderRow.customer_name
+            },
             company: orderRow.company_name,
             date: new Date(orderRow.created_at).toLocaleDateString("es-ES", {
                 day: "2-digit", month: "2-digit", year: "numeric"
@@ -332,7 +341,10 @@ export class SupabaseOrderRepository implements OrderRepository {
         const items = (row.order_items ?? []) as Array<Record<string, unknown>>;
         return {
             id: row.reference as string,
-            customer: row.customer_name as string,
+            customer: {
+                id: row.actor_id as string,
+                name: (row.actors as any)?.name || row.customer_name as string
+            },
             company: row.company_name as string,
             date: new Date(row.created_at as string).toLocaleDateString("es-ES", {
                 day: "2-digit", month: "2-digit", year: "numeric"

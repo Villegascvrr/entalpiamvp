@@ -18,7 +18,7 @@ export const recentOrders: RecentOrder[] = [
 export const adminOrders: Order[] = [
     {
         id: "PED-2024-0145",
-        customer: "Carlos Martínez",
+        customer: { id: "mock-carlos", name: "Carlos Martínez" },
         company: "Distribuciones Norte S.L.",
         date: "15/01/2024 09:45",
         status: "pending_validation" as OrderStatus,
@@ -33,7 +33,7 @@ export const adminOrders: Order[] = [
     },
     {
         id: "PED-2024-0144",
-        customer: "María López",
+        customer: { id: "mock-maria", name: "María López" },
         company: "Suministros Este S.A.",
         date: "15/01/2024 08:30",
         status: "pending_validation" as OrderStatus,
@@ -49,7 +49,7 @@ export const adminOrders: Order[] = [
     },
     {
         id: "PED-2024-0142",
-        customer: "Carlos Martínez",
+        customer: { id: "mock-carlos", name: "Carlos Martínez" },
         company: "Distribuciones Norte S.L.",
         date: "15/01/2024 07:15",
         status: "confirmed" as OrderStatus,
@@ -62,7 +62,7 @@ export const adminOrders: Order[] = [
     },
     {
         id: "PED-2024-0138",
-        customer: "José García",
+        customer: { id: "mock-jose", name: "José García" },
         company: "Comercial Sur",
         date: "14/01/2024 16:20",
         status: "shipped" as OrderStatus,
@@ -75,7 +75,7 @@ export const adminOrders: Order[] = [
     },
     {
         id: "PED-2024-0131",
-        customer: "Ana Fernández",
+        customer: { id: "mock-ana", name: "Ana Fernández" },
         company: "Instalaciones Oeste",
         date: "14/01/2024 11:00",
         status: "delivered" as OrderStatus,
@@ -88,7 +88,7 @@ export const adminOrders: Order[] = [
     },
     {
         id: "PED-2024-0125",
-        customer: "Roberto Sánchez",
+        customer: { id: "mock-roberto", name: "Roberto Sánchez" },
         company: "Materiales Centro",
         date: "13/01/2024 14:30",
         status: "cancelled" as OrderStatus,

@@ -65,7 +65,10 @@ export interface AdminOrderItem {
 /** A full order (admin / internal view) */
 export interface Order {
     id: string;
-    customer: string;
+    customer: {
+        id: string;
+        name: string;
+    };
     company: string;
     date: string;
     status: OrderStatus;

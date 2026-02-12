@@ -13,7 +13,25 @@ export interface AppConfig {
 }
 
 /** Current application mode — change this to switch data sources */
-const APP_MODE: AppMode = "development";
+// const APP_MODE: AppMode = "development"; // OLD STATIC
+
+const STORAGE_KEY = "dev_data_mode";
+
+function getAppMode(): AppMode {
+    if (typeof window === 'undefined') return "development";
+
+    // Read from local storage (Dev Tool)
+    const stored = localStorage.getItem(STORAGE_KEY);
+
+    if (stored === "mock") return "demo";
+    if (stored === "supabase-demo") return "development";
+    if (stored === "supabase-real-dev") return "production";
+
+    // Default fallback
+    return "development";
+}
+
+const APP_MODE: AppMode = getAppMode();
 
 const configs: Record<AppMode, AppConfig> = {
     demo: {
