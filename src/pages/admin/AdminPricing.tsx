@@ -123,188 +123,225 @@ export default function AdminPricing() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+      <div className="flex flex-col h-full bg-background overflow-hidden">
+        {/* Header - Compact */}
+        <div className="flex-none flex items-center justify-between px-6 py-3 bg-muted/30 border-b border-border/60">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Gestión de Precios</h1>
-            <p className="text-muted-foreground">Configura los precios diarios y márgenes</p>
+            <h1 className="text-lg font-bold font-mono tracking-tight text-foreground/90 uppercase flex items-center gap-2">
+              <Calculator className="h-5 w-5 text-primary" />
+              Gestión de Precios
+            </h1>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <Button
               variant="outline"
-              className="gap-2"
+              size="sm"
+              className="h-8 gap-2 text-xs"
               onClick={handleImportCSV}
               disabled={isImporting}
             >
-              <Upload className={cn("h-4 w-4", isImporting && "animate-bounce")} />
-              {isImporting ? "Importando..." : "Importar CSV"}
+              <Upload className={cn("h-3.5 w-3.5", isImporting && "animate-bounce")} />
+              {isImporting ? "Importando..." : "Importar"}
             </Button>
             <Button
               variant="outline"
-              className="gap-2"
+              size="sm"
+              className="h-8 gap-2 text-xs"
               onClick={handleSyncLME}
               disabled={isSyncing}
             >
-              <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
-              {isSyncing ? "Sincronizando..." : "Sincronizar LME"}
+              <RefreshCw className={cn("h-3.5 w-3.5", isSyncing && "animate-spin")} />
+              {isSyncing ? "Sincronizando..." : "Sincronizar"}
             </Button>
             <Button
-              className="gap-2"
+              size="sm"
+              className="h-8 gap-2 text-xs"
               disabled={!hasChanges}
               onClick={handlePublish}
             >
-              <Save className="h-4 w-4" />
-              Publicar Precios
+              <Save className="h-3.5 w-3.5" />
+              Publicar
             </Button>
           </div>
         </div>
 
-        {hasChanges && (
-          <div className="flex items-center gap-2 px-4 py-3 rounded-md bg-status-low/10 text-status-low border border-status-low/30">
-            <AlertCircle className="h-4 w-4" />
-            <span className="text-sm">Tienes cambios de precios sin publicar. Haz clic en "Publicar Precios" para hacerlos visibles a los clientes.</span>
-          </div>
-        )}
+        {/* Sticky LME Section & Alerts */}
+        <div className="flex-none flex flex-col gap-2 p-4 pb-0">
+          {hasChanges && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-sm bg-status-low/10 text-status-low border border-status-low/30 animate-pulse">
+              <AlertCircle className="h-3.5 w-3.5" />
+              <span className="text-xs font-medium">Cambios pendientes de publicar</span>
+            </div>
+          )}
 
-        {/* Market Index Controls */}
-        <DataCard title="Índice de Mercado LME" subtitle="Aplicar ajuste global de mercado">
-          <div className="flex items-center gap-6">
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Cotización LME Cobre</p>
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-semibold text-lg">$8,432.50 USD/t</span>
-                <Badge variant="outline" className="text-market-up bg-market-up/10 border-0">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  +2.3%
-                </Badge>
+          <div className="flex items-center justify-between bg-card border border-border/60 rounded-sm p-3 shadow-sm">
+            <div className="flex items-center gap-6">
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">LME Cobre (Hoy)</p>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-bold text-lg text-foreground">$8,432.50</span>
+                  <div className="flex items-center text-xs font-medium text-green-600 bg-green-500/10 px-1.5 py-0.5 rounded-sm">
+                    <TrendingUp className="h-3 w-3 mr-1" />
+                    +2.3%
+                  </div>
+                </div>
+              </div>
+              <div className="h-8 w-px bg-border/60" />
+              <div className="flex items-center gap-3">
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">Indice Global</p>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={lmeIndex}
+                      onChange={(e) => setLmeIndex(e.target.value)}
+                      className="w-16 h-7 font-mono text-sm text-right px-2"
+                    />
+                    <span className="text-xs text-muted-foreground font-mono">x</span>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={applyMarketIndex}
+                      className="h-7 text-xs px-2"
+                    >
+                      Aplicar
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="h-10 w-px bg-border" />
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Factor de Índice</p>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={lmeIndex}
-                  onChange={(e) => setLmeIndex(e.target.value)}
-                  className="w-24 font-mono"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={applyMarketIndex}
-                  className="gap-1"
-                >
-                  <Calculator className="h-4 w-4" />
-                  Aplicar a Todos
-                </Button>
-              </div>
+            <div className="text-right">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Última Act.</p>
+              <p className="text-xs font-mono">08:30 AM</p>
             </div>
           </div>
-        </DataCard>
+        </div>
 
-        {/* Pricing Table */}
-        <DataCard title="Tabla de Precios" subtitle="Edita márgenes y visualiza precios calculados" bodyClassName="p-0">
-          <div className="overflow-x-auto">
-            <table className="data-table">
-              <thead>
-                <tr className="bg-muted/30">
-                  <th>Producto</th>
-                  <th>Categoría</th>
-                  <th className="text-right">Precio Base</th>
-                  <th className="text-right">Índice LME</th>
-                  <th className="text-right">Margen</th>
-                  <th className="text-right">Precio Final</th>
-                  <th className="text-right">Variación</th>
-                  <th className="text-center">Actualizado</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {prices.map(entry => (
-                  <tr key={entry.id}>
-                    <td>
-                      <div>
-                        <p className="font-medium">{entry.name}</p>
-                        <p className="text-xs text-muted-foreground font-mono">{entry.id}</p>
-                      </div>
-                    </td>
-                    <td>
-                      <Badge variant="secondary">{entry.category}</Badge>
-                    </td>
-                    <td className="text-right font-mono">€{entry.basePrice.toFixed(2)}</td>
-                    <td className="text-right font-mono">{entry.marketIndex.toFixed(2)}x</td>
-                    <td className="text-right">
-                      {editingId === entry.id ? (
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={editValues?.margin || entry.margin}
-                          onChange={(e) => setEditValues({ margin: parseFloat(e.target.value) || 1 })}
-                          className="w-20 font-mono text-right h-8"
-                          autoFocus
-                        />
-                      ) : (
-                        <span className="font-mono">{entry.margin.toFixed(2)}x</span>
-                      )}
-                    </td>
-                    <td className="text-right">
-                      <span className="font-mono font-semibold">€{entry.finalPrice.toFixed(2)}</span>
-                    </td>
-                    <td className="text-right">
-                      <span className={cn(
-                        "inline-flex items-center gap-1 font-mono text-sm",
-                        entry.change > 0 && "text-market-up",
-                        entry.change < 0 && "text-market-down",
-                        entry.change === 0 && "text-muted-foreground"
-                      )}>
-                        {entry.change > 0 && <TrendingUp className="h-3 w-3" />}
-                        {entry.change < 0 && <TrendingDown className="h-3 w-3" />}
-                        {entry.change >= 0 ? "+" : ""}{entry.change.toFixed(1)}%
-                      </span>
-                    </td>
-                    <td className="text-center text-muted-foreground text-sm">
-                      {entry.lastUpdated}
-                    </td>
-                    <td>
-                      {editingId === entry.id ? (
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-status-available"
-                            onClick={() => saveEdit(entry.id)}
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive"
-                            onClick={cancelEdit}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => startEdit(entry)}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </td>
+        {/* Main Table Content */}
+        <div className="flex-1 p-4 overflow-hidden">
+          <div className="h-full bg-card border border-border/60 rounded-sm flex flex-col overflow-hidden shadow-sm">
+            <div className="flex-1 overflow-y-auto scrollbar-thin">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/40 sticky top-0 z-10 shadow-sm">
+                  <tr className="border-b border-border/60 text-[10px] text-muted-foreground uppercase tracking-wider text-left">
+                    <th className="px-3 py-2 font-medium">Producto</th>
+                    <th className="px-2 py-2 font-medium">Categoría</th>
+                    <th className="px-2 py-2 font-medium text-right">Precio Base</th>
+                    <th className="px-2 py-2 font-medium text-right">Index</th>
+                    <th className="px-2 py-2 font-medium text-right">Margen</th>
+                    <th className="px-2 py-2 font-medium text-right">P. Final</th>
+                    <th className="px-2 py-2 font-medium text-right">Var.</th>
+                    <th className="px-2 py-2 font-medium text-center">Estado</th>
+                    <th className="px-2 py-2 font-medium text-right w-[80px]"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {prices.map(entry => {
+                    // Margin Color Logic
+                    let marginClass = "text-muted-foreground";
+                    if (entry.margin >= 1.1) marginClass = "text-green-600 font-bold bg-green-500/10";
+                    else if (entry.margin > 1.05) marginClass = "text-amber-600 font-medium bg-amber-500/10";
+                    else marginClass = "text-red-500 font-bold bg-red-500/10";
+
+                    return (
+                      <tr key={entry.id} className="border-b border-border/40 last:border-0 hover:bg-muted/20 transition-colors">
+                        <td className="px-3 py-1.5 align-middle">
+                          <div className="font-medium text-foreground/90 line-clamp-1">{entry.name}</div>
+                          <div className="text-[9px] text-muted-foreground font-mono mt-0.5">{entry.id}</div>
+                        </td>
+                        <td className="px-2 py-1.5 align-middle">
+                          <Badge variant="secondary" className="h-5 text-[10px] px-1.5 font-normal bg-muted text-muted-foreground border-border/50">
+                            {entry.category}
+                          </Badge>
+                        </td>
+                        <td className="px-2 py-1.5 align-middle text-right font-mono text-muted-foreground">
+                          €{entry.basePrice.toFixed(2)}
+                        </td>
+                        <td className="px-2 py-1.5 align-middle text-right font-mono text-muted-foreground">
+                          {entry.marketIndex.toFixed(2)}x
+                        </td>
+                        <td className="px-2 py-1.5 align-middle text-right">
+                          {editingId === entry.id ? (
+                            <div className="flex justify-end">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={editValues?.margin || entry.margin}
+                                onChange={(e) => setEditValues({ margin: parseFloat(e.target.value) || 1 })}
+                                className="w-16 font-mono text-right h-6 text-xs"
+                                autoFocus
+                              />
+                            </div>
+                          ) : (
+                            <div className="flex justify-end">
+                              <span className={cn("font-mono px-1.5 py-0.5 rounded-sm inline-block min-w-[3.5rem] text-center", marginClass)}>
+                                {entry.margin.toFixed(2)}x
+                              </span>
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-2 py-1.5 align-middle text-right">
+                          <span className="font-mono font-bold text-foreground">€{entry.finalPrice.toFixed(2)}</span>
+                        </td>
+                        <td className="px-2 py-1.5 align-middle text-right">
+                          <span className={cn(
+                            "inline-flex items-center justify-end gap-1 font-mono text-xs w-full",
+                            entry.change > 0 && "text-green-600",
+                            entry.change < 0 && "text-red-500",
+                            entry.change === 0 && "text-muted-foreground"
+                          )}>
+                            {entry.change > 0 && <TrendingUp className="h-3 w-3" />}
+                            {entry.change < 0 && <TrendingDown className="h-3 w-3" />}
+                            {entry.change > 0 ? "+" : ""}{entry.change.toFixed(1)}%
+                          </span>
+                        </td>
+                        <td className="px-2 py-1.5 align-middle text-center">
+                          <span className="text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                            {entry.lastUpdated}
+                          </span>
+                        </td>
+                        <td className="px-2 py-1.5 align-middle text-right">
+                          {editingId === entry.id ? (
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                onClick={() => saveEdit(entry.id)}
+                              >
+                                <Check className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={cancelEdit}
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-muted-foreground hover:text-primary"
+                                onClick={() => startEdit(entry)}
+                              >
+                                <Edit2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </DataCard>
+        </div>
       </div>
     </AppLayout>
   );

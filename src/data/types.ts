@@ -95,6 +95,11 @@ export interface RecentOrder {
     date: string;
     status: string;
     total: number;
+    // New fields for Ops Dashboard
+    customer?: string;
+    time?: string;
+    items?: number;
+    priority?: "low" | "medium" | "high";
 }
 
 /** A quick product row for the customer dashboard */

@@ -16,6 +16,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Package,
   Upload,
   Save,
   Edit2,
@@ -112,203 +113,188 @@ export default function AdminStock() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+      <div className="flex flex-col h-full bg-background overflow-hidden">
+
+        {/* Header - Compact */}
+        <div className="flex-none flex items-center justify-between px-6 py-3 bg-muted/30 border-b border-border/60">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Gestión de Stock</h1>
-            <p className="text-muted-foreground">Monitoriza y actualiza niveles de inventario</p>
+            <h1 className="text-lg font-bold font-mono tracking-tight text-foreground/90 uppercase flex items-center gap-2">
+              <Package className="h-5 w-5 text-primary" />
+              Gestión de Stock
+            </h1>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline" className="gap-2">
-              <Upload className="h-4 w-4" />
-              Importar Stock
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="h-8 gap-2 text-xs">
+              <Upload className="h-3.5 w-3.5" />
+              Importar
             </Button>
-            <Button className="gap-2" disabled={!hasChanges}>
-              <Save className="h-4 w-4" />
-              Guardar Cambios
+            <Button size="sm" className="h-8 gap-2 text-xs" disabled={!hasChanges}>
+              <Save className="h-3.5 w-3.5" />
+              Guardar
             </Button>
           </div>
         </div>
 
-        {/* Alerts */}
-        {lowStockCount > 0 && (
-          <div className="flex items-center gap-2 px-4 py-3 rounded-md bg-status-low/10 text-status-low border border-status-low/30">
-            <AlertCircle className="h-4 w-4" />
-            <span className="text-sm">{lowStockCount} producto(s) tienen stock bajo o agotado. Considera realizar un pedido de reposición.</span>
+        {/* Main Content - Flex-1 for One Page View */}
+        <div className="flex-1 flex flex-col p-4 gap-4 overflow-hidden">
+
+          {/* Toolbar & Alerts */}
+          <div className="flex-none flex items-center justify-between gap-4">
+            <div className="relative w-64">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Buscar productos..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-8 text-xs bg-background"
+              />
+            </div>
+
+            {lowStockCount > 0 && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-sm bg-red-500/10 text-red-700 border border-red-500/20 animate-pulse">
+                <AlertCircle className="h-3.5 w-3.5" />
+                <span className="text-xs font-medium">{lowStockCount} alertas de stock</span>
+              </div>
+            )}
           </div>
-        )}
 
-        {/* Search */}
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar productos..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+          {/* Table Container - Scrollable */}
+          <div className="flex-1 bg-card border border-border/60 rounded-sm flex flex-col overflow-hidden shadow-sm">
+            <div className="flex-1 overflow-y-auto scrollbar-thin">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/40 sticky top-0 z-10">
+                  <tr className="border-b border-border/60 text-[10px] text-muted-foreground uppercase tracking-wider text-left">
+                    <th className="px-3 py-2 font-medium">Producto</th>
+                    <th className="px-2 py-2 font-medium">Categoría</th>
+                    <th className="px-2 py-2 font-medium text-right">Cantidad</th>
+                    <th className="px-2 py-2 font-medium text-right">Mínimo</th>
+                    <th className="px-2 py-2 font-medium text-center">Estado</th>
+                    <th className="px-2 py-2 font-medium">En Tránsito</th>
+                    <th className="px-2 py-2 font-medium">Ubicación</th>
+                    <th className="px-2 py-2 font-medium">Últ. Rec.</th>
+                    <th className="px-2 py-2 font-medium text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStock.map(entry => {
+                    const status = getStockStatus(entry);
+                    let rowClass = "hover:bg-muted/30";
+                    let badgeClass = "text-muted-foreground border-border";
+                    let label = "OK";
 
-        {/* Stock Table */}
-        <DataCard title="Niveles de Inventario" bodyClassName="p-0">
-          <div className="overflow-x-auto">
-            <table className="data-table">
-              <thead>
-                <tr className="bg-muted/30">
-                  <th>Producto</th>
-                  <th>Categoría</th>
-                  <th className="text-right">Cantidad</th>
-                  <th className="text-right">Stock Mín.</th>
-                  <th>Estado</th>
-                  <th>En Tránsito</th>
-                  <th>Ubicación</th>
-                  <th>Última Recepción</th>
-                  <th>Ajuste Rápido</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredStock.map(entry => {
-                  const status = getStockStatus(entry);
+                    if (status === "out") {
+                      rowClass = "bg-red-50/60 dark:bg-red-900/10 hover:bg-red-100/60 dark:hover:bg-red-900/20";
+                      badgeClass = "bg-red-100 text-red-700 border-red-200";
+                      label = "Agotado";
+                    } else if (status === "low") {
+                      rowClass = "bg-amber-50/50 dark:bg-amber-900/10 hover:bg-amber-100/50 dark:hover:bg-amber-900/20";
+                      badgeClass = "bg-amber-100 text-amber-800 border-amber-200";
+                      label = "Bajo";
+                    }
 
-                  return (
-                    <tr key={entry.id} className={status === "out" ? "bg-destructive/5" : status === "low" ? "bg-status-low/5" : ""}>
-                      <td>
-                        <div>
-                          <p className="font-medium">{entry.name}</p>
-                          <p className="text-xs text-muted-foreground font-mono">{entry.id}</p>
-                        </div>
-                      </td>
-                      <td>
-                        <Badge variant="secondary">{entry.category}</Badge>
-                      </td>
-                      <td className="text-right">
-                        {editingId === entry.id ? (
-                          <Input
-                            type="number"
-                            value={editValues?.quantity || entry.quantity}
-                            onChange={(e) => setEditValues({ quantity: parseInt(e.target.value) || 0 })}
-                            className="w-24 font-mono text-right h-8"
-                            autoFocus
-                          />
-                        ) : (
-                          <span className={cn(
-                            "font-mono font-semibold",
-                            status === "out" && "text-destructive",
-                            status === "low" && "text-status-low"
-                          )}>
-                            {entry.quantity.toLocaleString("es-ES")} {entry.unit}
-                          </span>
-                        )}
-                      </td>
-                      <td className="text-right font-mono text-muted-foreground">
-                        {entry.minStock.toLocaleString("es-ES")} {entry.unit}
-                      </td>
-                      <td>
-                        <StockBadge status={status} />
-                      </td>
-                      <td>
-                        {entry.inTransit ? (
-                          <div className="flex items-center gap-2 text-sm">
-                            <Truck className="h-4 w-4 text-primary" />
-                            <div>
-                              <span className="font-mono">{entry.inTransit}</span>
-                              <span className="text-xs text-muted-foreground ml-1">({entry.transitArrival})</span>
+                    return (
+                      <tr key={entry.id} className={cn("border-b border-border/40 last:border-0 transition-colors", rowClass)}>
+                        <td className="px-3 py-1.5 align-middle">
+                          <div className="font-medium text-foreground/90 line-clamp-1">{entry.name}</div>
+                          <div className="text-[9px] text-muted-foreground font-mono mt-0.5">{entry.id}</div>
+                        </td>
+                        <td className="px-2 py-1.5 align-middle">
+                          <Badge variant="secondary" className="h-5 text-[10px] px-1.5 font-normal bg-muted text-muted-foreground border-border/50">
+                            {entry.category}
+                          </Badge>
+                        </td>
+                        <td className="px-2 py-1.5 align-middle text-right">
+                          {editingId === entry.id ? (
+                            <Input
+                              type="number"
+                              value={editValues?.quantity || entry.quantity}
+                              onChange={(e) => setEditValues({ quantity: parseInt(e.target.value) || 0 })}
+                              className="w-20 font-mono text-right h-6 text-xs"
+                              autoFocus
+                            />
+                          ) : (
+                            <span className={cn(
+                              "font-mono font-bold",
+                              status === "out" ? "text-red-600" : status === "low" ? "text-amber-600" : "text-foreground/80"
+                            )}>
+                              {entry.quantity.toLocaleString("es-ES")} <span className="text-[10px] font-normal text-muted-foreground ml-0.5">{entry.unit}</span>
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-2 py-1.5 align-middle text-right font-mono text-muted-foreground">
+                          {entry.minStock}
+                        </td>
+                        <td className="px-2 py-1.5 align-middle text-center">
+                          <Badge variant="outline" className={cn("h-4 px-1 text-[9px] rounded-sm uppercase tracking-wider justify-center min-w-[60px]", badgeClass)}>
+                            {label}
+                          </Badge>
+                        </td>
+                        <td className="px-2 py-1.5 align-middle">
+                          {entry.inTransit ? (
+                            <div className="flex items-center gap-1.5">
+                              <Truck className="h-3 w-3 text-blue-500" />
+                              <span className="font-mono text-blue-700">{entry.inTransit}</span>
+                              <span className="text-[9px] text-muted-foreground">({entry.transitArrival})</span>
                             </div>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </td>
-                      <td className="text-muted-foreground">{entry.location}</td>
-                      <td className="text-muted-foreground">{entry.lastReceived}</td>
-                      <td>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => adjustStock(entry.id, -10)}
-                          >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => adjustStock(entry.id, 10)}
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </td>
-                      <td>
-                        {editingId === entry.id ? (
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-status-available"
-                              onClick={() => saveEdit(entry.id)}
-                            >
-                              <Check className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive"
-                              onClick={cancelEdit}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => startEdit(entry)}
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => setDeletingProduct(entry)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </DataCard>
+                          ) : (
+                            <span className="text-muted-foreground/30">-</span>
+                          )}
+                        </td>
+                        <td className="px-2 py-1.5 align-middle text-muted-foreground">{entry.location}</td>
+                        <td className="px-2 py-1.5 align-middle text-muted-foreground text-[10px]">{entry.lastReceived}</td>
 
-        <AlertDialog open={!!deletingProduct} onOpenChange={(open) => !open && setDeletingProduct(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta acción eliminará permanentemente <span className="font-semibold text-foreground">{deletingProduct?.name}</span> del inventario. Esta acción no se puede deshacer.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                Eliminar
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+                        {/* Actions */}
+                        <td className="px-2 py-1.5 align-middle text-right">
+                          {editingId === entry.id ? (
+                            <div className="flex justify-end gap-1">
+                              <Button variant="ghost" size="icon" className="h-6 w-6 text-green-600 hover:text-green-700 hover:bg-green-50" onClick={() => saveEdit(entry.id)}>
+                                <Check className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-6 w-6 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={cancelEdit}>
+                                <X className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary" onClick={() => startEdit(entry)}>
+                                <Edit2 className="h-3 w-3" />
+                              </Button>
+                              <div className="w-px h-3 bg-border/50 my-auto" />
+                              <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-foreground" onClick={() => adjustStock(entry.id, 10)}>
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-foreground" onClick={() => adjustStock(entry.id, -10)}>
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <AlertDialog open={!!deletingProduct} onOpenChange={(open) => !open && setDeletingProduct(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará permanentemente <span className="font-semibold text-foreground">{deletingProduct?.name}</span> del inventario. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }

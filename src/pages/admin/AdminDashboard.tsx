@@ -38,6 +38,8 @@ const lmeHistory = [
 
 import { useOrders } from "@/hooks/useOrders";
 
+// ... imports remain same
+
 export default function AdminDashboard() {
   const { recentOrders: pendingOrders, isLoading } = useOrders();
 
@@ -51,160 +53,252 @@ export default function AdminDashboard() {
 
   return (
     <AppLayout>
-      <div className="max-w-6xl mx-auto space-y-6 py-2">
-        {/* Header con Contexto Global */}
-        <div className="flex items-center justify-between border-b pb-4">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Panel de Control</h1>
-            <p className="text-sm text-muted-foreground">Vista general operativa • Domingo, 8 de Febrero</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-lg border">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">LME Cobre</span>
-              <span className="font-mono font-semibold">${lmeHistory[0].value.toLocaleString("en-US")}</span>
-              <span className={cn(
-                "text-xs font-mono flex items-center",
-                lmeChange > 0 ? "text-green-600" : "text-red-500"
+      {/* 
+        Changes for One-Page View:
+        1. h-full to fill the AppLayout's main container.
+        2. overflow-hidden to prevent the main scrollbar.
+        3. flex-col to organize Header and Main Content.
+      */}
+      <div className="flex flex-col h-full bg-background overflow-hidden rounded-md border border-border/40 shadow-sm">
+
+        {/* 1. TOP ALERT BAR (Industrial Strip) - Fixed Height */}
+        <div className="flex-none flex items-center justify-between px-6 py-3 bg-muted/30 border-b border-border/60">
+          <div className="flex items-center gap-6">
+            <h1 className="text-lg font-bold font-mono tracking-tight text-foreground/90 uppercase flex items-center gap-2">
+              <Activity className="h-5 w-5 text-primary" />
+              Control Panel
+            </h1>
+
+            {/* Status Indicators */}
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "flex items-center gap-2 px-3 py-1 rounded-sm border text-xs font-medium transition-colors",
+                pendingOrders.length > 0 ? "bg-amber-500/10 border-amber-500/20 text-amber-700" : "bg-muted/50 border-border text-muted-foreground"
               )}>
-                {lmeChange > 0 ? "↑" : "↓"}{Math.abs(lmeChange)}%
-              </span>
+                <Clock className="h-3.5 w-3.5" />
+                <span>{pendingOrders.length} Pendientes</span>
+              </div>
+
+              <div className={cn(
+                "flex items-center gap-2 px-3 py-1 rounded-sm border text-xs font-medium transition-colors",
+                criticalStock > 0 ? "bg-red-500/10 border-red-500/20 text-red-700 animate-pulse" : "bg-muted/50 border-border text-muted-foreground"
+              )}>
+                <AlertTriangle className="h-3.5 w-3.5" />
+                <span>{criticalStock} Stock Crítico</span>
+              </div>
+
+              <div className="flex items-center gap-2 px-3 py-1 rounded-sm border bg-blue-500/5 border-blue-500/10 text-blue-700 text-xs font-medium">
+                <Truck className="h-3.5 w-3.5" />
+                <span>12 En Ruta</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Global Context / LME */}
+          <div className="flex items-center gap-4">
+            <div className="text-right hidden sm:block">
+              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Volumen Hoy</p>
+              <p className="font-mono text-sm font-bold">€{todayVolume.toLocaleString("es-ES", { minimumFractionDigits: 0 })}</p>
+            </div>
+            <div className="h-8 w-px bg-border/60 hidden sm:block" />
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-medium text-muted-foreground hidden sm:inline">LME COBRE</span>
+              <div className="flex items-baseline gap-2">
+                <span className="font-mono font-bold text-sm min-w-[80px] text-right">${lmeHistory[0].value.toLocaleString("en-US")}</span>
+                <span className={cn(
+                  "text-xs font-mono w-14",
+                  lmeChange > 0 ? "text-green-600" : "text-red-500"
+                )}>
+                  {lmeChange > 0 ? "↑" : "↓"}{Math.abs(lmeChange)}%
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* KPIs Principales */}
-        <div className="grid grid-cols-4 gap-4">
-          <MetricCard
-            label="Pedidos Pendientes"
-            value={pendingOrders.length}
-            icon={<Clock className="h-4 w-4 text-amber-600" />}
-            className="border-amber-200 bg-amber-50/50 dark:bg-amber-900/10 dark:border-amber-800"
-          />
-          <MetricCard
-            label="Volumen Hoy"
-            value={`€${todayVolume.toLocaleString("es-ES", { minimumFractionDigits: 0 })}`}
-            icon={<Activity className="h-4 w-4 text-blue-600" />}
-          />
-          <MetricCard
-            label="Alertas Stock"
-            value={criticalStock}
-            icon={<AlertTriangle className="h-4 w-4 text-red-600" />}
-            className={criticalStock > 0 ? "border-red-200 bg-red-50/50 dark:bg-red-900/10 dark:border-red-800" : ""}
-          />
-          <MetricCard
-            label="Envíos en Ruta"
-            value="12"
-            icon={<Truck className="h-4 w-4 text-green-600" />}
-          />
-        </div>
+        {/* 2. MAIN GRID (70/30 SPLIT) - Flex-1 to take remaining height */}
+        <div className="flex-1 p-4 overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 h-full">
 
-        {/* Grid de Contenido */}
-        <div className="grid grid-cols-3 gap-6">
-
-          {/* Columna Izquierda (2/3) - Operaciones */}
-          <div className="col-span-2 space-y-6">
-
-            {/* Pedidos Pendientes */}
-            <DataCard
-              title="Cola de Procesamiento"
-              subtitle="Pedidos que requieren atención inmediata"
-              action={
+            {/* LEFT COLUMN (70%) - Operational Queue - h-full for scrolling internal */}
+            <div className="col-span-1 md:col-span-8 flex flex-col gap-3 h-full overflow-hidden">
+              <div className="flex-none flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Cola de Operaciones</h2>
                 <Link to="/admin/orders">
-                  <Button size="sm" className="gap-2">
-                    Gestionar Pedidos
-                    <ArrowRight className="h-4 w-4" />
+                  <Button variant="ghost" size="sm" className="h-6 text-xs gap-1 hover:bg-muted/50">
+                    Ver todo <ArrowRight className="h-3 w-3" />
                   </Button>
                 </Link>
-              }
-            >
-              <div className="space-y-1">
-                {pendingOrders.map((order) => (
-                  <div key={order.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors bg-card">
-                    <div className="flex items-center gap-4">
-                      <div className={cn(
-                        "w-2 h-2 rounded-full",
-                        order.priority === "high" ? "bg-red-500 animate-pulse" :
-                          order.priority === "medium" ? "bg-amber-500" : "bg-blue-500"
-                      )} />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-sm font-semibold">{order.id}</span>
-                          <span className="text-xs text-muted-foreground">• {order.time}</span>
+              </div>
+
+              <div className="flex-1 bg-card border border-border/60 rounded-sm overflow-hidden flex flex-col">
+                {/* Table Header */}
+                <div className="flex-none grid grid-cols-12 gap-4 px-4 py-2 bg-muted/40 border-b border-border/60 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                  <div className="col-span-4">Referencia / Cliente</div>
+                  <div className="col-span-3">Estado</div>
+                  <div className="col-span-3 text-right">Total</div>
+                  <div className="col-span-2 text-right">Acción</div>
+                </div>
+
+                {/* Table List - Scrollable */}
+                <div className="flex-1 overflow-y-auto scrollbar-thin">
+                  {pendingOrders.length > 0 ? (
+                    pendingOrders.map((order) => (
+                      <div key={order.id} className="grid grid-cols-12 gap-4 items-center px-4 py-2 border-b border-border/40 hover:bg-muted/20 transition-colors group text-sm">
+                        {/* ID & Customer */}
+                        <div className="col-span-4 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-bold text-foreground group-hover:text-primary transition-colors">{order.id}</span>
+                            {order.priority === "high" && <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate" title={order.customer}>{order.customer}</p>
                         </div>
-                        <p className="text-sm font-medium">{order.customer}</p>
+
+                        {/* Status/Time */}
+                        <div className="col-span-3">
+                          <Badge variant="outline" className="h-5 text-[10px] px-1.5 bg-amber-500/5 text-amber-700 border-amber-500/20 rounded-sm">
+                            Pendiente
+                          </Badge>
+                          <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">{order.time}</p>
+                        </div>
+
+                        {/* Total */}
+                        <div className="col-span-3 text-right">
+                          <p className="font-mono text-sm font-medium">€{order.total.toFixed(2)}</p>
+                          <p className="text-[10px] text-muted-foreground">{order.items} items</p>
+                        </div>
+
+                        {/* Action */}
+                        <div className="col-span-2 text-right">
+                          <Link to="/admin/orders">
+                            <Button variant="outline" size="sm" className="h-7 w-7 p-0 rounded-sm border-border/60">
+                              <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-muted-foreground opacity-50">
+                      <Package className="h-8 w-8 mb-2" />
+                      <span className="text-xs">No hay pedidos pendientes</span>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="font-mono text-sm font-semibold">€{order.total.toFixed(2)}</p>
-                        <p className="text-xs text-muted-foreground">{order.items} items</p>
-                      </div>
-                      <Link to="/admin/orders">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <Eye className="h-4 w-4 text-muted-foreground" />
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                ))}
+                  )}
+                </div>
               </div>
-            </DataCard>
+            </div>
 
-          </div>
+            {/* RIGHT COLUMN (30%) - Alerts & Stats - h-full for Layout */}
+            <div className="col-span-1 md:col-span-4 flex flex-col gap-4 h-full overflow-hidden">
 
-          {/* Columna Derecha (1/3) - Resumen & Alertas */}
-          <div className="space-y-6">
+              {/* Critical Stock (Take more space if needed) */}
+              <div className="flex-1 flex flex-col gap-2 min-h-0">
+                <h2 className="flex-none text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-red-500" /> Stock Crítico
+                </h2>
+                <div className="flex-1 bg-card border border-red-200/60 dark:border-red-900/40 rounded-sm flex flex-col overflow-hidden">
+                  <div className="flex-1 overflow-y-auto scrollbar-thin">
+                    <table className="w-full text-xs">
+                      <thead className="bg-muted/40 sticky top-0 z-10">
+                        <tr className="border-b border-border/60 text-[10px] text-muted-foreground uppercase tracking-wider text-left">
+                          <th className="px-3 py-1 font-medium select-none">Producto</th>
+                          <th className="px-2 py-1 font-medium text-right select-none">Stock</th>
+                          <th className="px-2 py-1 font-medium text-right select-none">Est.</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {stockAlerts.map((item) => {
+                          // Determine row styles based on status
+                          let rowClass = "hover:bg-muted/30";
+                          let badgeClass = "text-muted-foreground border-border";
+                          let label = "Normal";
 
-            {/* Stock Crítico */}
-            <DataCard
-              title="Stock Crítico"
-              subtitle="Inventario bajo mínimos"
-              className="border-red-200 dark:border-red-900"
-              headerClassName="bg-red-50/50 dark:bg-red-900/10 text-red-700 dark:text-red-400"
-            >
-              <div className="space-y-3">
-                {stockAlerts.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between py-1 border-b border-red-100 last:border-0 dark:border-red-900/30">
-                    <div>
-                      <p className="text-sm font-medium">{item.product}</p>
-                      <p className="text-xs text-muted-foreground font-mono">{item.id}</p>
-                    </div>
-                    <Badge variant="outline" className={cn(
-                      "font-mono text-xs",
-                      item.status === "out" ? "bg-red-100 text-red-700 border-red-200" : "bg-amber-100 text-amber-700 border-amber-200"
-                    )}>
-                      {item.stock} uds
-                    </Badge>
+                          if (item.status === "out") {
+                            rowClass = "bg-red-50/60 dark:bg-red-900/10 hover:bg-red-100/60 dark:hover:bg-red-900/20";
+                            badgeClass = "bg-red-100 text-red-700 border-red-200";
+                            label = "Agotado";
+                          } else if (item.status === "critical") {
+                            // Critical -> Red as requested
+                            rowClass = "bg-red-50/30 dark:bg-red-900/5 hover:bg-red-100/40 dark:hover:bg-red-900/15";
+                            badgeClass = "bg-red-50 text-red-600 border-red-100";
+                            label = "Crítico";
+                          } else if (item.status === "low") {
+                            // Low -> Warning -> Amber
+                            rowClass = "bg-amber-50/50 dark:bg-amber-900/10 hover:bg-amber-100/50 dark:hover:bg-amber-900/20";
+                            badgeClass = "bg-amber-100 text-amber-800 border-amber-200";
+                            label = "Bajo";
+                          }
+
+                          return (
+                            <tr key={item.id} className={cn("border-b border-border/40 last:border-0 transition-colors", rowClass)}>
+                              <td className="px-3 py-1.5 align-middle">
+                                <div className="font-medium text-foreground/90 line-clamp-1" title={item.product}>
+                                  {item.product}
+                                </div>
+                                <div className="text-[9px] text-muted-foreground font-mono mt-0.5">{item.id}</div>
+                              </td>
+                              <td className="px-2 py-1.5 align-middle text-right">
+                                <span className={cn("font-mono font-bold text-sm",
+                                  (item.status === "out" || item.status === "critical") ? "text-red-600" :
+                                    item.status === "low" ? "text-amber-600" : "text-foreground/80"
+                                )}>
+                                  {item.stock}
+                                </span>
+                              </td>
+                              <td className="px-2 py-1.5 align-middle text-right">
+                                <Badge variant="outline" className={cn("h-4 px-1 text-[9px] rounded-sm uppercase tracking-wider justify-center min-w-[60px]", badgeClass)}>
+                                  {label}
+                                </Badge>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
-                ))}
-                <Link to="/admin/stock" className="block mt-2">
-                  <Button variant="ghost" size="sm" className="w-full text-xs text-red-600 hover:text-red-700 hover:bg-red-50">
-                    Ver todo el inventario
+                  <Link to="/admin/stock">
+                    <div className="flex-none p-2 text-center border-t border-border/40 bg-muted/10 hover:bg-muted/20 cursor-pointer transition-colors">
+                      <span className="text-[10px] font-medium text-red-600">Gestión de Inventario →</span>
+                    </div>
+                  </Link>
+                </div>
+              </div>
+
+              {/* Quick Actions (Fixed height at bottom) */}
+              <div className="flex-none space-y-3">
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Accesos Rápidos</h2>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button variant="outline" className="justify-start h-10 px-3 rounded-sm border-border/60 hover:border-primary/50 hover:bg-primary/5 group" asChild>
+                    <Link to="/admin/reports">
+                      <FileText className="h-4 w-4 mr-2 text-muted-foreground group-hover:text-primary transition-colors" />
+                      <span className="text-xs font-medium truncate">Reportes</span>
+                    </Link>
                   </Button>
-                </Link>
+                  <Button variant="outline" className="justify-start h-10 px-3 rounded-sm border-border/60 hover:border-blue-500/50 hover:bg-blue-500/5 group" asChild>
+                    <Link to="/admin/products">
+                      <Package className="h-4 w-4 mr-2 text-muted-foreground group-hover:text-blue-500 transition-colors" />
+                      <span className="text-xs font-medium truncate">Catálogo</span>
+                    </Link>
+                  </Button>
+                </div>
               </div>
-            </DataCard>
 
-            {/* Accesos Rápidos */}
-            <DataCard title="Accesos Rápidos">
-              <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" className="justify-start gap-2 h-auto py-3">
-                  <FileText className="h-4 w-4 text-primary" />
-                  <div className="text-left">
-                    <span className="block text-xs font-semibold">Reportes</span>
-                    <span className="block text-[10px] text-muted-foreground">Ventas Mensuales</span>
+              {/* Mini Stat (Fixed height) */}
+              <div className="flex-none bg-muted/20 border border-border/60 rounded-sm p-3">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <Activity className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Eficiencia</span>
                   </div>
-                </Button>
-                <Button variant="outline" className="justify-start gap-2 h-auto py-3">
-                  <Package className="h-4 w-4 text-blue-600" />
-                  <div className="text-left">
-                    <span className="block text-xs font-semibold">Catálogo</span>
-                    <span className="block text-[10px] text-muted-foreground">Gestionar Productos</span>
-                  </div>
-                </Button>
+                  <span className="text-[10px] text-green-600 font-medium bg-green-500/10 px-1.5 rounded-full">↑ 1.4%</span>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-xl font-bold font-mono">94.2%</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">Entregas a tiempo (Semana)</p>
               </div>
-            </DataCard>
 
+            </div>
           </div>
         </div>
       </div>

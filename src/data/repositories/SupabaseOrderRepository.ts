@@ -87,9 +87,17 @@ export class SupabaseOrderRepository implements OrderRepository {
     async getRecentOrders(_session: ActorSession): Promise<RecentOrder[]> {
         const { data, error } = await supabase
             .from("orders")
-            .select("reference, created_at, status, total")
+            .select(`
+                reference, 
+                created_at, 
+                status, 
+                total,
+                customer_name,
+                actors (name),
+                order_items (id)
+            `)
             .order("created_at", { ascending: false })
-            .limit(5);
+            .limit(10); // Increased limit for Ops Queue
 
         if (error) {
             console.error("[SupabaseOrderRepo] Error fetching recent orders:", error.message);
@@ -112,11 +120,22 @@ export class SupabaseOrderRepository implements OrderRepository {
                 });
             }
 
+            // Determine priority based on total or status
+            const total = Number(row.total);
+            let priority: "low" | "medium" | "high" = "low";
+            if (total > 5000) priority = "high";
+            else if (total > 1000) priority = "medium";
+
             return {
                 id: row.reference,
                 date: dateLabel,
                 status: row.status,
-                total: Number(row.total),
+                total: total,
+                // New fields for Ops Dashboard
+                customer: (row.actors as any)?.name || row.customer_name || "Desconocido",
+                time: dateLabel, // Reusing logic
+                items: (row.order_items ?? []).length,
+                priority: priority,
             };
         });
     }

@@ -45,7 +45,34 @@ export class MockOrderRepository implements OrderRepository {
 
     async getRecentOrders(session: ActorSession): Promise<RecentOrder[]> {
         await this._delay(200);
-        return [...recentOrders];
+
+        // Derive recent orders from the central mock store instead of static recentOrders
+        // This ensures creating a new order visibly updates the Ops Queue
+        return this._orders
+            .slice(0, 10)
+            .map(o => {
+                const total = o.total;
+                let priority: "low" | "medium" | "high" = "low";
+                if (total > 5000) priority = "high";
+                else if (total > 1000) priority = "medium";
+
+                // Mock time label for demo purposes
+                // In a real app we'd parse o.date and diff it, but mock dates are strings like "15/01/2024"
+                // So we'll just return a random recent time for the demo effect
+                const times = ["Hace 2 min", "Hace 15 min", "Hace 45 min", "Hace 2h", "Hace 5h"];
+                const randomTime = times[Math.floor(Math.random() * times.length)];
+
+                return {
+                    id: o.id,
+                    date: o.date,
+                    status: o.status,
+                    total: o.total,
+                    customer: o.customer.name,
+                    time: randomTime,
+                    items: o.items.length,
+                    priority: priority
+                };
+            });
     }
 
     async getCustomerHistory(session: ActorSession, customerId: string): Promise<OrderSummary[]> {

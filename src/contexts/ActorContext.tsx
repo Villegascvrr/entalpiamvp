@@ -42,28 +42,17 @@ const MOCK_SESSION: ActorSession = {
 
 // ── Resolve actor row from Supabase after auth ──
 // Has its own timeout to prevent hanging on slow DB queries.
+// ── Resolve actor row from Supabase after auth ──
 async function resolveActor(authUserId: string, email: string): Promise<ActorSession | null> {
     console.log("[ActorContext] 🔍 resolveActor called");
     console.log("[ActorContext]   auth_user_id:", authUserId);
-    console.log("[ActorContext]   email:", email);
 
-    // Race between the actual query and a 2.5s timeout
-    const queryPromise = supabase
+    // Direct query without artificial timeout race condition
+    const { data, error } = await supabase
         .from("actors")
         .select("*")
         .eq("auth_user_id", authUserId)
         .maybeSingle();
-
-    const timeoutPromise = new Promise<{ data: null; error: { message: string } }>((resolve) =>
-        setTimeout(() => resolve({ data: null, error: { message: "Actor query timed out (2.5s)" } }), 2500)
-    );
-
-    const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
-
-    console.log("[ActorContext] 📋 Actor query response:", {
-        data: data ? { id: data.id, role: data.role, name: data.name, tenant_id: data.tenant_id } : null,
-        error: error ? error : null,
-    });
 
     if (error) {
         console.error("[ActorContext] ❌ Actor query error:", error);
@@ -73,10 +62,6 @@ async function resolveActor(authUserId: string, email: string): Promise<ActorSes
     if (!data) {
         // RLS might be returning empty — log explicitly
         console.error("[ActorContext] ⚠️ EMPTY RESULT — Authenticated but actor profile NOT found.");
-        console.error("[ActorContext]   This means either:");
-        console.error("[ActorContext]   1. No row in 'actors' table with auth_user_id =", authUserId);
-        console.error("[ActorContext]   2. RLS policy is blocking the SELECT (actor can't read their own row)");
-        console.error("[ActorContext]   3. The auth_user_id column doesn't match auth.uid()");
         return null;
     }
 
@@ -91,8 +76,6 @@ async function resolveActor(authUserId: string, email: string): Promise<ActorSes
         effectiveTenantId = "entalpia-real-dev";
     }
 
-    console.log(`[ActorContext] 🌍 Tenant Override: ${data.tenant_id} -> ${effectiveTenantId} (Mode: ${appConfig.mode})`);
-
     return {
         actorId: data.id,
         role: data.role as ActorRole,
@@ -103,145 +86,88 @@ async function resolveActor(authUserId: string, email: string): Promise<ActorSes
 }
 
 export function ActorProvider({ children }: { children: ReactNode }) {
-    const [session, setSession] = useState<ActorSession | null>(null); // Start unauthenticated even in demo
+    const [session, setSession] = useState<ActorSession | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const initCompleteRef = useRef(false);
     const mountedRef = useRef(true);
-    const loginInProgressRef = useRef(false);
+
+    // Keep track of auth session separately to unblock UI immediately
+    const [authSession, setAuthSession] = useState<Session | null>(null);
 
     useEffect(() => {
-        // In demo mode, we just stop loading.
-        if (appConfig.mode === "demo") {
-            setIsLoading(false);
-            return;
-        }
-
         mountedRef.current = true;
 
-        // ... (rest of useEffect logic unchanged) ...
-
-        // ═══════════════════════════════════════════════════════
-        // SAFETY TIMEOUT — absolute maximum wait of 3 seconds.
-        // After this, isLoading WILL be false no matter what.
-        // ═══════════════════════════════════════════════════════
-        const safetyTimer = setTimeout(() => {
-            if (mountedRef.current) {
-                console.warn("[ActorContext] ⚠️ Safety timeout (3s) — forcing isLoading=false");
-                setIsLoading(false);
-                initCompleteRef.current = true;
-            }
-        }, 3000);
-
-        // ═══════════════════════════════════════════════════════
-        // STEP 1: Explicit session check (single source of truth)
-        // ═══════════════════════════════════════════════════════
-        const initAuth = async () => {
-            console.log("[ActorContext] 🔄 initAuth started");
+        const init = async () => {
+            console.log("[ActorContext] 🔄 init() started");
             try {
-                const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+                // ═══════════════════════════════════════════════════════
+                // PHASE 1: AUTH SESSION (Blocking) - MUST COMPLETE
+                // ═══════════════════════════════════════════════════════
+                const { data, error } = await supabase.auth.getSession();
 
-                console.log("[ActorContext] getSession result:", {
-                    hasSession: !!initialSession,
-                    uid: initialSession?.user?.id,
-                    email: initialSession?.user?.email,
-                    error: error?.message,
-                });
-
-                if (error) throw error;
-
-                if (initialSession?.user) {
-                    console.log("[ActorContext] auth.uid() =", initialSession.user.id);
-                    const actor = await resolveActor(
-                        initialSession.user.id,
-                        initialSession.user.email ?? ""
-                    );
-                    if (mountedRef.current) {
-                        if (actor) {
-                            setSession(actor);
-                            console.log("[ActorContext] ✅ Session set from getSession:", actor.role);
-                        } else {
-                            console.error("[ActorContext] ❌ Authenticated but actor profile not found — showing login with error");
-                            setSession(null);
-                        }
-                    }
-                } else {
-                    console.log("[ActorContext] No initial session — showing login");
+                if (error) {
+                    console.error("[ActorContext] ❌ getSession error:", error);
+                    // Even on error, we must stop loading
                 }
-            } catch (err) {
-                console.error("[ActorContext] ❌ Init error:", err);
-                if (mountedRef.current) setSession(null);
-            } finally {
+
+                console.log("[AUTH] getSession finished");
+
                 if (mountedRef.current) {
+                    setAuthSession(data.session);
+                    // CRITICAL: Stop loading immediately after Auth check
                     setIsLoading(false);
-                    initCompleteRef.current = true;
-                    console.log("[ActorContext] ✅ initAuth complete — isLoading=false");
                 }
+
+                // ═══════════════════════════════════════════════════════
+                // PHASE 2: ACTOR RESOLUTION (Non-blocking)
+                // ═══════════════════════════════════════════════════════
+                if (data.session?.user) {
+                    console.log("[AUTH] resolving actor...");
+                    resolveActor(data.session.user.id, data.session.user.email ?? "")
+                        .then(actor => {
+                            if (mountedRef.current) {
+                                setSession(actor);
+                                console.log("[ActorContext] ✅ Actor resolved background:", actor?.role);
+                            }
+                        })
+                        .catch(err => console.error("[ActorContext] 💥 Actor resolution failed:", err));
+                } else {
+                    if (mountedRef.current) setSession(null);
+                }
+
+            } catch (err) {
+                console.error("[ActorContext] 💥 Init Exception:", err);
+                if (mountedRef.current) setIsLoading(false);
             }
         };
 
-        initAuth();
+        // Initialize immediately
+        init();
 
-        // ═══════════════════════════════════════════════════════
-        // STEP 2: Auth state change listener (subsequent events only)
-        // Only processes events AFTER init is complete to avoid
-        // race conditions with getSession.
-        // ═══════════════════════════════════════════════════════
+        // Listen for Auth Changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (event, authSession) => {
+            async (event, currentSession) => {
                 if (!mountedRef.current) return;
 
-                console.log("[ActorContext] Auth event:", event, "initComplete:", initCompleteRef.current);
-
-                // Ignore INITIAL_SESSION — we handle it via getSession above
-                if (event === "INITIAL_SESSION") {
-                    console.log("[ActorContext] Skipping INITIAL_SESSION (handled by getSession)");
-                    return;
-                }
+                console.log("[ActorContext] 🔔 Auth Event:", event);
+                setAuthSession(currentSession); // Update auth state immediately
 
                 if (event === "SIGNED_OUT") {
-                    console.log("[ActorContext] SIGNED_OUT — clearing session");
                     setSession(null);
-                    setIsLoading(false);
                     return;
                 }
 
-                if (event === "SIGNED_IN" && authSession?.user) {
-                    // Skip if login() is handling this directly
-                    if (loginInProgressRef.current) {
-                        console.log("[ActorContext] SIGNED_IN — skipping (login() is handling it)");
-                        return;
-                    }
-                    // Skip if init hasn't completed yet (getSession handles it)
-                    if (!initCompleteRef.current) {
-                        console.log("[ActorContext] SIGNED_IN before init complete — skipping (getSession handles it)");
-                        return;
-                    }
-
-                    console.log("[ActorContext] SIGNED_IN event — resolving actor");
-                    setIsLoading(true);
-                    try {
-                        const actor = await resolveActor(
-                            authSession.user.id,
-                            authSession.user.email ?? ""
-                        );
-                        if (mountedRef.current) setSession(actor);
-                    } catch (err) {
-                        console.error("[ActorContext] ❌ SIGNED_IN resolve error:", err);
-                        if (mountedRef.current) setSession(null);
-                    } finally {
-                        if (mountedRef.current) setIsLoading(false);
-                    }
-                }
-
-                if (event === "TOKEN_REFRESHED") {
-                    console.log("[ActorContext] TOKEN_REFRESHED — no action needed");
+                if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && currentSession?.user) {
+                    // Re-resolve actor in background
+                    resolveActor(currentSession.user.id, currentSession.user.email ?? "")
+                        .then(actor => {
+                            if (mountedRef.current) setSession(actor);
+                        });
                 }
             }
         );
 
         return () => {
             mountedRef.current = false;
-            clearTimeout(safetyTimer);
             subscription.unsubscribe();
         };
     }, []);
@@ -252,7 +178,6 @@ export function ActorProvider({ children }: { children: ReactNode }) {
     // ═══════════════════════════════════════════════════════
     const login = async (email: string, password: string) => {
         console.log("[ActorContext] 🔑 login() called for:", email);
-        loginInProgressRef.current = true;
         setIsLoading(true);
 
         // MOCK MODE LOGIN
@@ -276,7 +201,6 @@ export function ActorProvider({ children }: { children: ReactNode }) {
 
             setSession(mockSession);
             setIsLoading(false);
-            loginInProgressRef.current = false;
             return;
         }
 
@@ -310,9 +234,8 @@ export function ActorProvider({ children }: { children: ReactNode }) {
         } catch (err) {
             throw err;
         } finally {
-            loginInProgressRef.current = false;
             setIsLoading(false);
-            console.log("[ActorContext] login() complete — isLoading=false, loginInProgress=false");
+            console.log("[ActorContext] login() complete — isLoading=false");
         }
     };
 
@@ -335,7 +258,7 @@ export function ActorProvider({ children }: { children: ReactNode }) {
     const value: ActorContextType = {
         session,
         setSession,
-        isAuthenticated: !!session,
+        isAuthenticated: !!authSession,
         isLoading,
         hasRole,
         login,

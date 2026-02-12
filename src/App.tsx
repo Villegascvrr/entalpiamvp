@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -31,48 +30,13 @@ const queryClient = new QueryClient();
 // ── Auth Guard: shows Login when not authenticated ──
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useActor();
-  const [showSpinner, setShowSpinner] = useState(false);
-  const [showForceLogout, setShowForceLogout] = useState(false);
-
-  useEffect(() => {
-    if (!isLoading) {
-      setShowSpinner(false);
-      setShowForceLogout(false);
-      return;
-    }
-    // Only show spinner after 400ms (prevents flash on fast checks)
-    const spinnerTimer = setTimeout(() => setShowSpinner(true), 400);
-    // Show force-logout after 5s (true stuck state)
-    const forceTimer = setTimeout(() => setShowForceLogout(true), 5000);
-    return () => {
-      clearTimeout(spinnerTimer);
-      clearTimeout(forceTimer);
-    };
-  }, [isLoading]);
-
+  // STRICT ORDER: 1. Loading -> 2. Auth Check
   if (isLoading) {
-    if (!showSpinner) {
-      // Blank screen for first 400ms — no flash
-      return <div className="min-h-screen bg-background" />;
-    }
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4 animate-in fade-in duration-300">
           <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground">Verificando sesión...</p>
-          {showForceLogout && (
-            <button
-              onClick={async () => {
-                const { supabase } = await import("@/lib/supabaseClient");
-                localStorage.clear();
-                await supabase.auth.signOut();
-                window.location.reload();
-              }}
-              className="text-xs text-red-500 hover:text-red-700 font-medium underline mt-2 cursor-pointer animate-in fade-in duration-300"
-            >
-              ¿Atascado? Reiniciar sesión
-            </button>
-          )}
+          <p className="text-sm text-muted-foreground font-medium animate-pulse">Iniciando aplicación...</p>
         </div>
       </div>
     );
