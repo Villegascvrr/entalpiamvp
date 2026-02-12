@@ -12,12 +12,16 @@ import {
   User,
   History,
   Activity,
+  LogOut,
+  Users,
+  Truck,
+  ScrollText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { RoleSwitcher } from "./RoleSwitcher";
-import { useActor } from "@/contexts/ActorContext";
+
+import { useActor, ActorRole } from "@/contexts/ActorContext";
 
 interface NavItem {
   title: string;
@@ -25,33 +29,60 @@ interface NavItem {
   href: string;
 }
 
-// Vista Cliente - Workflow de compra simplificado
-const clienteNav: NavItem[] = [
-  { title: "Panel Principal", icon: LayoutDashboard, href: "/dashboard" },
-  { title: "Crear Pedido", icon: Package, href: "/order/new" },
-  { title: "Mis Pedidos", icon: ClipboardList, href: "/orders" },
-  { title: "Histórico", icon: History, href: "/orders/history" },
-];
+// ── Role-based Navigation Config ──
 
-// Vista Interna (Antonio) - Control operativo
-const internoNav: NavItem[] = [
-  { title: "Resumen Operativo", icon: Activity, href: "/admin/dashboard" },
-  { title: "Pedidos Recibidos", icon: FileText, href: "/admin/orders" },
-  { title: "Gestión Precios", icon: TrendingUp, href: "/admin/pricing" },
-  { title: "Gestión Stock", icon: Warehouse, href: "/admin/stock" },
-];
+const NAV_CONFIG: Record<ActorRole, { title: string; items: NavItem[] }> = {
+  customer: {
+    title: "Mi Cuenta",
+    items: [
+      { title: "Panel Principal", icon: LayoutDashboard, href: "/dashboard" },
+      { title: "Crear Pedido", icon: Package, href: "/order/new" },
+      { title: "Mis Pedidos", icon: ClipboardList, href: "/orders" },
+      { title: "Histórico", icon: History, href: "/orders/history" },
+    ]
+  },
+  commercial: {
+    title: "Gestión Comercial",
+    items: [
+      { title: "Dashboard Comercial", icon: Activity, href: "/dashboard" },
+      { title: "Pedidos Pendientes", icon: FileText, href: "/commercial/orders" },
+      { title: "Clientes", icon: Users, href: "/commercial/customers" },
+      { title: "Gestión Precios", icon: TrendingUp, href: "/admin/pricing" },
+    ]
+  },
+  logistics: {
+    title: "Logística",
+    items: [
+      { title: "Panel Logística", icon: Warehouse, href: "/dashboard" },
+      { title: "Preparación", icon: Package, href: "/logistics/prep" },
+      { title: "Envíos", icon: Truck, href: "/logistics/shipping" },
+      { title: "Albaranes", icon: ScrollText, href: "/logistics/delivery-notes" },
+    ]
+  },
+  admin: {
+    title: "Administración",
+    items: [
+      { title: "Resumen Global", icon: LayoutDashboard, href: "/dashboard" },
+      { title: "Pedidos (Todo)", icon: FileText, href: "/admin/orders" },
+      { title: "Stock", icon: Warehouse, href: "/admin/stock" },
+      { title: "Precios", icon: TrendingUp, href: "/admin/pricing" },
+      // Admin also sees useful links from others? For now, keep it focused.
+      { title: "Clientes", icon: Users, href: "/commercial/customers" },
+    ]
+  }
+};
 
 export function AppSidebar({ className, onNavigate }: { className?: string, onNavigate?: () => void }) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
-  const { hasRole } = useActor();
-  const isInterno = hasRole("admin");
+  const { session, signOut } = useActor();
 
   const isActive = (path: string) => location.pathname === path;
 
-  // Seleccionar navegación según rol
-  const navItems = isInterno ? internoNav : clienteNav;
-  const sectionTitle = isInterno ? "Control Operativo" : "Operaciones";
+  // Determine navigation based on role
+  const role = session?.role || "customer";
+  // Fallback to customer if role not found in config (safety)
+  const currentNav = NAV_CONFIG[role] || NAV_CONFIG["customer"];
 
   const NavItem = ({ item }: { item: NavItem }) => (
     <NavLink
@@ -82,7 +113,7 @@ export function AppSidebar({ className, onNavigate }: { className?: string, onNa
         className
       )}
     >
-      {/* Header - Compact */}
+      {/* Header */}
       <div className="px-3 py-3 flex items-center justify-between">
         {!collapsed && (
           <div className="flex items-center gap-2">
@@ -92,7 +123,7 @@ export function AppSidebar({ className, onNavigate }: { className?: string, onNa
             <div>
               <h1 className="font-semibold text-sidebar-foreground text-[13px] tracking-tight">ENTALPIA</h1>
               <p className="text-[10px] text-sidebar-muted uppercase tracking-wider">
-                {isInterno ? "Operaciones" : "Comercial"}
+                {role}
               </p>
             </div>
           </div>
@@ -106,30 +137,24 @@ export function AppSidebar({ className, onNavigate }: { className?: string, onNa
 
       <Separator className="bg-sidebar-border" />
 
-      {/* Role Switcher - Compact */}
-      {!collapsed && (
-        <div className="px-2.5 py-2.5">
-          <RoleSwitcher />
-        </div>
-      )}
+
 
       {/* Navigation */}
       <nav className="flex-1 px-2.5 py-2 space-y-0.5 overflow-y-auto scrollbar-thin">
         {!collapsed && (
           <p className="px-2.5 py-1.5 text-[10px] font-semibold text-sidebar-muted uppercase tracking-wider">
-            {sectionTitle}
+            {currentNav.title}
           </p>
         )}
-        {navItems.map((item) => (
+        {currentNav.items.map((item) => (
           <NavItem key={item.href} item={item} />
         ))}
       </nav>
 
       <Separator className="bg-sidebar-border" />
 
-      {/* Footer - Compact */}
+      {/* Footer */}
       <div className="p-2.5 space-y-2">
-        {/* User Info */}
         <div className={cn(
           "flex items-center gap-2.5 px-2 py-1.5 rounded",
           collapsed ? "justify-center" : ""
@@ -138,18 +163,30 @@ export function AppSidebar({ className, onNavigate }: { className?: string, onNa
             <User className="h-3.5 w-3.5 text-sidebar-foreground" />
           </div>
           {!collapsed && (
-            <div className="overflow-hidden">
+            <div className="overflow-hidden flex-1">
               <p className="text-[12px] font-medium text-sidebar-foreground truncate">
-                {isInterno ? "Antonio García" : "Distribuidor Demo"}
+                {session?.name ?? "Sin sesión"}
               </p>
               <p className="text-[10px] text-sidebar-muted truncate">
-                {isInterno ? "ENTALPIA Europe" : "Cliente Ejemplo S.L."}
+                {session?.email ?? ""}
               </p>
             </div>
           )}
         </div>
 
-        {/* Collapse Toggle */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={signOut}
+          className={cn(
+            "w-full justify-center text-sidebar-muted hover:text-red-400 hover:bg-red-500/10 h-7",
+            collapsed ? "px-0" : ""
+          )}
+        >
+          <LogOut className="h-3.5 w-3.5" />
+          {!collapsed && <span className="text-[11px] ml-1.5">Cerrar Sesión</span>}
+        </Button>
+
         <Button
           variant="ghost"
           size="sm"

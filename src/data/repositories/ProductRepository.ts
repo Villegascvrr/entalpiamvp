@@ -5,7 +5,7 @@ import type { ActorSession } from "@/contexts/ActorContext";
 // ─────────────────────────────────────────────────────────────
 // Product Repository Interface
 // Defines the contract for product data access.
-// When Supabase is connected, only the implementation changes.
+// Implementation switching is handled by repositories/index.ts
 // ─────────────────────────────────────────────────────────────
 
 export interface ProductRepository {
@@ -41,6 +41,3 @@ export class MockProductRepository implements ProductRepository {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 }
-
-// Singleton instance
-export const productRepository = new MockProductRepository();

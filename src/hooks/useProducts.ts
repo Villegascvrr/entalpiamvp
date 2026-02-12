@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { productRepository } from "@/data/repositories/ProductRepository";
+import { productRepository } from "@/data/repositories";
 import { useActor } from "@/contexts/ActorContext";
 import type { Product, Category } from "@/data/types";
 

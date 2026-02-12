@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
-import type { OrderItem, OrderStatus } from "@/data/types";
-// import { toast } from "sonner";
+import type { OrderItem, OrderStatus, Order } from "@/data/types";
 
 interface OrderContextType {
     items: OrderItem[];
@@ -24,7 +23,7 @@ interface OrderContextType {
     commercialName: string;
     lastSaved: Date | null;
     orderStatus: OrderStatus;
-    submitOrder: () => void;
+    submitOrder: (persistFn?: (data: Partial<Order>) => Promise<Order | null>) => Promise<Order | null>;
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
@@ -52,12 +51,33 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         }
     }, [items, shippingDetails, currentStep]);
 
-    const submitOrder = () => {
-        // Transition: Draft -> Pending Validation (canonical key)
+    const submitOrder = async (
+        persistFn?: (data: Partial<Order>) => Promise<Order | null>
+    ): Promise<Order | null> => {
+        // Build the order payload from context state
+        const orderPayload: Partial<Order> = {
+            items: items.map(i => ({
+                id: i.id,
+                name: i.name,
+                price: i.price,
+                quantity: i.quantity,
+            })),
+            notes: shippingDetails.notes || undefined,
+            address: shippingDetails.address || undefined,
+            shippingDate: shippingDetails.date || undefined,
+            company: clientName,
+        };
+
+        // If a persist function was provided, call it (real Supabase write)
+        let result: Order | null = null;
+        if (persistFn) {
+            result = await persistFn(orderPayload);
+        }
+
+        // Update local state regardless
         setOrderStatus("pending_validation");
         setLastSaved(new Date());
-        // NOTE: In production, this will call orderRepository.createOrder()
-        // For now, it updates local context state.
+        return result;
     };
 
     const addItem = (product: any) => {

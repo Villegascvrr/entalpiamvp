@@ -5,7 +5,7 @@ import type { ActorSession } from "@/contexts/ActorContext";
 // ─────────────────────────────────────────────────────────────
 // Order Repository Interface
 // Defines the contract for ALL data access (reads + writes).
-// When Supabase is connected, only the implementation changes.
+// Implementation switching is handled by repositories/index.ts
 // ─────────────────────────────────────────────────────────────
 
 export interface OrderRepository {
@@ -124,5 +124,3 @@ export class MockOrderRepository implements OrderRepository {
     }
 }
 
-// Singleton instance — shared across all hooks
-export const orderRepository = new MockOrderRepository();

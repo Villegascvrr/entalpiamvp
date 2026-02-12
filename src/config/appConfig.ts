@@ -13,7 +13,7 @@ export interface AppConfig {
 }
 
 /** Current application mode — change this to switch data sources */
-const APP_MODE: AppMode = "demo";
+const APP_MODE: AppMode = "development";
 
 const configs: Record<AppMode, AppConfig> = {
     demo: {
@@ -23,12 +23,12 @@ const configs: Record<AppMode, AppConfig> = {
     },
     development: {
         mode: "development",
-        apiBaseUrl: "http://localhost:54321", // Future Supabase local
+        apiBaseUrl: "https://syqhaewpxflmpmtmjspa.supabase.co",
         enableDevTools: true,
     },
     production: {
         mode: "production",
-        apiBaseUrl: "https://your-project.supabase.co", // Placeholder
+        apiBaseUrl: "https://syqhaewpxflmpmtmjspa.supabase.co",
         enableDevTools: false,
     },
 };

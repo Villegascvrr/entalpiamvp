@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { appConfig } from "@/config/appConfig";
-import { orderRepository } from "@/data/repositories/OrderRepository";
+import { orderRepository } from "@/data/repositories";
 import { useActor } from "@/contexts/ActorContext";
 import type { Order, RecentOrder, OrderSummary, OrderStatus } from "@/data/types";
 
@@ -50,13 +49,6 @@ export function useOrders(): UseOrdersResult {
             setError(null);
 
             try {
-                if (appConfig.mode === "production") {
-                    setAdminOrders([]);
-                    setRecentOrders([]);
-                    setHistoryOrders([]);
-                    return;
-                }
-
                 const [admin, recent, history] = await Promise.all([
                     orderRepository.getAdminOrders(session),
                     orderRepository.getRecentOrders(session),

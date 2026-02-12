@@ -43,6 +43,7 @@ interface OrderItem {
 }
 
 import { useOrder } from "@/contexts/OrderContext";
+import { useOrders } from "@/hooks/useOrders";
 import { cn } from "@/lib/utils";
 import { OrderStateHeader } from "@/components/orders/OrderStateHeader";
 import { Card } from "@/components/ui/card";
@@ -52,6 +53,7 @@ export default function OrderPreview() {
   const navigate = useNavigate();
   const { session, hasRole } = useActor();
   const { items, orderTotal, clearOrder, orderReference, clientName, commercialName, orderStatus, submitOrder } = useOrder();
+  const { createOrder } = useOrders();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Derived state from global status
@@ -75,23 +77,28 @@ export default function OrderPreview() {
     day: "numeric",
   });
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
-      submitOrder(); // Update global state
-      setIsSubmitting(false);
-      // setIsSubmitted is now derived, so no need to set local state
+    try {
+      // Pass the real repository write function as the persist callback
+      const result = await submitOrder(createOrder);
 
-      // Kept clearOrder logic only if we want to reset the cart for next order, 
-      // but usually after submission we view the "Success" state of THIS order.
-      // For now, let's NOT clearOrder immediately so we can see the success state with data.
-      // clearOrder(); 
-
-      toast.success(hasCustomItems ? "Solicitud enviada correctamente" : "Pedido enviado correctamente", {
-        description: `Referencia: ${orderNumber}`,
+      if (result) {
+        toast.success(hasCustomItems ? "Solicitud enviada correctamente" : "Pedido enviado correctamente", {
+          description: `Referencia: ${result.id}`,
+        });
+      } else {
+        toast.success(hasCustomItems ? "Solicitud enviada correctamente" : "Pedido enviado correctamente", {
+          description: `Referencia: ${orderNumber}`,
+        });
+      }
+    } catch (err: any) {
+      toast.error("Error al enviar pedido", {
+        description: err.message || "Inténtalo de nuevo",
       });
-    }, 1500);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (orderItems.length === 0 && !isSubmitted) {

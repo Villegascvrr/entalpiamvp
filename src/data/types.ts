@@ -58,6 +58,8 @@ export interface AdminOrderItem {
     name: string;
     quantity: number;
     price: number;
+    total?: number;
+    isCustom?: boolean;
 }
 
 /** A full order (admin / internal view) */
