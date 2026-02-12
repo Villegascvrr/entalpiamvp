@@ -3,8 +3,9 @@ import { DataCard } from "@/components/ui/data-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { 
-  Search, 
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Search,
   Eye,
   Clock,
   CheckCircle,
@@ -13,50 +14,43 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useOrders } from "@/hooks/useOrders";
 
-interface Order {
-  id: string;
-  date: string;
-  status: "pendiente" | "procesando" | "enviado" | "entregado";
-  items: number;
-  total: number;
-}
-
-const orders: Order[] = [
-  { id: "PED-2024-0142", date: "15/01/2024", status: "procesando", items: 4, total: 4250.00 },
-  { id: "PED-2024-0138", date: "14/01/2024", status: "enviado", items: 2, total: 8920.50 },
-  { id: "PED-2024-0131", date: "12/01/2024", status: "entregado", items: 6, total: 2180.00 },
-  { id: "PED-2024-0125", date: "10/01/2024", status: "entregado", items: 3, total: 5640.25 },
-  { id: "PED-2024-0118", date: "08/01/2024", status: "entregado", items: 5, total: 12450.00 },
-  { id: "PED-2024-0112", date: "05/01/2024", status: "entregado", items: 2, total: 890.50 },
-];
-
-const statusConfig = {
-  pendiente: { 
-    label: "Pendiente", 
-    icon: Clock, 
-    className: "bg-status-low/10 text-status-low border-status-low/20" 
+const statusConfig: Record<string, { label: string; icon: any; className: string }> = {
+  pending_validation: {
+    label: "Pend. Validación",
+    icon: Clock,
+    className: "bg-status-low/10 text-status-low border-status-low/20"
   },
-  procesando: { 
-    label: "Procesando", 
-    icon: Package, 
-    className: "bg-primary/10 text-primary border-primary/20" 
+  confirmed: {
+    label: "Confirmado",
+    icon: CheckCircle,
+    className: "bg-blue-500/10 text-blue-600 border-blue-500/20"
   },
-  enviado: { 
-    label: "Enviado", 
-    icon: Truck, 
-    className: "bg-primary/10 text-primary border-primary/20" 
+  preparing: {
+    label: "En Preparación",
+    icon: Package,
+    className: "bg-primary/10 text-primary border-primary/20"
   },
-  entregado: { 
-    label: "Entregado", 
-    icon: CheckCircle, 
-    className: "bg-status-available/10 text-status-available border-status-available/20" 
+  shipped: {
+    label: "Enviado",
+    icon: Truck,
+    className: "bg-primary/10 text-primary border-primary/20"
+  },
+  delivered: {
+    label: "Entregado",
+    icon: CheckCircle,
+    className: "bg-status-available/10 text-status-available border-status-available/20"
   },
 };
 
 export default function MyOrders() {
+  const { historyOrders, isLoading } = useOrders();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+
+  // Show recent subset
+  const orders = historyOrders.slice(0, 6);
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = order.id.toLowerCase().includes(searchQuery.toLowerCase());
@@ -108,54 +102,64 @@ export default function MyOrders() {
 
         {/* Orders List */}
         <DataCard title="Historial de Pedidos" bodyClassName="p-0">
-          <table className="data-table">
-            <thead>
-              <tr className="bg-muted/30">
-                <th>Nº Pedido</th>
-                <th>Fecha</th>
-                <th>Artículos</th>
-                <th>Estado</th>
-                <th className="text-right">Total</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredOrders.map(order => {
-                const status = statusConfig[order.status];
-                const StatusIcon = status.icon;
-                
-                return (
-                  <tr key={order.id}>
-                    <td>
-                      <span className="font-mono font-medium">{order.id}</span>
-                    </td>
-                    <td className="text-muted-foreground">{order.date}</td>
-                    <td>{order.items} artículos</td>
-                    <td>
-                      <Badge variant="outline" className={cn("gap-1", status.className)}>
-                        <StatusIcon className="h-3 w-3" />
-                        {status.label}
-                      </Badge>
-                    </td>
-                    <td className="text-right font-mono font-semibold">
-                      €{order.total.toFixed(2)}
-                    </td>
-                    <td>
-                      <Button variant="ghost" size="sm" className="gap-1">
-                        <Eye className="h-3 w-3" />
-                        Ver
-                      </Button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          
-          {filteredOrders.length === 0 && (
-            <div className="p-8 text-center text-muted-foreground">
-              No se encontraron pedidos con los criterios seleccionados
+          {isLoading ? (
+            <div className="p-6 space-y-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
             </div>
+          ) : (
+            <>
+              <table className="data-table">
+                <thead>
+                  <tr className="bg-muted/30">
+                    <th>Nº Pedido</th>
+                    <th>Fecha</th>
+                    <th>Artículos</th>
+                    <th>Estado</th>
+                    <th className="text-right">Total</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredOrders.map(order => {
+                    const status = statusConfig[order.status] || statusConfig.pending_validation;
+                    const StatusIcon = status.icon;
+
+                    return (
+                      <tr key={order.id}>
+                        <td>
+                          <span className="font-mono font-medium">{order.id}</span>
+                        </td>
+                        <td className="text-muted-foreground">{order.date}</td>
+                        <td>{order.items} artículos</td>
+                        <td>
+                          <Badge variant="outline" className={cn("gap-1", status.className)}>
+                            <StatusIcon className="h-3 w-3" />
+                            {status.label}
+                          </Badge>
+                        </td>
+                        <td className="text-right font-mono font-semibold">
+                          €{order.total.toFixed(2)}
+                        </td>
+                        <td>
+                          <Button variant="ghost" size="sm" className="gap-1">
+                            <Eye className="h-3 w-3" />
+                            Ver
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+
+              {filteredOrders.length === 0 && (
+                <div className="p-8 text-center text-muted-foreground">
+                  No se encontraron pedidos con los criterios seleccionados
+                </div>
+              )}
+            </>
           )}
         </DataCard>
       </div>

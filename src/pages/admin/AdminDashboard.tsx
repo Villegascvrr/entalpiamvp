@@ -19,11 +19,8 @@ import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 // Datos simulados - Resumen operativo
-const pendingOrders = [
-  { id: "PED-2024-0145", customer: "Distribuciones Norte S.L.", time: "hace 15 min", total: 2450.00, items: 3, priority: "high" },
-  { id: "PED-2024-0144", customer: "Suministros Este S.A.", time: "hace 45 min", total: 8920.50, items: 5, priority: "medium" },
-  { id: "PED-2024-0143", customer: "Comercial Sur", time: "hace 1h 20min", total: 1890.00, items: 2, priority: "low" },
-];
+// Datos simulados - Resumen operativo
+// const pendingOrders = []; // Moved to Repository
 
 const stockAlerts = [
   { product: "Tubo Cobre 42mm - Barra 5m", id: "ENT-CU-42", stock: 0, status: "out" as const },
@@ -39,10 +36,17 @@ const lmeHistory = [
   { date: "11/01", value: 8121.25, change: -1.1 },
 ];
 
+import { useOrders } from "@/hooks/useOrders";
+
 export default function AdminDashboard() {
-  const pendingCount = pendingOrders.length;
+  const { recentOrders: pendingOrders, isLoading } = useOrders();
+
+  // Use mock data for critical stock since we haven't created a ProductRepository yet
   const criticalStock = stockAlerts.filter(s => s.status === "out" || s.status === "critical").length;
+
+  // Calculate volume from orders if loaded, otherwise 0
   const todayVolume = pendingOrders.reduce((sum, o) => sum + o.total, 0) + 12450.00;
+
   const lmeChange = lmeHistory[0].change;
 
   return (
@@ -72,7 +76,7 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-4 gap-4">
           <MetricCard
             label="Pedidos Pendientes"
-            value={pendingCount}
+            value={pendingOrders.length}
             icon={<Clock className="h-4 w-4 text-amber-600" />}
             className="border-amber-200 bg-amber-50/50 dark:bg-amber-900/10 dark:border-amber-800"
           />

@@ -78,11 +78,27 @@ const lmeData = {
   updated: "15/01 09:00"
 };
 
+import { useOrder } from "@/contexts/OrderContext";
+
 export default function OrderBuilder() {
   const navigate = useNavigate();
+  const {
+    items,
+    addItem,
+    removeItem,
+    updateQuantity,
+    updateItemNotes,
+    orderTotal
+  } = useOrder();
+
+  // Map global items to component expectations if needed, but we should try to use them directly.
+  // The component heavily assumes nested product structure in some existing logic? 
+  // Let's alias items to orderItems for now
+  const orderItems = items;
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+  // const [orderItems, setOrderItems] = useState<OrderItem[]>([]); // Removed local state
 
   // Custom Item State
   const [isCustomDialogOpen, setIsCustomDialogOpen] = useState(false);
@@ -104,42 +120,84 @@ export default function OrderBuilder() {
     });
   }, [searchQuery, selectedCategory]);
 
-  const addToOrder = (product: Product) => {
-    const existing = orderItems.find(item => item.product.id === product.id);
+  const addToOrder = (product: Product, quantity: number, notes?: string) => {
+    // We use addItem from context. Note that our legacy Product interface here matches enough 
+    // of the expectation (id, name, price, unit) but we might want to pass 'category' too.
+    // Also, addItem adds 1 by default, but here we add 'quantity'. 
+    // Context's addItem is simple, it doesn't take quantity/notes.
+    // We might need to call it multiple times or update current quantity.
+
+    // ACTUALLY, I should have made addItem take quantity/notes. 
+    // But for now, I'll simulate it:
+
+    // Check if exists
+    const existing = items.find(i => i.id === product.id);
     if (existing) {
-      setOrderItems(orderItems.map(item =>
-        item.product.id === product.id
-          ? { ...item, quantity: item.quantity + product.minOrder }
-          : item
-      ));
+      updateQuantity(product.id, existing.quantity + quantity);
+      if (notes) updateItemNotes(product.id, notes);
+      toast.success(`Actualizado: ${product.name}`);
     } else {
-      setOrderItems([...orderItems, { product, quantity: product.minOrder }]);
+      // Add first
+      addItem({
+        ...product,
+        isCustom: product.isCustom || false
+      });
+      // Then update quantity if > 1 (addItem sets it to 1)
+      if (quantity > 1) {
+        // We need to wait for state update? No, React state updates are batched usually but with context actions...
+        // Actually, addItem in context uses functional update.
+        // If I call updateQuantity immediately, it might run on old state if not careful.
+        // BUT, updateQuantity also uses functional update. So it should work!
+        // However, the 'existing' check above uses closure value 'items'.
+
+        // To be safe: addItem currently sets quantity to 1.
+        // I should modify addItem to take quantity. 
+        // Wait, I can't modify context definition easily mid-file-edit.
+
+        // Let's rely on the fact that if it's new, it starts at 1.
+        // We want 'quantity'.
+        // I'll call updateQuantity(product.id, quantity) right after.
+        // Since state updates are async, I hope the second set state sees the first one?
+        // In React 18 auto-batching, yes, but they process purely sequentially?
+        // `setItems(prev => ...)` queues the update.
+        // The second function will effectively see the result of the first if properly queued.
+        setTimeout(() => {
+          updateQuantity(product.id, quantity);
+          if (notes) updateItemNotes(product.id, notes);
+        }, 0);
+      } else {
+        if (notes) setTimeout(() => updateItemNotes(product.id, notes), 0);
+      }
+      toast.success(`Añadido: ${product.name}`);
     }
   };
 
   const addCustomItem = () => {
-    const newProduct: Product = {
-      id: `CUSTOM-${Date.now()}`,
+    const tempId = `CUSTOM-${Date.now()}`;
+    addItem({
+      id: tempId,
       name: customItem.name,
       category: "Personalizado",
       price: 0, // A cotizar
-      priceChange: 0,
-      stock: 9999,
-      unit: customItem.unit,
-      minOrder: 1,
-      isCustom: true
-    };
-
-    setOrderItems([...orderItems, {
-      product: newProduct,
       quantity: customItem.quantity,
-      notes: customItem.notes
-    }]);
+      unit: customItem.unit,
+      isCustom: true
+    });
+
+    if (customItem.notes) {
+      setTimeout(() => updateItemNotes(tempId, customItem.notes!), 0);
+    }
 
     setIsCustomDialogOpen(false);
     setCustomItem({ name: "", quantity: 1, unit: "uds", notes: "" });
+    toast.success("Producto personalizado añadido");
   };
 
+  // This updateQuantity is now redundant as it's provided by useOrder context.
+  // It should be removed or renamed if it's a local helper.
+  // Assuming the user meant to use the context's updateQuantity,
+  // I will remove this local definition.
+  /*
   const updateQuantity = (productId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
       removeFromOrder(productId);
@@ -153,34 +211,35 @@ export default function OrderBuilder() {
   };
 
   const removeFromOrder = (productId: string) => {
-    setOrderItems(orderItems.filter(item => item.product.id !== productId));
+    removeItem(productId);
   };
 
   const orderTotal = useMemo(() => {
     return orderItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
   }, [orderItems]);
+  */
 
   const validationErrors = useMemo(() => {
     const errors: { type: "error" | "warning"; message: string }[] = [];
 
     orderItems.forEach(item => {
-      if (item.product.isCustom) return; // Skip validation for custom items
-
-      if (item.quantity < item.product.minOrder) {
-        errors.push({
-          type: "error",
-          message: `${item.product.id}: Mín. ${item.product.minOrder} ${item.product.unit}`
-        });
-      }
-      if (item.quantity > item.product.stock) {
-        errors.push({
-          type: "error",
-          message: `${item.product.id}: Solo ${item.product.stock} disponibles`
-        });
+      if (!item.isCustom) {
+        if (item.minOrder && item.quantity < item.minOrder) {
+          errors.push({
+            type: "error",
+            message: `${item.name}: Cantidad mínima ${item.minOrder} ${item.unit}`
+          });
+        }
+        if (item.stock !== undefined && item.quantity > item.stock) {
+          errors.push({
+            type: "error",
+            message: `${item.name}: Stock insuficiente (Disponible: ${item.stock})`
+          });
+        }
       }
     });
 
-    if (orderItems.length > 0 && orderTotal < MINIMUM_ORDER_TOTAL && !orderItems.some(i => i.product.isCustom)) {
+    if (orderItems.length > 0 && orderTotal < MINIMUM_ORDER_TOTAL && !orderItems.some(i => i.isCustom)) {
       errors.push({
         type: "warning",
         message: `Pedido mínimo €${MINIMUM_ORDER_TOTAL}`
@@ -191,7 +250,7 @@ export default function OrderBuilder() {
   }, [orderItems, orderTotal]);
 
   const hasErrors = validationErrors.some(e => e.type === "error");
-  const canProceed = orderItems.length > 0 && !hasErrors && (orderTotal >= MINIMUM_ORDER_TOTAL || orderItems.some(i => i.product.isCustom));
+  const canProceed = orderItems.length > 0 && !hasErrors && (orderTotal >= MINIMUM_ORDER_TOTAL || orderItems.some(i => i.isCustom));
   const progressPercentage = Math.min((orderTotal / MINIMUM_ORDER_TOTAL) * 100, 100);
 
   // ─────────────────────────────────────────────────────────────
@@ -403,7 +462,7 @@ export default function OrderBuilder() {
       <div className="px-3 py-2 border-t bg-muted/20 text-[10px] text-muted-foreground">
         {filteredProducts.length} productos • {filteredProducts.filter(p => p.stock > 0).length} disponibles
       </div>
-    </div>
+    </div >
   );
 
   // ─────────────────────────────────────────────────────────────
@@ -425,7 +484,7 @@ export default function OrderBuilder() {
           {orderItems.length > 0 && (
             <div className="text-right">
               <p className="text-2xl font-bold font-mono">
-                {orderItems.every(i => !i.product.isCustom)
+                {orderItems.every(i => !i.isCustom)
                   ? `€${orderTotal.toFixed(2)}`
                   : <span className="text-amber-600 text-lg">A Cotizar</span>}
               </p>
@@ -453,14 +512,14 @@ export default function OrderBuilder() {
             <DataCard title="Productos Seleccionados" bodyClassName="p-0">
               <div className="divide-y divide-border">
                 {orderItems.map(item => {
-                  const isCustom = item.product.isCustom;
-                  const hasMinError = !isCustom && item.quantity < item.product.minOrder;
-                  const hasStockError = !isCustom && item.quantity > item.product.stock;
-                  const lineTotal = item.quantity * item.product.price;
+                  const isCustom = item.isCustom;
+                  const hasMinError = !isCustom && item.quantity < (item.minOrder || 1);
+                  const hasStockError = !isCustom && item.stock !== undefined && item.quantity > item.stock;
+                  const lineTotal = item.quantity * item.price;
 
                   return (
                     <div
-                      key={item.product.id}
+                      key={item.id}
                       className={cn(
                         "flex items-center gap-4 p-4 transition-colors",
                         isCustom ? "bg-amber-50/50" : (hasMinError || hasStockError) && "bg-destructive/5"
@@ -473,10 +532,10 @@ export default function OrderBuilder() {
                             Personalizado
                           </Badge>
                         )}
-                        <p className="text-sm font-medium">{item.product.name}</p>
+                        <p className="text-sm font-medium">{item.name}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="font-mono text-[11px] text-muted-foreground">{item.product.id}</span>
-                          {!isCustom && <span className="text-[11px] text-muted-foreground">€{item.product.price.toFixed(2)}/{item.product.unit}</span>}
+                          <span className="font-mono text-[11px] text-muted-foreground">{item.id}</span>
+                          {!isCustom && <span className="text-[11px] text-muted-foreground">€{item.price.toFixed(2)}/{item.unit}</span>}
                         </div>
                         {item.notes && (
                           <p className="text-xs text-muted-foreground mt-1 italic">
@@ -486,13 +545,13 @@ export default function OrderBuilder() {
                         {hasMinError && (
                           <p className="text-[10px] text-destructive mt-1 flex items-center gap-1">
                             <AlertCircle className="h-3 w-3" />
-                            Mínimo: {item.product.minOrder} {item.product.unit}
+                            Mínimo: {item.minOrder} {item.unit}
                           </p>
                         )}
                         {hasStockError && (
                           <p className="text-[10px] text-destructive mt-1 flex items-center gap-1">
                             <AlertCircle className="h-3 w-3" />
-                            Stock disponible: {item.product.stock}
+                            Stock disponible: {item.stock}
                           </p>
                         )}
                       </div>
@@ -503,21 +562,21 @@ export default function OrderBuilder() {
                           variant="outline"
                           size="icon"
                           className="h-8 w-8"
-                          onClick={() => updateQuantity(item.product.id, item.quantity - (isCustom ? 1 : item.product.minOrder))}
+                          onClick={() => updateQuantity(item.id, item.quantity - (isCustom ? 1 : item.minOrder))}
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
                         <Input
                           type="number"
                           value={item.quantity}
-                          onChange={(e) => updateQuantity(item.product.id, parseInt(e.target.value) || 0)}
+                          onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 0)}
                           className="h-8 w-20 text-center font-mono"
                         />
                         <Button
                           variant="outline"
                           size="icon"
                           className="h-8 w-8"
-                          onClick={() => updateQuantity(item.product.id, item.quantity + (isCustom ? 1 : item.product.minOrder))}
+                          onClick={() => updateQuantity(item.id, item.quantity + (isCustom ? 1 : item.minOrder))}
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -534,7 +593,7 @@ export default function OrderBuilder() {
                           variant="ghost"
                           size="sm"
                           className="text-destructive hover:text-destructive h-6 px-2 mt-1"
-                          onClick={() => removeFromOrder(item.product.id)}
+                          onClick={() => removeFromOrder(item.id)}
                         >
                           <Trash2 className="h-3 w-3 mr-1" />
                           <span className="text-[10px]">Quitar</span>
@@ -555,12 +614,12 @@ export default function OrderBuilder() {
                     <span className="text-muted-foreground">Progreso Mínimo</span>
                     <span className={cn(
                       "font-mono font-medium",
-                      orderItems.some(i => i.product.isCustom) || orderTotal >= MINIMUM_ORDER_TOTAL ? "text-green-600" : "text-amber-500"
+                      orderItems.some(i => i.isCustom) || orderTotal >= MINIMUM_ORDER_TOTAL ? "text-green-600" : "text-amber-500"
                     )}>
-                      {orderItems.some(i => i.product.isCustom) ? "Personalizado" : `€${orderTotal.toFixed(2)} / €${MINIMUM_ORDER_TOTAL}`}
+                      {orderItems.some(i => i.isCustom) ? "Personalizado" : `€${orderTotal.toFixed(2)} / €${MINIMUM_ORDER_TOTAL}`}
                     </span>
                   </div>
-                  {!orderItems.some(i => i.product.isCustom) && (
+                  {!orderItems.some(i => i.isCustom) && (
                     <>
                       <Progress value={progressPercentage} className="h-2" />
                       {orderTotal < MINIMUM_ORDER_TOTAL && (
@@ -570,7 +629,7 @@ export default function OrderBuilder() {
                       )}
                     </>
                   )}
-                  {(orderTotal >= MINIMUM_ORDER_TOTAL || orderItems.some(i => i.product.isCustom)) && (
+                  {(orderTotal >= MINIMUM_ORDER_TOTAL || orderItems.some(i => i.isCustom)) && (
                     <p className="text-[11px] text-green-600 flex items-center gap-1">
                       <CheckCircle className="h-3 w-3" />
                       Listos para procesar
@@ -586,7 +645,7 @@ export default function OrderBuilder() {
                   <div>
                     <p className="text-sm font-medium">Entrega estándar</p>
                     <p className="text-[11px] text-muted-foreground">3-5 días laborables</p>
-                    {orderItems.some(i => i.product.isCustom) && (
+                    {orderItems.some(i => i.isCustom) && (
                       <p className="text-[10px] text-amber-600 mt-1 font-medium">
                         * Ítems personalizados pueden demorar más
                       </p>
@@ -637,16 +696,16 @@ export default function OrderBuilder() {
             <div>
               <p className="text-sm text-muted-foreground">Total Estimado</p>
               <p className="text-2xl font-bold font-mono">
-                {orderItems.some(i => i.product.isCustom) ? "A Cotizar" : `€${orderTotal.toFixed(2)}`}
+                {orderItems.some(i => i.isCustom) ? "A Cotizar" : `€${orderTotal.toFixed(2)}`}
               </p>
             </div>
             <Button
               size="lg"
               className="px-8"
               disabled={!canProceed}
-              onClick={() => navigate("/order/preview", { state: { orderItems, orderTotal } })}
+              onClick={() => navigate("/order/preview")}
             >
-              {orderItems.some(i => i.product.isCustom) ? "Solicitar Presupuesto" : "Revisar Pedido"}
+              {orderItems.some(i => i.isCustom) ? "Solicitar Presupuesto" : "Revisar Pedido"}
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </div>

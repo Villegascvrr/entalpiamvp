@@ -1,4 +1,4 @@
-import { useLocation, useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,11 +13,21 @@ import {
   CheckCircle,
   Printer,
   Truck,
-  AlertCircle
+  AlertCircle,
+  Clock,
+  Scale,
+  Check,
+  Building2,
+  MapPin,
+  CreditCard,
+  MessageSquare,
+  User,
+  Receipt
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useRole } from "@/contexts/RoleContext";
+// import { useRole } from "@/contexts/RoleContext"; // Replaced by useActor
+import { useActor } from "@/contexts/ActorContext";
 
 interface OrderItem {
   product: {
@@ -32,19 +42,32 @@ interface OrderItem {
   notes?: string;
 }
 
+import { useOrder } from "@/contexts/OrderContext";
+import { cn } from "@/lib/utils";
+import { OrderStateHeader } from "@/components/orders/OrderStateHeader";
+import { Card } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
 export default function OrderPreview() {
-  const location = useLocation();
   const navigate = useNavigate();
-  const { isInterno } = useRole();
+  const { session, hasRole } = useActor();
+  const { items, orderTotal, clearOrder, orderReference, clientName, commercialName, orderStatus, submitOrder } = useOrder();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const orderItems: OrderItem[] = location.state?.orderItems || [];
-  // Recalculate total or use passed total (custom items might make it partial)
-  const hasCustomItems = orderItems.some(i => i.product.isCustom);
-  const orderTotal: number = location.state?.orderTotal || 0;
+  // Derived state from global status
+  const isSubmitted = orderStatus !== "draft";
 
-  const orderNumber = `PED-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
+  // Permission check
+  const canValidate = hasRole(["admin", "commercial"]); // Example permission gate
+
+  // We use items from context directly
+  const orderItems = items;
+  const hasCustomItems = orderItems.some(i => i.isCustom);
+  // orderTotal is from context
+
+  // Used from context now
+  const orderNumber = orderReference;
+
   const today = new Date().toLocaleDateString("es-ES", {
     weekday: "long",
     year: "numeric",
@@ -56,8 +79,15 @@ export default function OrderPreview() {
     setIsSubmitting(true);
     // Simulate API call
     setTimeout(() => {
+      submitOrder(); // Update global state
       setIsSubmitting(false);
-      setIsSubmitted(true);
+      // setIsSubmitted is now derived, so no need to set local state
+
+      // Kept clearOrder logic only if we want to reset the cart for next order, 
+      // but usually after submission we view the "Success" state of THIS order.
+      // For now, let's NOT clearOrder immediately so we can see the success state with data.
+      // clearOrder(); 
+
       toast.success(hasCustomItems ? "Solicitud enviada correctamente" : "Pedido enviado correctamente", {
         description: `Referencia: ${orderNumber}`,
       });
@@ -101,6 +131,31 @@ export default function OrderPreview() {
                 : "Recibirás una confirmación por email en breve. Nuestro equipo procesará tu pedido en las próximas 24 horas."
               }
             </p>
+            <div className="bg-muted/30 rounded-lg p-6 mb-6 text-left space-y-3">
+              <div className="flex items-center gap-3 text-sm">
+                <div className="h-5 w-5 rounded-full bg-green-500/20 text-green-600 flex items-center justify-center">
+                  <CheckCircle className="h-3 w-3" />
+                </div>
+                <span className="font-medium">Pedido registrado</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                <div className="h-5 w-5 rounded-full bg-green-500/20 text-green-600 flex items-center justify-center">
+                  <CheckCircle className="h-3 w-3" />
+                </div>
+                <span className="font-medium">Confirmación generada</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm opacity-50">
+                <div className="h-5 w-5 rounded-full border border-muted-foreground/30 flex items-center justify-center">
+                </div>
+                <span>Albarán preparado</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm opacity-50">
+                <div className="h-5 w-5 rounded-full border border-muted-foreground/30 flex items-center justify-center">
+                </div>
+                <span>Aviso de envío enviado</span>
+              </div>
+            </div>
+
             <div className="flex gap-3 justify-center">
               <Link to="/orders">
                 <Button variant="outline">Ver Mis Pedidos</Button>
@@ -117,6 +172,7 @@ export default function OrderPreview() {
 
   return (
     <AppLayout>
+      {!isSubmitted && <OrderStateHeader />}
       <div className="max-w-4xl mx-auto space-y-6 py-8">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -145,60 +201,211 @@ export default function OrderPreview() {
 
         {/* Order Document */}
         <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-          {/* Document Header */}
-          <div className="p-6 border-b border-border bg-muted/20">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded bg-primary flex items-center justify-center">
-                  <Package className="h-5 w-5 text-primary-foreground" />
+          {/* Order Identity & Documents Zone */}
+          <div className="border-b border-border bg-muted/20">
+            {/* Zone 1: Order Identity (PEDIDO) */}
+            <div className="p-6 border-b border-border/50">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Building2 className="h-4 w-4 text-primary" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-primary">Proveedor (Nosotros)</span>
+                  </div>
+                  <h4 className="font-semibold text-lg">{hasRole(["admin", "commercial"]) ? "ENTALPIA Europe" : "ENTALPIA Europe"}</h4>
+                  <div className="text-sm text-muted-foreground space-y-1 mt-1">
+                    <p>Pol. Ind. Example, Calle A, 123</p>
+                    <p>28000 Madrid, España</p>
+                    <p>Tlf: +34 91 123 45 67</p>
+                    <p>VAT: ES-B12345678</p>
+                  </div>
                 </div>
                 <div>
-                  <h2 className="font-semibold text-lg">ENTALPIA Europe</h2>
-                  <p className="text-sm text-muted-foreground">
-                    {hasCustomItems ? "Solicitud de Presupuesto" : "Orden de Compra"}
-                  </p>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Package className="h-4 w-4 text-primary" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-primary">Pedido (Entidad Principal)</span>
+                  </div>
+                  <h2 className="text-2xl font-mono font-bold text-foreground">{orderNumber}</h2>
+                  <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <Building className="h-3.5 w-3.5" />
+                      <span>{clientName}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <User className="h-3.5 w-3.5" />
+                      <span>{commercialName}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="text-right">
-                <p className="font-mono font-semibold text-lg">{orderNumber}</p>
-                <Badge variant="outline" className={hasCustomItems ? "border-amber-500 text-amber-600" : "border-status-low text-status-low"}>
+                <Badge variant="outline" className={hasCustomItems ? "border-amber-500 text-amber-600 h-7 px-3" : "border-status-low text-status-low h-7 px-3"}>
+                  <div className="w-1.5 h-1.5 rounded-full bg-current mr-2" />
                   {hasCustomItems ? "Pendiente Cotización" : "Borrador"}
                 </Badge>
               </div>
             </div>
+
+            {/* Zone 2: Derived Documents (DOCUMENTOS) */}
+            <div className="p-6 bg-background/50">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Documentos Derivados
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Cada documento se genera automáticamente según el estado del pedido</p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                {/* Card 1: Confirmation */}
+                <div className={cn(
+                  "relative group border rounded-lg p-4 transition-all cursor-pointer",
+                  isSubmitted
+                    ? "border-primary/20 bg-primary/5 hover:bg-primary/10"
+                    : "border-dashed border-border bg-muted/30 opacity-70"
+                )}>
+                  <div className="flex justify-between items-start mb-2">
+                    <div className={cn("p-2 rounded border shadow-sm", isSubmitted ? "bg-background border-border" : "bg-muted border-border")}>
+                      <FileText className={cn("h-5 w-5", isSubmitted ? "text-primary" : "text-muted-foreground")} />
+                    </div>
+                    <Badge variant={isSubmitted ? "secondary" : "outline"} className={cn("text-[10px] shadow-none", isSubmitted ? "bg-green-500/10 text-green-700 hover:bg-green-500/20 border-green-200" : "border-border text-muted-foreground")}>
+                      {isSubmitted ? "Generado" : "Borrador"}
+                    </Badge>
+                  </div>
+                  <p className={cn("font-medium text-sm", !isSubmitted && "text-muted-foreground")}>Confirmación Pedido</p>
+                  <p className="text-xs text-muted-foreground mt-1">{isSubmitted ? `Creado: ${today}` : "Pendiente de envío"}</p>
+                </div>
+
+                {/* Card 2: Albaran */}
+                <div className="relative border border-dashed border-border bg-muted/30 rounded-lg p-4 opacity-70">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="p-2 rounded bg-muted border border-border">
+                      <Truck className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <Badge variant="outline" className="text-[10px] border-border text-muted-foreground shadow-none">
+                      Pendiente
+                    </Badge>
+                  </div>
+                  <p className="font-medium text-sm text-muted-foreground">Albarán de Entrega</p>
+                  <p className="text-xs text-muted-foreground mt-1">--/--/----</p>
+                </div>
+
+                {/* Card 3: Invoice */}
+                <div className="relative border border-dashed border-border bg-muted/30 rounded-lg p-4 opacity-70">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="p-2 rounded bg-muted border border-border">
+                      <Receipt className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <Badge variant="outline" className="text-[10px] border-border text-muted-foreground shadow-none">
+                      No generada
+                    </Badge>
+                  </div>
+                  <p className="font-medium text-sm text-muted-foreground">Factura Comercial</p>
+                  <p className="text-xs text-muted-foreground mt-1">--/--/----</p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Order Details */}
-          <div className="p-6 grid grid-cols-2 gap-6 border-b border-border">
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <Building className="h-4 w-4 text-muted-foreground mt-0.5" />
+          {/* Timeline - Lifecycle */}
+          <div className="px-6 py-4 border-b border-border">
+            <div className="flex items-center justify-between text-[10px] uppercase tracking-wider font-semibold text-muted-foreground relative">
+              {/* Line */}
+              <div className="absolute top-1/2 left-0 w-full h-0.5 bg-muted -z-10"></div>
+
+              {/* Steps */}
+              {["draft", "pending_validation", "confirmed", "preparing", "shipped"].map((step, index) => {
+                // Simple mapping for display labels
+                const labels: Record<string, string> = {
+                  draft: "Borrador",
+                  pending_validation: "En Validación",
+                  confirmed: "Confirmado",
+                  preparing: "Preparación",
+                  shipped: "Enviado"
+                };
+
+                // Determine if active or completed
+                // Status order: draft -> pending_validation -> confirmed -> preparing -> shipped
+                const steps = ["draft", "pending_validation", "confirmed", "preparing", "shipped"];
+                const currentIndex = steps.indexOf(orderStatus);
+                const isCompleted = index <= currentIndex;
+                const isCurrent = index === currentIndex;
+
+                return (
+                  <div key={step} className={cn("flex flex-col items-center gap-1 bg-background px-2 z-10 transition-colors duration-300",
+                    isCompleted ? "text-primary" : "text-muted-foreground/50"
+                  )}>
+                    <div className={cn("h-2 w-2 rounded-full ring-4 ring-background transition-colors duration-300",
+                      isCurrent ? "bg-primary ring-primary/20" : isCompleted ? "bg-primary" : "bg-muted"
+                    )}></div>
+                    <span>{labels[step]}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Details Split: Commercial vs Logistics */}
+          <div className="grid grid-cols-2 border-b border-border">
+            {/* Commercial Data */}
+            <div className="p-6 border-r border-border space-y-4">
+              <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-primary uppercase tracking-wide">
+                <FileText className="h-4 w-4" />
+                Datos Comerciales
+              </div>
+
+              <div className="space-y-3">
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Cliente</p>
-                  <p className="font-medium">{isInterno ? "ENTALPIA Europe" : "Cliente Ejemplo S.L."}</p>
-                  <p className="text-sm text-muted-foreground">{isInterno ? "Antonio García" : "Distribuidor Demo"}</p>
+                  <p className="text-xs text-muted-foreground">Cliente</p>
+                  <p className="text-sm font-medium">{hasRole("admin") ? "ENTALPIA Europe" : "Cliente Ejemplo S.L."}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Comercial Asignado</p>
+                  <p className="text-sm font-medium">Antonio García</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Condiciones Generales</p>
+                  <p className="text-sm font-medium">Pago a 60 días f.f.</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Validez Cotización</p>
+                  <p className="text-sm font-medium text-amber-600">Viernes 17:00</p>
                 </div>
               </div>
             </div>
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Fecha</p>
-                  <p className="font-medium capitalize">{today}</p>
-                </div>
+
+            {/* Logistics Data */}
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-blue-600 uppercase tracking-wide">
+                <Truck className="h-4 w-4" />
+                Datos Logísticos
               </div>
-              <div className="flex items-start gap-3">
-                <Truck className="h-4 w-4 text-muted-foreground mt-0.5" />
+
+              <div className="space-y-3">
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Entrega Estimada</p>
-                  <p className="font-medium">
-                    {hasCustomItems ? "A confirmar tras revisión" : "3-5 días laborables"}
-                  </p>
+                  <p className="text-xs text-muted-foreground">Fecha de Envío Solicitada</p>
+                  <p className="text-sm font-medium capitalize">{today}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Incoterm</p>
+                  <Badge variant="outline" className="font-mono text-xs mt-0.5">FOB (Barcelona)</Badge>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Email Logística</p>
+                  <p className="text-sm font-medium">logistica@ejemplo.com</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Dirección de Entrega</p>
+                  <p className="text-sm font-medium text-muted-foreground italic">C/ Industria 44, Nave 2 (Pol. Ind. Sur)</p>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Validity Banner */}
+          {!isSubmitted && (
+            <div className="mx-6 mt-4 p-3 bg-blue-50/50 border border-blue-100 rounded-md flex items-center gap-2 text-sm text-blue-800">
+              <Clock className="h-4 w-4" />
+              <span className="font-medium">Cotización válida hasta:</span> Viernes 17:00
+            </div>
+          )}
 
           {/* Line Items */}
           <div className="p-6 border-b border-border">
@@ -217,32 +424,41 @@ export default function OrderPreview() {
               </thead>
               <tbody>
                 {orderItems.map((item) => (
-                  <tr key={item.product.id} className="border-b border-border last:border-0 hover:bg-muted/5">
+                  <tr key={item.id} className="border-b border-border last:border-0 hover:bg-muted/5">
                     <td className="py-3 px-3">
                       <div>
-                        {item.product.isCustom && (
+                        {item.isCustom && (
                           <Badge variant="outline" className="mb-1 text-[10px] border-amber-200 text-amber-700 bg-amber-50">
                             Personalizado
                           </Badge>
                         )}
-                        <p className="font-medium">{item.product.name}</p>
-                        <p className="text-xs text-muted-foreground font-mono">{item.product.id}</p>
+                        <p className="font-medium">{item.name}</p>
+                        <p className="text-xs text-muted-foreground font-mono">{item.id}</p>
                         {item.notes && <p className="text-xs text-muted-foreground italic mt-0.5">Nota: {item.notes}</p>}
                       </div>
                     </td>
                     <td className="py-3 px-3 text-center font-mono align-top pt-4">
-                      {item.quantity.toLocaleString("es-ES")} {item.product.unit}
+                      {item.quantity.toLocaleString("es-ES")} {item.unit}
                     </td>
                     <td className="py-3 px-3 text-right font-mono align-top pt-4">
-                      {item.product.isCustom ? <span className="text-xs text-muted-foreground">--</span> : `€${item.product.price.toFixed(2)}`}
+                      {item.isCustom ? <span className="text-xs text-muted-foreground">--</span> : `€${item.price.toFixed(2)}`}
                     </td>
                     <td className="py-3 px-3 text-right font-mono font-semibold align-top pt-4">
-                      {item.product.isCustom ? <span className="text-xs text-amber-600">A Cotizar</span> : `€${(item.quantity * item.product.price).toFixed(2)}`}
+                      {item.isCustom ? <span className="text-xs text-amber-600">A Cotizar</span> : `€${(item.quantity * item.price).toFixed(2)}`}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Weight Placeholder */}
+          <div className="px-6 py-3 border-b border-border bg-muted/5 flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Scale className="h-4 w-4" />
+              <span>Peso estimado (según configuración de contenedor)</span>
+            </div>
+            <span className="font-mono text-muted-foreground italic">Se calculará automáticamente</span>
           </div>
 
           {/* Totals */}
@@ -276,43 +492,47 @@ export default function OrderPreview() {
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Actions */}
-        <div className="flex items-center justify-between p-4 bg-card rounded-lg border border-border">
-          <p className="text-sm text-muted-foreground flex items-center gap-2">
-            <AlertCircle className="h-4 w-4" />
-            {hasCustomItems
-              ? "Al enviar, un agente revisará tu solicitud y te contactará."
-              : "Al enviar, aceptas los precios y disponibilidad de stock del día actual."
-            }
-          </p>
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => navigate(-1)}
-            >
-              Editar {hasCustomItems ? "Solicitud" : "Pedido"}
+      {/* Actions */}
+      <div className="flex items-center justify-between p-4 bg-card rounded-lg border border-border">
+        <Button variant="outline" onClick={() => navigate(-1)} disabled={isSubmitting || isSubmitted}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Volver a editar
+        </Button>
+        <div className="flex gap-3">
+          {/* Simulation of Internal Validation Step */}
+          {isSubmitted && canValidate && orderStatus === "pending_validation" && (
+            <Button variant="secondary" onClick={() => toast.info("Simulación: Pedido Validado")}>
+              <Check className="h-4 w-4 mr-2" />
+              Validar Pedido
             </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <span className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                  Enviando...
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4" />
-                  Enviar {hasCustomItems ? "Solicitud" : "Pedido"}
-                </>
-              )}
-            </Button>
-          </div>
+          )}
+
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting || isSubmitted || items.length === 0}
+            className={cn("min-w-[150px]", isSubmitted && "bg-green-600 hover:bg-green-700")}
+          >
+            {isSubmitting ? (
+              <>
+                <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                Enviando...
+              </>
+            ) : isSubmitted ? (
+              <>
+                <Check className="h-4 w-4 mr-2" />
+                Enviado
+              </>
+            ) : (
+              <>
+                Enviar Pedido
+                <ArrowLeft className="h-4 w-4 ml-2 rotate-180" />
+              </>
+            )}
+          </Button>
         </div>
       </div>
-    </AppLayout>
+    </AppLayout >
   );
 }

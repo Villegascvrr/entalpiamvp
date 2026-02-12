@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { MasterDetailLayout } from "@/components/layout/MasterDetailLayout";
@@ -21,141 +22,46 @@ import {
   Calendar,
   ArrowRight,
   Printer,
-  RotateCcw
+  RotateCcw,
+  Plus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface OrderItem {
-  id: string;
-  name: string;
-  quantity: number;
-  price: number;
-}
-
-interface Order {
-  id: string;
-  customer: string;
-  company: string;
-  date: string;
-  status: "pendiente" | "procesando" | "enviado" | "entregado" | "cancelado";
-  items: OrderItem[];
-  total: number;
-  notes?: string;
-  address?: string;
-}
-
-const orders: Order[] = [
-  {
-    id: "PED-2024-0145",
-    customer: "Carlos Martínez",
-    company: "Distribuciones Norte S.L.",
-    date: "15/01/2024 09:45",
-    status: "pendiente",
-    items: [
-      { id: "ENT-CU-15", name: "Tubo Cobre 15mm - Rollo 50m", quantity: 20, price: 245.80 },
-      { id: "ENT-CU-18", name: "Tubo Cobre 18mm - Rollo 50m", quantity: 10, price: 312.50 },
-      { id: "ENT-ACC-01", name: "Codo Cobre 90° 15mm", quantity: 200, price: 2.45 },
-    ],
-    total: 2450.00,
-    address: "Pol. Ind. Norte, C/ Principal 45, 28001 Madrid",
-    notes: "Entregar por la mañana"
-  },
-  {
-    id: "PED-2024-0144",
-    customer: "María López",
-    company: "Suministros Este S.A.",
-    date: "15/01/2024 08:30",
-    status: "pendiente",
-    items: [
-      { id: "ENT-CU-22", name: "Tubo Cobre 22mm - Rollo 25m", quantity: 50, price: 198.90 },
-      { id: "ENT-CU-28", name: "Tubo Cobre 28mm - Barra 5m", quantity: 30, price: 89.40 },
-      { id: "ENT-CU-35", name: "Tubo Cobre 35mm - Barra 5m", quantity: 20, price: 142.60 },
-      { id: "ENT-ACC-02", name: "Te Cobre 15mm", quantity: 500, price: 3.20 },
-      { id: "ENT-ACC-03", name: "Manguito Cobre 18mm", quantity: 400, price: 1.85 },
-    ],
-    total: 8920.50,
-    address: "Av. de la Industria 123, 28850 Torrejón",
-  },
-  {
-    id: "PED-2024-0142",
-    customer: "Carlos Martínez",
-    company: "Distribuciones Norte S.L.",
-    date: "15/01/2024 07:15",
-    status: "procesando",
-    items: [
-      { id: "ENT-CU-15", name: "Tubo Cobre 15mm - Rollo 50m", quantity: 15, price: 245.80 },
-      { id: "ENT-CU-54", name: "Tubo Cobre 54mm - Barra 5m", quantity: 8, price: 234.20 },
-    ],
-    total: 4250.00,
-    address: "Pol. Ind. Norte, C/ Principal 45, 28001 Madrid",
-  },
-  {
-    id: "PED-2024-0138",
-    customer: "José García",
-    company: "Comercial Sur",
-    date: "14/01/2024 16:20",
-    status: "enviado",
-    items: [
-      { id: "ENT-CU-18", name: "Tubo Cobre 18mm - Rollo 50m", quantity: 5, price: 312.50 },
-      { id: "ENT-ACC-01", name: "Codo Cobre 90° 15mm", quantity: 100, price: 2.45 },
-    ],
-    total: 1890.00,
-    address: "C/ del Comercio 78, 29001 Málaga",
-  },
-  {
-    id: "PED-2024-0131",
-    customer: "Ana Fernández",
-    company: "Instalaciones Oeste",
-    date: "14/01/2024 11:00",
-    status: "entregado",
-    items: [
-      { id: "ENT-CU-15", name: "Tubo Cobre 15mm - Rollo 50m", quantity: 40, price: 245.80 },
-      { id: "ENT-CU-22", name: "Tubo Cobre 22mm - Rollo 25m", quantity: 20, price: 198.90 },
-    ],
-    total: 12180.00,
-    address: "Pol. Ind. Oeste, Nave 12, 41001 Sevilla",
-  },
-  {
-    id: "PED-2024-0125",
-    customer: "Roberto Sánchez",
-    company: "Materiales Centro",
-    date: "13/01/2024 14:30",
-    status: "cancelado",
-    items: [
-      { id: "ENT-CU-42", name: "Tubo Cobre 42mm - Barra 5m", quantity: 25, price: 178.30 },
-    ],
-    total: 5640.25,
-    address: "C/ Mayor 99, 45001 Toledo",
-    notes: "Cancelado por cliente - sin stock"
-  },
-];
+import type { Order } from "@/data/types";
+// import { adminOrders as orders } from "@/data/mock-orders"; // Replaced by hook
+import { useOrders } from "@/hooks/useOrders";
 
 const statusConfig = {
-  pendiente: {
-    label: "Pendiente",
+  pending_validation: {
+    label: "Pend. Validación",
     icon: Clock,
     className: "bg-amber-500/10 text-amber-600 border-amber-500/20",
     badgeVariant: "outline" as const
   },
-  procesando: {
-    label: "Procesando",
-    icon: Package,
+  confirmed: {
+    label: "Confirmado",
+    icon: CheckCircle,
     className: "bg-blue-500/10 text-blue-600 border-blue-500/20",
     badgeVariant: "outline" as const
   },
-  enviado: {
+  preparing: {
+    label: "En Preparación",
+    icon: Package,
+    className: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+    badgeVariant: "outline" as const
+  },
+  shipped: {
     label: "Enviado",
     icon: Truck,
     className: "bg-primary/10 text-primary border-primary/20",
     badgeVariant: "outline" as const
   },
-  entregado: {
+  delivered: {
     label: "Entregado",
     icon: CheckCircle,
     className: "bg-green-500/10 text-green-600 border-green-500/20",
     badgeVariant: "outline" as const
   },
-  cancelado: {
+  cancelled: {
     label: "Cancelado",
     icon: XCircle,
     className: "bg-destructive/10 text-destructive border-destructive/20",
@@ -164,40 +70,33 @@ const statusConfig = {
 };
 
 export default function AdminOrders() {
-  const [ordersState, setOrdersState] = useState<Order[]>(orders);
+  const navigate = useNavigate();
+  const { adminOrders: orders, isLoading, updateOrderStatus, refresh } = useOrders();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(orders[0]);
 
-  // Update selectedOrder when ordersState changes to reflect new status
+  // If loading, we might show a skeleton or just render empty for now until data arrives
+  // The original mock was instant, so this is a subtle behavior change.
+  // Update selectedOrder when orders changes to reflect new status
   if (selectedOrder) {
-    const currentOrder = ordersState.find(o => o.id === selectedOrder.id);
+    const currentOrder = orders.find(o => o.id === selectedOrder.id);
     if (currentOrder && currentOrder.status !== selectedOrder.status) {
       setSelectedOrder(currentOrder);
     }
   }
 
-  const handleStatusChange = (orderId: string, newStatus: Order["status"], notes?: string) => {
-    setOrdersState(prevOrders =>
-      prevOrders.map(order =>
-        order.id === orderId
-          ? { ...order, status: newStatus, notes: notes || order.notes }
-          : order
-      )
-    );
-
-    const actionMap = {
-      procesando: "procecsado",
-      enviado: "enviado",
-      cancelado: "cancelado",
-      entregado: "entregado",
-      pendiente: "pendiente"
-    };
-
-    toast.success(`Pedido ${orderId} marcado como ${newStatus}`, {
-      description: `El cliente recibirá una notificación automática.`,
-    });
+  const handleStatusChange = async (orderId: string, newStatus: Order["status"], notes?: string) => {
+    try {
+      await updateOrderStatus(orderId, newStatus);
+      toast.success(`Pedido actualizado`, {
+        description: `${orderId} → ${newStatus}`
+      });
+    } catch (err) {
+      toast.error("Error al actualizar pedido");
+    }
   };
+
 
   const handlePrint = () => {
     toast.info("Generando documento...", {
@@ -214,18 +113,18 @@ export default function AdminOrders() {
     });
   };
 
-  const filteredOrders = ordersState.filter(order => {
+  const filteredOrders = orders.filter(order => {
     const matchesSearch =
       order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.company.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = !selectedStatus || order.status === selectedStatus;
+    const matchesStatus = !statusFilter || statusFilter === "all" || order.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const pendingCount = ordersState.filter(o => o.status === "pendiente").length;
-  const processingCount = ordersState.filter(o => o.status === "procesando").length;
-  const todayTotal = ordersState.filter(o => o.date.startsWith("15/01/2024")).reduce((sum, o) => sum + o.total, 0);
+  const pendingCount = orders.filter(o => o.status === "pending_validation").length;
+  const processingCount = orders.filter(o => o.status === "confirmed").length;
+  const todayTotal = orders.filter(o => o.date.startsWith("15/01/2024")).reduce((sum, o) => sum + o.total, 0);
 
   // ─────────────────────────────────────────────────────────────
   // MASTER PANEL: Orders List
@@ -276,30 +175,36 @@ export default function AdminOrders() {
         </div>
         <div className="flex gap-1 flex-wrap">
           <Button
-            variant={selectedStatus === null ? "default" : "outline"}
+            variant={statusFilter === "all" ? "default" : "outline"}
             size="sm"
             className="h-6 text-[10px] px-2"
-            onClick={() => setSelectedStatus(null)}
+            onClick={() => setStatusFilter("all")}
           >
             Todos
           </Button>
           <Button
-            variant={selectedStatus === "pendiente" ? "default" : "outline"}
+            variant={statusFilter === "pending_validation" ? "default" : "outline"}
             size="sm"
             className="h-6 text-[10px] px-2"
-            onClick={() => setSelectedStatus("pendiente")}
+            onClick={() => setStatusFilter("pending_validation")}
           >
             <Clock className="h-3 w-3 mr-1" />
             Pendiente
           </Button>
           <Button
-            variant={selectedStatus === "procesando" ? "default" : "outline"}
+            variant={statusFilter === "confirmed" ? "default" : "outline"}
             size="sm"
             className="h-6 text-[10px] px-2"
-            onClick={() => setSelectedStatus("procesando")}
+            onClick={() => setStatusFilter("confirmed")}
           >
-            <Package className="h-3 w-3 mr-1" />
-            Procesando
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Confirmado
+          </Button>
+        </div>
+        <div className="mt-2">
+          <Button className="w-full gap-2 h-8 text-xs" onClick={() => navigate("/admin/orders/new")}>
+            <Plus className="h-3.5 w-3.5" />
+            Nuevo Pedido
           </Button>
         </div>
       </div>
@@ -319,7 +224,7 @@ export default function AdminOrders() {
                 isSelected
                   ? "bg-primary/10 border-l-2 border-l-primary"
                   : "hover:bg-muted/50",
-                order.status === "pendiente" && !isSelected && "bg-amber-500/5"
+                order.status === "pending_validation" && !isSelected && "bg-amber-500/5"
               )}
               onClick={() => setSelectedOrder(order)}
             >
@@ -467,7 +372,7 @@ export default function AdminOrders() {
             </DataCard>
 
             {/* Alerts */}
-            {selectedOrder.status === "pendiente" && (
+            {selectedOrder.status === "pending_validation" && (
               <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-amber-500/10 text-amber-700 border border-amber-500/20">
                 <AlertCircle className="h-5 w-5" />
                 <div>
@@ -477,7 +382,7 @@ export default function AdminOrders() {
               </div>
             )}
 
-            {selectedOrder.status === "cancelado" && (
+            {selectedOrder.status === "cancelled" && (
               <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-destructive/10 text-destructive border border-destructive/20">
                 <XCircle className="h-5 w-5" />
                 <div>
@@ -489,14 +394,14 @@ export default function AdminOrders() {
           </div>
 
           {/* Actions Footer */}
-          {selectedOrder.status === "pendiente" && (
+          {selectedOrder.status === "pending_validation" && (
             <div className="p-4 border-t bg-muted/30">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleStatusChange(selectedOrder.id, "cancelado", "Rechazado por administración")}
+                    onClick={() => handleStatusChange(selectedOrder.id, "cancelled", "Rechazado por administración")}
                   >
                     <XCircle className="h-4 w-4 mr-1" />
                     Rechazar
@@ -513,7 +418,7 @@ export default function AdminOrders() {
                 <Button
                   size="lg"
                   className="px-8"
-                  onClick={() => handleStatusChange(selectedOrder.id, "procesando")}
+                  onClick={() => handleStatusChange(selectedOrder.id, "confirmed")}
                 >
                   Procesar Pedido
                   <ArrowRight className="h-4 w-4 ml-2" />
@@ -522,13 +427,13 @@ export default function AdminOrders() {
             </div>
           )}
 
-          {selectedOrder.status === "procesando" && (
+          {selectedOrder.status === "confirmed" && (
             <div className="p-4 border-t bg-muted/30">
               <div className="flex items-center justify-end">
                 <Button
                   size="lg"
                   className="px-8"
-                  onClick={() => handleStatusChange(selectedOrder.id, "enviado")}
+                  onClick={() => handleStatusChange(selectedOrder.id, "shipped")}
                 >
                   Marcar como Enviado
                   <Truck className="h-4 w-4 ml-2" />
@@ -539,9 +444,13 @@ export default function AdminOrders() {
         </>
       ) : (
         <div className="h-full flex items-center justify-center">
-          <div className="text-center">
-            <FileText className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
-            <p className="text-muted-foreground">Selecciona un pedido para ver los detalles</p>
+          <div className="flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">{selectedOrder.customer}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <User className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Comercial: Antonio García</span>
           </div>
         </div>
       )}

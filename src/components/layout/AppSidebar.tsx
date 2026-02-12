@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { RoleSwitcher } from "./RoleSwitcher";
-import { useRole } from "@/contexts/RoleContext";
+import { useActor } from "@/contexts/ActorContext";
 
 interface NavItem {
   title: string;
@@ -44,7 +44,8 @@ const internoNav: NavItem[] = [
 export function AppSidebar({ className, onNavigate }: { className?: string, onNavigate?: () => void }) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
-  const { isInterno } = useRole();
+  const { hasRole } = useActor();
+  const isInterno = hasRole("admin");
 
   const isActive = (path: string) => location.pathname === path;
 
