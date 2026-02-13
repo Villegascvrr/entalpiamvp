@@ -50,6 +50,8 @@ export interface OrderItem {
     isCustom?: boolean;
     category?: string;
     image?: string;
+    stock?: number;
+    minOrder?: number;
 }
 
 /** A simplified order item (for admin views without unit) */
