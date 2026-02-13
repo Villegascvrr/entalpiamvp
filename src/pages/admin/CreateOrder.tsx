@@ -33,7 +33,8 @@ import { cn } from "@/lib/utils";
 
 export default function CreateOrder() {
     const navigate = useNavigate();
-    const { session } = useActor();
+    const { session, hasRole } = useActor();
+    const isInterno = hasRole("admin");
     const {
         items,
         currentStep,
