@@ -30,9 +30,9 @@ export default function Login() {
     // DEV: Data Mode State
     const [dataMode, setDataMode] = useState(() => {
         if (typeof window !== 'undefined') {
-            return localStorage.getItem("dev_data_mode") || "supabase-demo";
+            return localStorage.getItem("dev_data_mode") || "mock";
         }
-        return "supabase-demo";
+        return "mock";
     });
 
     const handleDataModeChange = async (mode: string) => {
@@ -66,6 +66,17 @@ export default function Login() {
         setPassword("Demo2024!");
         setError(null);
     };
+
+    // Auto-select Cliente on first load if no email set
+    useState(() => {
+        if (!email) {
+            const clienteAccount = DEMO_ACCOUNTS.find(a => a.role === "customer");
+            if (clienteAccount) {
+                setEmail(clienteAccount.email);
+                setPassword("Demo2024!");
+            }
+        }
+    });
 
     return (
         <div className="h-screen w-screen overflow-hidden flex items-center justify-center bg-slate-50 p-4 font-sans text-slate-900">
@@ -164,6 +175,14 @@ export default function Login() {
                             <h3 className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                                 Modo de datos
                             </h3>
+                        </div>
+
+                        {/* Demo UI recommendation badge */}
+                        <div className="mb-3 flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-md px-3 py-2">
+                            <span className="text-blue-600 text-[10px] mt-0.5">💡</span>
+                            <p className="text-[10px] text-blue-700 leading-snug">
+                                <strong>Recomendado:</strong> Para ver el prototipo/demo completo, usa siempre <strong>Demo UI</strong>. Los otros modos requieren conexión al backend.
+                            </p>
                         </div>
 
                         <div className="space-y-1.5">
