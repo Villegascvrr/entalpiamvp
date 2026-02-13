@@ -1,13 +1,16 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
-import type { OrderItem, OrderStatus, Order } from "@/data/types";
+import type { OrderItem, OrderStatus, Order, DeliveryDetails } from "@/data/types";
 
 interface OrderContextType {
     items: OrderItem[];
     currentStep: number;
     shippingDetails: {
         date: string;
+        // Old fields kept compatible or deprecated
         address?: string;
         notes?: string;
+        // New delivery object
+        delivery: DeliveryDetails;
     };
     addItem: (product: any) => void;
     removeItem: (id: string) => void;
@@ -15,7 +18,7 @@ interface OrderContextType {
     updateItemNotes: (id: string, notes: string) => void;
     clearOrder: () => void;
     setStep: (step: number) => void;
-    updateShipping: (details: Partial<OrderContextType["shippingDetails"]>) => void;
+    updateShipping: (details: Partial<OrderContextType["shippingDetails"]> | Partial<DeliveryDetails>) => void;
     orderTotal: number;
     // Metadata for Central State Simulation
     orderReference: string;
@@ -31,10 +34,29 @@ const OrderContext = createContext<OrderContextType | undefined>(undefined);
 export function OrderProvider({ children }: { children: ReactNode }) {
     const [items, setItems] = useState<OrderItem[]>([]);
     const [currentStep, setCurrentStep] = useState(1);
-    const [shippingDetails, setShippingDetails] = useState({
+
+    // Default safe values for delivery
+    const defaultDelivery: DeliveryDetails = {
+        address: "",
+        city: "",
+        postalCode: "",
+        province: "",
+        contactName: "",
+        contactPhone: "",
+        contactEmail: "",
+        timeSlot: "all_day",
+        type: "standard",
+        requiresCallBefore: false,
+        hasUnloadingRequirements: false,
+        vehicleAccessNotes: "",
+        instructions: ""
+    };
+
+    const [shippingDetails, setShippingDetails] = useState<OrderContextType["shippingDetails"]>({
         date: new Date().toISOString().split('T')[0],
         address: "",
-        notes: ""
+        notes: "",
+        delivery: defaultDelivery
     });
 
     // Central State Data
@@ -63,8 +85,9 @@ export function OrderProvider({ children }: { children: ReactNode }) {
                 quantity: i.quantity,
             })),
             notes: shippingDetails.notes || undefined,
-            address: shippingDetails.address || undefined,
+            address: shippingDetails.address || undefined, // Legacy fallback
             shippingDate: shippingDetails.date || undefined,
+            delivery: shippingDetails.delivery, // New structured data
             company: clientName,
         };
 
@@ -127,7 +150,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         setShippingDetails({
             date: new Date().toISOString().split('T')[0],
             address: "",
-            notes: ""
+            notes: "",
+            delivery: defaultDelivery
         });
         // We probably don't clear the reference in this prototype session to simulate persistence, 
         // but for a "New Order" flow we might want to reset it. 
@@ -135,8 +159,20 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         setLastSaved(new Date());
     };
 
-    const updateShipping = (details: Partial<typeof shippingDetails>) => {
-        setShippingDetails(prev => ({ ...prev, ...details }));
+    const updateShipping = (updates: any) => {
+        setShippingDetails(prev => {
+            // Handle simple updates (date, notes) vs nested delivery updates
+            const isDeliveryUpdate = Object.keys(updates).some(k => k in defaultDelivery);
+
+            if (isDeliveryUpdate) {
+                return {
+                    ...prev,
+                    delivery: { ...prev.delivery, ...updates }
+                };
+            }
+
+            return { ...prev, ...updates };
+        });
     };
 
     const setStep = (step: number) => {

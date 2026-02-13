@@ -18,6 +18,9 @@ import {
   Calculator
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { lmeRepository } from "@/data/repositories";
+import { useActor } from "@/contexts/ActorContext";
+import { useEffect } from "react";
 
 interface PriceEntry {
   id: string;
@@ -46,6 +49,10 @@ export default function AdminPricing() {
   const [editValues, setEditValues] = useState<{ margin: number } | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [lmeIndex, setLmeIndex] = useState("1.15");
+  const [lmePrice, setLmePrice] = useState<number | null>(null);
+  const [lmeInputValue, setLmeInputValue] = useState("");
+  const [lmeHistory, setLmeHistory] = useState<any[]>([]);
+  const { session } = useActor();
   const [isImporting, setIsImporting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -99,19 +106,50 @@ export default function AdminPricing() {
     }, 1500);
   };
 
-  const handleSyncLME = () => {
-    setIsSyncing(true);
-    toast.info("Conectando con LME...", { description: "Obteniendo últimas cotizaciones" });
+  useEffect(() => {
+    if (session) {
+      loadLMEData();
+    }
+  }, [session]);
 
-    setTimeout(() => {
-      setIsSyncing(false);
-      const newIndex = (parseFloat(lmeIndex) + (Math.random() * 0.02 - 0.01)).toFixed(2);
-      setLmeIndex(newIndex);
-      applyMarketIndex(); // Re-apply with new index
-      toast.success("Sincronización LME completada", {
-        description: `Nuevo índice de mercado: ${newIndex}x`
+  const loadLMEData = async () => {
+    if (!session) return;
+    try {
+      const latest = await lmeRepository.getLatestPrice(session);
+      if (latest) {
+        setLmePrice(latest.price);
+        setLmeInputValue(latest.price.toString());
+      }
+      const history = await lmeRepository.getHistory(session);
+      setLmeHistory(history);
+    } catch (error) {
+      console.error("Error loading LME data:", error);
+    }
+  };
+
+  const handleSaveLME = async () => {
+    if (!session || !lmeInputValue) return;
+    setIsSyncing(true);
+
+    try {
+      const price = parseFloat(lmeInputValue);
+      if (isNaN(price)) {
+        toast.error("Precio inválido");
+        return;
+      }
+
+      await lmeRepository.setManualPrice(session, price);
+      await loadLMEData();
+
+      toast.success("Precio LME actualizado", {
+        description: `Nuevo precio base: $${price.toFixed(2)}`
       });
-    }, 2000);
+    } catch (error) {
+      console.error("Error saving LME price:", error);
+      toast.error("Error guardando precio LME");
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const handlePublish = () => {
@@ -143,16 +181,7 @@ export default function AdminPricing() {
               <Upload className={cn("h-3.5 w-3.5", isImporting && "animate-bounce")} />
               {isImporting ? "Importando..." : "Importar"}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 gap-2 text-xs"
-              onClick={handleSyncLME}
-              disabled={isSyncing}
-            >
-              <RefreshCw className={cn("h-3.5 w-3.5", isSyncing && "animate-spin")} />
-              {isSyncing ? "Sincronizando..." : "Sincronizar"}
-            </Button>
+
             <Button
               size="sm"
               className="h-8 gap-2 text-xs"
@@ -179,34 +208,64 @@ export default function AdminPricing() {
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">LME Cobre (Hoy)</p>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono font-bold text-lg text-foreground">$8,432.50</span>
-                  <div className="flex items-center text-xs font-medium text-green-600 bg-green-500/10 px-1.5 py-0.5 rounded-sm">
-                    <TrendingUp className="h-3 w-3 mr-1" />
-                    +2.3%
+                  {/* Manual Input for LME */}
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-lg text-foreground font-bold">$</span>
+                    <Input
+                      value={lmeInputValue}
+                      onChange={(e) => setLmeInputValue(e.target.value)}
+                      className="w-28 h-8 font-mono font-bold text-lg px-2"
+                      placeholder="0.00"
+                    />
+                    <Button
+                      size="sm"
+                      className="h-8 text-xs"
+                      onClick={handleSaveLME}
+                      disabled={isSyncing}
+                    >
+                      {isSyncing ? "Guardando..." : "Actualizar precio"}
+                    </Button>
                   </div>
+
+                  {lmeHistory.length > 1 && (
+                    <div className={cn(
+                      "flex items-center text-xs font-medium px-1.5 py-0.5 rounded-sm",
+                      (lmePrice || 0) >= lmeHistory[1].price ? "text-green-600 bg-green-500/10" : "text-red-600 bg-red-500/10"
+                    )}>
+                      {(lmePrice || 0) >= lmeHistory[1].price ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
+                      {Math.abs(((lmePrice || 0) - lmeHistory[1].price) / lmeHistory[1].price * 100).toFixed(1)}%
+                    </div>
+                  )}
                 </div>
+                {lmeHistory.length > 0 && (
+                  <p className="text-[9px] text-muted-foreground mt-1">
+                    Actualizado: {new Date(lmeHistory[0]?.created_at || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                )}
               </div>
               <div className="h-8 w-px bg-border/60" />
               <div className="flex items-center gap-3">
                 <div>
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">Indice Global</p>
                   <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={lmeIndex}
-                      onChange={(e) => setLmeIndex(e.target.value)}
-                      className="w-16 h-7 font-mono text-sm text-right px-2"
-                    />
-                    <span className="text-xs text-muted-foreground font-mono">x</span>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={applyMarketIndex}
-                      className="h-7 text-xs px-2"
-                    >
-                      Aplicar
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={lmeIndex}
+                        onChange={(e) => setLmeIndex(e.target.value)}
+                        className="w-20 h-8 font-mono text-sm text-right px-2"
+                      />
+                      <span className="text-xs text-muted-foreground font-mono">x</span>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={applyMarketIndex}
+                        className="h-8 text-xs px-3"
+                      >
+                        Aplicar
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>

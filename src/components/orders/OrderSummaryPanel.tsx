@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Trash2, ChevronRight, FileText, AlertTriangle } from "lucide-react";
@@ -27,91 +28,103 @@ export function OrderSummaryPanel({ items, onRemoveItem, onUpdateQuantity, onPro
     const total = subtotal + tax;
 
     return (
-        <div className="flex flex-col h-full bg-card border-l border-border shadow-xl w-full max-w-sm">
-            <div className="p-4 border-b border-border bg-muted/20">
-                <h2 className="font-semibold text-lg flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-primary" />
-                    Resumen del Pedido
-                </h2>
-                <p className="text-xs text-muted-foreground mt-1">
-                    Borrador actual • {items.length} líneas
-                </p>
+        <div className="flex flex-col h-full w-full max-h-full overflow-hidden bg-card border-l border-border shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)]">
+            {/* Header */}
+            <div className="px-4 py-3 border-b border-border bg-muted/30 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    <h2 className="font-bold text-sm uppercase tracking-tight">Resumen</h2>
+                </div>
+                <Badge variant="outline" className="text-[9px] font-mono h-5 px-1.5 border-dashed">
+                    {items.length} ITEMS
+                </Badge>
             </div>
 
-            <ScrollArea className="flex-1 p-4">
+            {/* Scrollable Items List */}
+            <ScrollArea className="flex-1 bg-background">
                 {items.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-muted-foreground space-y-3 opacity-50 py-12">
-                        <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                            <FileText className="h-6 w-6" />
+                    <div className="h-full flex flex-col items-center justify-center p-6 text-center space-y-4 opacity-40">
+                        <div className="h-16 w-16 rounded-full bg-muted border-2 border-dashed border-muted-foreground/20 flex items-center justify-center">
+                            <FileText className="h-8 w-8 text-muted-foreground" />
                         </div>
-                        <p className="text-sm">No hay artículos seleccionados</p>
+                        <div className="space-y-1">
+                            <p className="text-sm font-bold uppercase tracking-wider">Sin Artículos</p>
+                            <p className="text-xs">Añade productos del catálogo.</p>
+                        </div>
                     </div>
                 ) : (
-                    <div className="space-y-4">
+                    <div className="divide-y divide-border/40">
                         {items.map(item => (
-                            <div key={item.id} className="flex gap-3 items-start group">
-                                <div className="w-12 h-12 bg-muted rounded flex items-center justify-center flex-shrink-0 text-xs font-mono text-muted-foreground">
-                                    IMG
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium leading-none truncate mb-1.5" title={item.name}>
-                                        {item.name}
-                                    </p>
-                                    <p className="text-[10px] text-muted-foreground font-mono mb-2">
-                                        {item.id} • €{item.price.toFixed(2)}/{item.unit}
-                                    </p>
-                                    <div className="flex items-center gap-2">
-                                        <Input
-                                            type="number"
-                                            min="1"
-                                            className="h-7 w-20 text-xs font-mono"
-                                            value={item.quantity}
-                                            onChange={(e) => onUpdateQuantity(item.id, parseInt(e.target.value) || 1)}
-                                        />
-                                        <span className="text-xs text-muted-foreground">{item.unit}s</span>
-                                        <div className="ml-auto font-mono text-sm font-semibold">
-                                            €{(item.price * item.quantity).toFixed(2)}
+                            <div key={item.id} className="p-3 hover:bg-muted/10 transition-colors group relative">
+                                <div className="flex gap-3">
+                                    {/* Tiny Thumbnail */}
+                                    <div className="h-10 w-10 bg-muted/50 rounded border border-border flex items-center justify-center shrink-0 overflow-hidden">
+                                        <span className="text-[8px] font-mono text-muted-foreground/50">IMG</span>
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="flex-1 min-w-0 flex flex-col justify-between">
+                                        <div className="flex justify-between items-start gap-2">
+                                            <span className="text-xs font-semibold leading-tight line-clamp-2" title={item.name}>
+                                                {item.name}
+                                            </span>
+                                            <button
+                                                onClick={() => onRemoveItem(item.id)}
+                                                className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity p-0.5"
+                                            >
+                                                <Trash2 className="h-3.5 w-3.5" />
+                                            </button>
+                                        </div>
+
+                                        <div className="flex items-end justify-between mt-1.5">
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex items-center border border-border rounded-sm h-6 bg-muted/20">
+                                                    <Input
+                                                        type="number"
+                                                        min="1"
+                                                        className="h-full w-10 text-[10px] font-mono text-center border-none bg-transparent p-0 focus-visible:ring-0 [&::-webkit-inner-spin-button]:appearance-none"
+                                                        value={item.quantity}
+                                                        onChange={(e) => onUpdateQuantity(item.id, parseInt(e.target.value) || 1)}
+                                                    />
+                                                </div>
+                                                <span className="text-[9px] text-muted-foreground font-medium uppercase">{item.unit}</span>
+                                            </div>
+                                            <span className="font-mono text-xs font-bold text-foreground">
+                                                €{(item.price * item.quantity).toFixed(2)}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity absolute right-4"
-                                    onClick={() => onRemoveItem(item.id)}
-                                >
-                                    <Trash2 className="h-3 w-3" />
-                                </Button>
                             </div>
                         ))}
                     </div>
                 )}
             </ScrollArea>
 
-            <div className="p-4 border-t border-border bg-background space-y-4">
-                <div className="space-y-2 text-sm">
-                    <div className="flex justify-between text-muted-foreground">
-                        <span>Subtotal</span>
+            {/* Footer Totals & Actions */}
+            <div className="p-4 border-t border-border bg-muted/10 shrink-0 space-y-3">
+                <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Base Imponible</span>
                         <span className="font-mono">€{subtotal.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between text-muted-foreground">
+                    <div className="flex justify-between text-xs text-muted-foreground">
                         <span>IVA (21%)</span>
                         <span className="font-mono">€{tax.toFixed(2)}</span>
                     </div>
-                    <Separator className="my-2" />
-                    <div className="flex justify-between font-bold text-lg">
-                        <span>Total</span>
-                        <span className="font-mono">€{total.toFixed(2)}</span>
+                    <Separator className="my-1.5" />
+                    <div className="flex justify-between items-baseline">
+                        <span className="text-sm font-bold uppercase tracking-tight">Total Est.</span>
+                        <span className="font-mono text-lg font-black text-primary">€{total.toFixed(2)}</span>
                     </div>
                 </div>
 
-                {/* Info Trigger */}
-                <div className="flex gap-2">
+                <div className="pt-1 space-y-2">
                     <Sheet>
                         <SheetTrigger asChild>
-                            <Button variant="outline" size="sm" className="w-full text-xs text-muted-foreground h-8">
-                                <AlertTriangle className="h-3 w-3 mr-1.5" />
-                                Condiciones
+                            <Button variant="ghost" size="sm" className="w-full h-6 text-[10px] text-muted-foreground hover:text-foreground">
+                                <AlertTriangle className="h-3 w-3 mr-1" />
+                                Ver Condiciones Comerciales
                             </Button>
                         </SheetTrigger>
                         <SheetContent>
@@ -130,31 +143,22 @@ export function OrderSummaryPanel({ items, onRemoveItem, onUpdateQuantity, onPro
                                     <h4 className="font-semibold mb-1 text-foreground">Política de Devoluciones</h4>
                                     <p>Se aceptan devoluciones de material no utilizado en su embalaje original hasta 30 días después de la entrega. Sujeto a cargo de gestión del 10%.</p>
                                 </div>
-                                <div className="p-3 bg-muted rounded-lg border-l-4 border-destructive">
-                                    <h4 className="font-semibold mb-1 text-foreground">Cancelación</h4>
-                                    <p>Una vez que el pedido pase a estado "Procesando", no se podrá cancelar de forma automática. Contacte con soporte técnico para modificaciones.</p>
-                                </div>
-                                <div className="p-3 bg-muted rounded-lg">
-                                    <h4 className="font-semibold mb-1 text-foreground">Soporte Técnico</h4>
-                                    <p>Asesoramiento disponible para la selección de diámetros y especificaciones ASTM/EN de 08:00 a 18:00.</p>
-                                </div>
                             </div>
                         </SheetContent>
                     </Sheet>
-                </div>
 
-                <Button
-                    className={cn(
-                        "w-full gap-2 transition-all duration-300 shadow-md",
-                        items.length > 0 ? "animate-in fade-in zoom-in-95 duration-500 bg-primary hover:shadow-lg" : ""
-                    )}
-                    size="lg"
-                    disabled={items.length === 0}
-                    onClick={onProceed}
-                >
-                    {items.length > 0 ? "Siguiente: Revisar Pedido" : "Revisar Pedido"}
-                    <ChevronRight className={cn("h-4 w-4", items.length > 0 && "animate-bounce-x")} />
-                </Button>
+                    <Button
+                        className={cn(
+                            "w-full h-10 font-bold uppercase tracking-wide gap-2 shadow-md transition-all duration-300",
+                            items.length > 0 ? "bg-primary hover:bg-primary/90 hover:shadow-lg hover:scale-[1.01]" : "opacity-50 cursor-not-allowed"
+                        )}
+                        disabled={items.length === 0}
+                        onClick={onProceed}
+                    >
+                        Revisar Pedido
+                        <ChevronRight className="h-4 w-4 ml-0.5" />
+                    </Button>
+                </div>
             </div>
         </div>
     );

@@ -48,8 +48,8 @@
     --input: 215 20% 88%;
     --ring: 186 69% 35%;
 
-    /* Radius - Sharp, industrial */
-    --radius: 0.375rem;
+    /* Radius - Soft SaaS (14px base) */
+    --radius: 0.875rem;
 
     /* ===== CUSTOM TOKENS ===== */
 
@@ -149,6 +149,17 @@
     font-variant-numeric: tabular-nums;
     font-feature-settings: 'tnum' 1;
   }
+
+  /* Global Transitions for SaaS feel */
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  [role="button"],
+  .group {
+    @apply transition-all duration-200 ease-out;
+  }
 }
 
 @layer components {
@@ -167,7 +178,7 @@
   }
 
   .data-table tr:hover td {
-    @apply bg-muted/50;
+    @apply bg-muted/60 transition-colors duration-150;
   }
 
   /* Price display */
@@ -198,7 +209,7 @@
 
   /* Industrial card */
   .industrial-card {
-    @apply bg-card border border-border rounded-md shadow-sm;
+    @apply bg-card border border-border/60 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md;
   }
 
   .industrial-card-header {

@@ -29,28 +29,14 @@ export class SupabaseOrderRepository implements OrderRepository {
         const { data, error } = await supabase
             .from("orders")
             .select(`
-                id,
-                reference,
-                customer_name,
-                company_name,
-                created_at,
-                status,
-                total,
-                notes,
-                shipping_address,
-                shipping_date,
-                actor_id,
-                actors (
-                    name
-                ),
-                order_items (
-                    id,
-                    name,
-                    quantity,
-                    unit_price,
-                    line_total,
-                    is_custom
-                )
+                id, reference, customer_name, company_name, created_at, status, total, notes, actor_id,
+                shipping_address, shipping_date,
+                delivery_address, delivery_city, delivery_postal_code, delivery_province,
+                delivery_contact_name, delivery_contact_phone, delivery_contact_email,
+                delivery_time_slot, delivery_type, delivery_instructions,
+                delivery_requires_call_before, delivery_has_unloading_requirements, delivery_vehicle_access_notes,
+                actors ( name ),
+                order_items ( id, name, quantity, unit_price, line_total, is_custom )
             `)
             .order("created_at", { ascending: false });
 
@@ -59,29 +45,7 @@ export class SupabaseOrderRepository implements OrderRepository {
             return [];
         }
 
-        // Map DB rows → frontend Order shape
-        return (data ?? []).map(row => ({
-            id: row.reference,                        // UI uses reference as display ID
-            customer: {
-                id: row.actor_id as string,
-                name: (row.actors as any)?.name || row.customer_name as string
-            },
-            company: row.company_name,
-            date: new Date(row.created_at).toLocaleDateString("es-ES", {
-                day: "2-digit", month: "2-digit", year: "numeric"
-            }),
-            status: row.status as OrderStatus,
-            total: Number(row.total),
-            notes: row.notes ?? undefined,
-            address: row.shipping_address ?? undefined,
-            shippingDate: row.shipping_date ?? undefined,
-            items: (row.order_items ?? []).map((item: Record<string, unknown>) => ({
-                id: item.id as string,
-                name: item.name as string,
-                quantity: item.quantity as number,
-                price: Number(item.unit_price),
-            } as AdminOrderItem)),
-        }));
+        return (data ?? []).map(row => this._mapRowToOrder(row));
     }
 
     async getRecentOrders(_session: ActorSession): Promise<RecentOrder[]> {
@@ -129,7 +93,7 @@ export class SupabaseOrderRepository implements OrderRepository {
             return {
                 id: row.reference,
                 date: dateLabel,
-                status: row.status,
+                status: row.status as OrderStatus,
                 total: total,
                 // New fields for Ops Dashboard
                 customer: (row.actors as any)?.name || row.customer_name || "Desconocido",
@@ -177,6 +141,8 @@ export class SupabaseOrderRepository implements OrderRepository {
         const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
         // 3. Insert order row — tenant_id comes from session, NOT from frontend data
+        const delivery = orderData.delivery;
+
         const { data: orderRow, error: orderError } = await supabase
             .from("orders")
             .insert({
@@ -188,10 +154,32 @@ export class SupabaseOrderRepository implements OrderRepository {
                 status: "pending_validation",
                 total,
                 notes: orderData.notes ?? null,
-                shipping_address: orderData.address ?? null,
+                // Legacy fields mapping
+                shipping_address: delivery?.address ?? orderData.address ?? null,
                 shipping_date: orderData.shippingDate ?? null,
+                // New Detailed Delivery Fields
+                delivery_address: delivery?.address ?? null,
+                delivery_city: delivery?.city ?? null,
+                delivery_postal_code: delivery?.postalCode ?? null,
+                delivery_province: delivery?.province ?? null,
+                delivery_contact_name: delivery?.contactName ?? null,
+                delivery_contact_phone: delivery?.contactPhone ?? null,
+                delivery_contact_email: delivery?.contactEmail ?? null,
+                delivery_time_slot: delivery?.timeSlot ?? null,
+                delivery_type: delivery?.type ?? null,
+                delivery_instructions: delivery?.instructions ?? null,
+                delivery_requires_call_before: delivery?.requiresCallBefore ?? false,
+                delivery_has_unloading_requirements: delivery?.hasUnloadingRequirements ?? false,
+                delivery_vehicle_access_notes: delivery?.vehicleAccessNotes ?? null,
             })
-            .select("id, reference, customer_name, company_name, status, total, notes, shipping_address, shipping_date, created_at")
+            .select(`
+                id, reference, customer_name, company_name, status, total, notes, created_at,
+                shipping_address, shipping_date,
+                delivery_address, delivery_city, delivery_postal_code, delivery_province,
+                delivery_contact_name, delivery_contact_phone, delivery_contact_email,
+                delivery_time_slot, delivery_type, delivery_instructions,
+                delivery_requires_call_before, delivery_has_unloading_requirements, delivery_vehicle_access_notes
+            `)
             .single();
 
         if (orderError || !orderRow) {
@@ -208,12 +196,11 @@ export class SupabaseOrderRepository implements OrderRepository {
             const itemRows = items.map(item => ({
                 tenant_id: session.tenantId,
                 order_id: orderRow.id,
-                product_id: item.id || null, // Allow null for custom items if DB permits, or ensure ID exists
+                product_id: item.id || null,
                 name: item.name,
                 unit_price: item.price,
                 quantity: item.quantity,
                 unit: "Ud",
-                // line_total is GENERATED ALWAYS in DB -> DO NOT INSERT
                 is_custom: item.isCustom ?? false,
             }));
 
@@ -224,7 +211,6 @@ export class SupabaseOrderRepository implements OrderRepository {
 
             if (itemsError) {
                 console.error("[SupabaseOrderRepo] ❌ Insert items failed:", itemsError.message);
-                // Atomic: delete the orphan order and throw
                 await supabase.from("orders").delete().eq("id", orderRow.id);
                 throw new Error(`Error insertando items: ${itemsError.message}`);
             } else {
@@ -233,32 +219,14 @@ export class SupabaseOrderRepository implements OrderRepository {
                     name: row.name,
                     quantity: row.quantity,
                     price: Number(row.unit_price),
-                    // line_total comes back from the SELECT
                     total: Number(row.line_total),
                     isCustom: row.is_custom
                 }));
-                console.log(`[SupabaseOrderRepo] ✅ ${insertedItems.length} items inserted`);
             }
         }
 
         // 5. Return full Order mapped to frontend shape
-        return {
-            id: orderRow.reference,
-            customer: {
-                id: session.actorId,
-                name: orderRow.customer_name
-            },
-            company: orderRow.company_name,
-            date: new Date(orderRow.created_at).toLocaleDateString("es-ES", {
-                day: "2-digit", month: "2-digit", year: "numeric"
-            }),
-            status: orderRow.status as OrderStatus,
-            total: Number(orderRow.total),
-            notes: orderRow.notes ?? undefined,
-            address: orderRow.shipping_address ?? undefined,
-            shippingDate: orderRow.shipping_date ?? undefined,
-            items: insertedItems,
-        };
+        return this._mapRowToOrder(orderRow, insertedItems);
     }
 
     async validateOrder(session: ActorSession, orderId: string): Promise<Order> {
@@ -356,8 +324,26 @@ export class SupabaseOrderRepository implements OrderRepository {
     // ── Private Helpers ────────────────────────────────────
 
     /** Maps a DB row (with nested order_items) to the frontend Order type */
-    private _mapRowToOrder(row: Record<string, unknown>): Order {
-        const items = (row.order_items ?? []) as Array<Record<string, unknown>>;
+    private _mapRowToOrder(row: Record<string, unknown>, itemsOverride?: AdminOrderItem[]): Order {
+        const items = itemsOverride ?? (row.order_items ?? []) as Array<Record<string, unknown>>;
+
+        // Construct DeliveryDetails from DB columns
+        const deliveryDetails = {
+            address: (row.delivery_address as string) || (row.shipping_address as string) || "",
+            city: (row.delivery_city as string) || "",
+            postalCode: (row.delivery_postal_code as string) || "",
+            province: (row.delivery_province as string) || "",
+            contactName: (row.delivery_contact_name as string) || "",
+            contactPhone: (row.delivery_contact_phone as string) || "",
+            contactEmail: (row.delivery_contact_email as string) || "",
+            timeSlot: (row.delivery_time_slot as any) || "all_day",
+            type: (row.delivery_type as any) || "standard",
+            instructions: (row.delivery_instructions as string) || "",
+            requiresCallBefore: (row.delivery_requires_call_before as boolean) || false,
+            hasUnloadingRequirements: (row.delivery_has_unloading_requirements as boolean) || false,
+            vehicleAccessNotes: (row.delivery_vehicle_access_notes as string) || ""
+        };
+
         return {
             id: row.reference as string,
             customer: {
@@ -373,13 +359,14 @@ export class SupabaseOrderRepository implements OrderRepository {
             notes: (row.notes as string) ?? undefined,
             address: (row.shipping_address as string) ?? undefined,
             shippingDate: (row.shipping_date as string) ?? undefined,
+            delivery: deliveryDetails,
             items: items.map(item => ({
                 id: item.id as string,
                 name: item.name as string,
                 quantity: item.quantity as number,
                 price: Number(item.unit_price),
-                total: Number(item.line_total),
-                isCustom: item.is_custom as boolean,
+                total: Number(item.line_total || (Number(item.unit_price) * Number(item.quantity))),
+                isCustom: item.isCustom ?? item.is_custom as boolean,
             })),
         };
     }

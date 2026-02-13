@@ -75,9 +75,26 @@ export interface Order {
     items: AdminOrderItem[];
     total: number;
     notes?: string;
-    address?: string;
-    shippingDate?: string;
+    delivery?: DeliveryDetails;
+    address?: string; // Kept for backward compatibility
+    shippingDate?: string; // Kept for backward compatibility or strict shipping date
     emails?: string[];
+}
+
+export interface DeliveryDetails {
+    address: string;
+    city: string;
+    postalCode: string;
+    province: string;
+    contactName: string;
+    contactPhone: string;
+    contactEmail: string;
+    timeSlot: "morning" | "afternoon" | "all_day" | "custom";
+    type: "standard" | "pickup" | "urgent";
+    instructions?: string;
+    requiresCallBefore: boolean;
+    hasUnloadingRequirements: boolean;
+    vehicleAccessNotes?: string;
 }
 
 /** A simplified order (customer history view) */
@@ -133,4 +150,15 @@ export interface Customer {
     sales_points: number;
     created_at?: string;
     updated_at?: string;
+}
+
+/** LME Price Entity for manual entry */
+export interface LMEPrice {
+    id: string;
+    tenant_id: string;
+    price: number;
+    date: string;
+    source: string;
+    created_by?: string;
+    created_at?: string;
 }

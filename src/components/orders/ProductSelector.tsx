@@ -27,6 +27,7 @@ import {
     Info,
     Search,
     ChevronLeft,
+    ChevronRight,
     CheckCircle2,
     Check,
     RotateCcw
@@ -98,16 +99,21 @@ export function ProductSelector({ onSelectProduct, selectedItems, onUpdateQuanti
                 /* ─────────────────────────────────────────────────────────────
                    CATEGORY SELECTION VIEW (Step 1 of Catalog)
                    ───────────────────────────────────────────────────────────── */
-                <ScrollArea className="flex-1">
-                    <div className="p-6 space-y-4">
-                        <div>
-                            <h2 className="text-lg font-black text-foreground uppercase tracking-tight">Seleccionar Categoría</h2>
-                            <p className="text-[11px] text-muted-foreground mt-0.5">
-                                Escoge una familia de productos para ver las referencias técnicas disponibles.
-                            </p>
+                <ScrollArea className="flex-1 bg-muted/5 p-4">
+                    <div className="max-w-7xl mx-auto space-y-6">
+                        <div className="flex items-center justify-between pb-2 border-b border-border/50">
+                            <div>
+                                <h2 className="text-xl font-bold text-foreground uppercase tracking-tight flex items-center gap-2">
+                                    <Layers className="h-5 w-5 text-primary" />
+                                    Catálogo de Productos
+                                </h2>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    Selecciona una categoría para explorar referencias.
+                                </p>
+                            </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                             {categories.map(cat => {
                                 const info = CATEGORY_MAP[cat] || { label: cat, icon: Package, description: "Catálogo completo" };
                                 const Icon = info.icon;
@@ -117,92 +123,70 @@ export function ProductSelector({ onSelectProduct, selectedItems, onUpdateQuanti
                                     <div
                                         key={cat}
                                         onClick={() => setActiveCategory(cat)}
-                                        className="group relative flex flex-col border border-border rounded-xl bg-card hover:border-primary/50 hover:shadow-xl transition-all duration-500 cursor-pointer overflow-hidden"
+                                        className="group relative flex flex-col border border-border rounded-xl bg-card hover:border-primary/50 hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden h-64"
                                     >
-                                        {/* Category Image Area - Adjusted for compact view */}
-                                        <div className="aspect-[21/6] relative overflow-hidden bg-muted">
+                                        {/* Large Image Area (60%) */}
+                                        <div className="h-[60%] w-full bg-muted relative overflow-hidden">
                                             {info.image ? (
-                                                <img
-                                                    src={info.image}
-                                                    alt={info.label}
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700"
-                                                />
+                                                <>
+                                                    <img
+                                                        src={info.image}
+                                                        alt={info.label}
+                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                                    />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
+                                                </>
                                             ) : (
-                                                <div className="w-full h-full flex items-center justify-center bg-muted/40">
-                                                    <Icon className="h-10 w-10 text-muted-foreground/30" />
+                                                <div className="w-full h-full flex items-center justify-center bg-muted/50">
+                                                    <Icon className="h-16 w-16 text-muted-foreground/20 group-hover:text-primary/40 transition-colors" />
                                                 </div>
                                             )}
-                                            {/* Gradient Overlay */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
 
-                                            {/* Floating Info Icon */}
-                                            <div className="absolute bottom-3 left-3">
-                                                {info.detailedText && (
-                                                    <TooltipProvider>
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Button
-                                                                    variant="secondary"
-                                                                    size="icon"
-                                                                    className="h-10 w-10 rounded-lg bg-background/90 backdrop-blur-sm border border-border shadow-lg hover:bg-primary hover:text-white transition-all duration-300"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setInfoCategory(cat);
-                                                                    }}
-                                                                >
-                                                                    <Info className="h-5 w-5" />
-                                                                </Button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent side="top" className="text-[10px] font-bold uppercase tracking-wider bg-card border shadow-lg">
-                                                                Ver información detallada
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
-                                                )}
+                                            {/* Floating Badge */}
+                                            <div className="absolute top-3 right-3">
+                                                <Badge variant="secondary" className="bg-background/90 backdrop-blur-sm text-xs font-bold px-2.5 h-6 shadow-sm">
+                                                    {count} Refs
+                                                </Badge>
+                                            </div>
+
+                                            {/* Text Overlay (Bottom Left) */}
+                                            <div className="absolute bottom-0 left-0 p-4 w-full">
+                                                <h3 className="text-lg font-bold text-white leading-tight drop-shadow-md group-hover:text-primary-foreground transition-colors">
+                                                    {info.label}
+                                                </h3>
                                             </div>
                                         </div>
 
-                                        <div className="p-3.5 pt-2.5">
-                                            <div className="flex items-start justify-between gap-4">
-                                                <div className="flex-1">
-                                                    {/* Category Title Area */}
-                                                    <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors leading-tight">
-                                                        {info.label}
-                                                    </h3>
-                                                    <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 font-medium">
-                                                        {info.description}
-                                                    </p>
-                                                </div>
-                                                <div className="text-right flex flex-col items-end shrink-0">
-                                                    <Badge variant="secondary" className="bg-muted text-[10px] font-bold uppercase tracking-tight py-0 px-2 h-5 border-none">
-                                                        {count} Refs
-                                                    </Badge>
-                                                </div>
-                                            </div>
+                                        {/* Bottom Content (40%) */}
+                                        <div className="flex-1 p-4 bg-card flex flex-col justify-between relative group-hover:bg-muted/5 transition-colors">
+                                            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                                                {info.description}
+                                            </p>
 
-                                            <div className="mt-2.5 flex items-center justify-between">
-                                                <div className="flex items-center gap-1.5 overflow-hidden">
-                                                    <div className="h-1 w-8 rounded-full bg-primary/20" />
-                                                    <div className="h-1 w-1 bg-primary/10 rounded-full" />
-                                                    <div className="h-1 w-1 bg-primary/10 rounded-full" />
+                                            <div className="flex items-center justify-between mt-auto pt-2">
+                                                <div className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wider opacity-60 group-hover:opacity-100 transition-opacity">
+                                                    Explorar
+                                                    <ChevronRight className="h-3.5 w-3.5" />
                                                 </div>
-                                                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all duration-300">
-                                                    Explorar Catálogo
-                                                    <ChevronLeft className="h-3 w-3 rotate-180" />
-                                                </div>
+
+                                                {info.detailedText && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 -mr-2"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setInfoCategory(cat);
+                                                        }}
+                                                    >
+                                                        <Info className="h-4 w-4" />
+                                                    </Button>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
                                 );
                             })}
-                        </div>
-
-                        {/* Quick Search Informational Widget */}
-                        <div className="p-4 bg-muted/20 border border-border/50 rounded-lg flex items-center gap-3">
-                            <Info className="h-5 w-5 text-primary/60" />
-                            <p className="text-xs text-muted-foreground italic">
-                                ¿No encuentras lo que buscas? Selecciona la categoría principal y usa el buscador interno.
-                            </p>
                         </div>
                     </div>
                 </ScrollArea>

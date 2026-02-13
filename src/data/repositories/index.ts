@@ -54,8 +54,10 @@ function createOrderRepository(): OrderRepository {
 }
 
 import type { CustomerRepository } from "./CustomerRepository";
+import type { LMERepository } from "./LMERepository";
 
 import { MockCustomerRepository } from "./MockCustomerRepository";
+import { MockLMERepository } from "./MockLMERepository";
 
 function createCustomerRepository(): CustomerRepository {
     try {
@@ -84,6 +86,31 @@ function createCustomerRepository(): CustomerRepository {
     }
 }
 
+function createLMERepository(): LMERepository {
+    try {
+        if (appConfig.mode !== "demo") {
+            let impl: LMERepository | null = null;
+            const ready = import("./SupabaseLMERepository").then(m => {
+                impl = new m.SupabaseLMERepository();
+            }).catch(err => {
+                console.error("[RepoFactory] Failed to load SupabaseLMERepository:", err);
+            });
+
+            return {
+                getLatestPrice: async (s) => { await ready; return impl ? impl.getLatestPrice(s) : null; },
+                getPriceByDate: async (s, d) => { await ready; return impl ? impl.getPriceByDate(s, d) : null; },
+                setManualPrice: async (s, p) => { await ready; if (!impl) throw new Error("Repo not loaded"); return impl.setManualPrice(s, p); },
+                getHistory: async (s, l) => { await ready; return impl ? impl.getHistory(s, l) : []; },
+            };
+        }
+        return new MockLMERepository();
+    } catch (error) {
+        console.error("CRITICAL: Failed to initialize LMERepository:", error);
+        return new MockLMERepository();
+    }
+}
+
 export const productRepository: ProductRepository = createProductRepository();
 export const orderRepository: OrderRepository = createOrderRepository();
 export const customerRepository: CustomerRepository = createCustomerRepository();
+export const lmeRepository: LMERepository = createLMERepository();

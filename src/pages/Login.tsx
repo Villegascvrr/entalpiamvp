@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +25,7 @@ export default function Login() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
     const { login, isLoading } = useActor();
+    const navigate = useNavigate();
 
     // DEV: Data Mode State
     const [dataMode, setDataMode] = useState(() => {
@@ -52,7 +54,8 @@ export default function Login() {
 
         try {
             await login(email, password);
-            // Login successful, redirect happens via AuthGate
+            // Force redirect to dashboard to avoid lingering on previous routes (e.g. pricing)
+            navigate("/dashboard");
         } catch (err: any) {
             setError(err.message || "Error al iniciar sesión");
         }

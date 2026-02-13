@@ -4,9 +4,10 @@ import { AppHeader } from "./AppHeader";
 
 interface AppLayoutProps {
   children: ReactNode;
+  mainClassName?: string;
 }
 
-export function AppLayout({ children }: AppLayoutProps) {
+export function AppLayout({ children, mainClassName }: AppLayoutProps) {
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden">
       <div className="hidden md:flex h-full flex-col">
@@ -14,7 +15,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       </div>
       <div className="flex-1 flex flex-col overflow-hidden">
         <AppHeader />
-        <main className="flex-1 overflow-auto p-6 scrollbar-thin">
+        <main className={`flex-1 overflow-auto p-6 scrollbar-thin ${mainClassName}`}>
           {children}
         </main>
       </div>
