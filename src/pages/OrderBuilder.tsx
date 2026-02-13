@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface Product {
   id: string;
@@ -394,7 +395,7 @@ export default function OrderBuilder() {
           </thead>
           <tbody>
             {filteredProducts.map(product => {
-              const inOrder = orderItems.find(item => item.product.id === product.id);
+              const inOrder = orderItems.find(item => item.id === product.id);
               const isOutOfStock = product.stock === 0;
 
               return (
@@ -444,7 +445,7 @@ export default function OrderBuilder() {
                         variant="ghost"
                         size="sm"
                         className="h-6 w-6 p-0"
-                        onClick={() => addToOrder(product)}
+                        onClick={() => addToOrder(product, product.minOrder || 1)}
                         disabled={isOutOfStock}
                       >
                         <Plus className="h-3.5 w-3.5" />
@@ -593,7 +594,7 @@ export default function OrderBuilder() {
                           variant="ghost"
                           size="sm"
                           className="text-destructive hover:text-destructive h-6 px-2 mt-1"
-                          onClick={() => removeFromOrder(item.id)}
+                          onClick={() => removeItem(item.id)}
                         >
                           <Trash2 className="h-3 w-3 mr-1" />
                           <span className="text-[10px]">Quitar</span>
