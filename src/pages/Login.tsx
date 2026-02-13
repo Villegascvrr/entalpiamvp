@@ -84,7 +84,7 @@ export default function Login() {
             <div className="w-full max-w-5xl h-full max-h-[750px] bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden grid grid-cols-1 lg:grid-cols-12">
 
                 {/* LEFT: Authentication (Primary) - Spans 7 cols */}
-                <div className="lg:col-span-7 p-6 lg:p-10 bg-white flex flex-col justify-center h-full overflow-y-auto">
+                <div className="lg:col-span-7 p-6 lg:p-10 bg-white flex flex-col justify-center h-full overflow-hidden">
 
                     {/* Header */}
                     <div className="mb-6 flex-shrink-0">
@@ -239,7 +239,7 @@ export default function Login() {
                 </div>
 
                 {/* RIGHT: Contextual Roles (Secondary) - Spans 5 cols */}
-                <div className="lg:col-span-5 p-6 lg:p-8 bg-slate-50 border-t lg:border-t-0 lg:border-l border-slate-200 flex flex-col justify-center h-full overflow-y-auto">
+                <div className="lg:col-span-5 p-6 lg:p-8 bg-slate-50 border-t lg:border-t-0 lg:border-l border-slate-200 flex flex-col justify-center h-full overflow-hidden">
                     <div className="mb-4 flex-shrink-0">
                         <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                             Cuentas Demo Disponibles
