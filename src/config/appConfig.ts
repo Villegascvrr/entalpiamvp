@@ -28,7 +28,7 @@ function getAppMode(): AppMode {
     if (stored === "supabase-real-dev") return "production";
 
     // Default fallback
-    return "development";
+    return "demo";
 }
 
 const APP_MODE: AppMode = getAppMode();

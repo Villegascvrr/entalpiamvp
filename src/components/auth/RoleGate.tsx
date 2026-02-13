@@ -28,6 +28,12 @@ export function RoleGate({ children, roles, fallback }: RoleGateProps) {
                 <div className="mt-4 text-xs font-mono text-slate-400 bg-slate-100 px-2 py-1 rounded">
                     Roles permitidos: {roles.join(", ")}
                 </div>
+
+                <div className="mt-6">
+                    <a href="/dashboard" className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
+                        Volver al Dashboard
+                    </a>
+                </div>
             </div>
         );
     }

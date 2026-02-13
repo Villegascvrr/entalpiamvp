@@ -60,8 +60,29 @@ async function resolveActor(authUserId: string, email: string): Promise<ActorSes
     }
 
     if (!data) {
-        // RLS might be returning empty — log explicitly
-        console.error("[ActorContext] ⚠️ EMPTY RESULT — Authenticated but actor profile NOT found.");
+        console.warn("[ActorContext] ⚠️ Actor not found by ID. Attempting fallback by Email...");
+
+        // FALLBACK: User ID mismatch (common in Sandbox/Seed data)
+        const { data: fallbackData, error: fallbackError } = await supabase
+            .from("actors")
+            .select("*")
+            .eq("email", email)
+            .maybeSingle();
+
+        if (fallbackData) {
+            console.log("[ActorContext] 🔄 Recovered via Email Fallback:", fallbackData.name);
+            // Optional: Auto-fix ID in background (if RLS allows)
+            // supabase.from("actors").update({ auth_user_id: authUserId }).eq("id", fallbackData.id);
+            return {
+                actorId: fallbackData.id,
+                role: fallbackData.role as ActorRole,
+                tenantId: appConfig.mode === "development" ? "entalpia-demo" : fallbackData.tenant_id,
+                name: fallbackData.name,
+                email,
+            };
+        }
+
+        console.error("[ActorContext] ❌ EMPTY RESULT — Authenticated but actor profile NOT found (ID or Email).");
         return null;
     }
 
