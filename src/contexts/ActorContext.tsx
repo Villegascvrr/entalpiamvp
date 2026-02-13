@@ -258,7 +258,7 @@ export function ActorProvider({ children }: { children: ReactNode }) {
     const value: ActorContextType = {
         session,
         setSession,
-        isAuthenticated: !!authSession,
+        isAuthenticated: appConfig.mode === "demo" ? !!session : !!authSession,
         isLoading,
         hasRole,
         login,

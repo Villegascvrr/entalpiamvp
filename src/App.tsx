@@ -24,6 +24,8 @@ import CreateOrder from "./pages/admin/CreateOrder";
 import MainDashboard from "./pages/MainDashboard";
 import { RoleGate } from "./components/auth/RoleGate";
 import PlaceholderPage from "./pages/PlaceholderPage";
+import Customers from "./pages/commercial/Customers";
+import CustomerDetail from "./pages/commercial/CustomerDetail";
 
 const queryClient = new QueryClient();
 
@@ -111,7 +113,15 @@ const App = () => (
                       path="/commercial/customers"
                       element={
                         <RoleGate roles={['commercial', 'admin']}>
-                          <PlaceholderPage title="Gestión de Clientes" />
+                          <Customers />
+                        </RoleGate>
+                      }
+                    />
+                    <Route
+                      path="/commercial/customers/:id"
+                      element={
+                        <RoleGate roles={['commercial', 'admin']}>
+                          <CustomerDetail />
                         </RoleGate>
                       }
                     />

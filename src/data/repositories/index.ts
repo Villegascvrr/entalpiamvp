@@ -53,5 +53,37 @@ function createOrderRepository(): OrderRepository {
     return new MockOrderRepository();
 }
 
+import type { CustomerRepository } from "./CustomerRepository";
+
+import { MockCustomerRepository } from "./MockCustomerRepository";
+
+function createCustomerRepository(): CustomerRepository {
+    try {
+        if (appConfig.mode !== "demo") {
+            let impl: CustomerRepository | null = null;
+            const ready = import("./SupabaseCustomerRepository").then(m => {
+                impl = new m.SupabaseCustomerRepository();
+            }).catch(err => {
+                console.error("[RepoFactory] Failed to load SupabaseCustomerRepository:", err);
+            });
+
+            return {
+                getCustomers: async (s) => { await ready; return impl ? impl.getCustomers(s) : []; },
+                getCustomerById: async (s, id) => { await ready; return impl ? impl.getCustomerById(s, id) : null; },
+                createCustomer: async (s, d) => { await ready; if (!impl) throw new Error("Repo not loaded"); return impl.createCustomer(s, d); },
+                updateCustomer: async (s, id, d) => { await ready; if (!impl) throw new Error("Repo not loaded"); return impl.updateCustomer(s, id, d); },
+            };
+        }
+
+        // Use Mock implementation for demo mode
+        return new MockCustomerRepository();
+    } catch (error) {
+        console.error("CRITICAL: Failed to initialize CustomerRepository:", error);
+        // Fallback to avoid app crash
+        return new MockCustomerRepository();
+    }
+}
+
 export const productRepository: ProductRepository = createProductRepository();
 export const orderRepository: OrderRepository = createOrderRepository();
+export const customerRepository: CustomerRepository = createCustomerRepository();

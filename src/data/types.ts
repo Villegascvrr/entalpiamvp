@@ -117,3 +117,20 @@ export interface LmeData {
     change: number;
     updated: string;
 }
+
+/** CRM Customer Entity */
+export interface Customer {
+    id: string;
+    tenant_id: string;
+    name: string;
+    province?: string;
+    cif?: string;
+    address?: string;
+    postal_city?: string;
+    contact_name?: string;
+    email?: string;
+    phone?: string;
+    sales_points: number;
+    created_at?: string;
+    updated_at?: string;
+}

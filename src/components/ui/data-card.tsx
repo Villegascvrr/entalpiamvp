@@ -6,16 +6,18 @@ interface DataCardProps {
   subtitle?: string;
   children: ReactNode;
   action?: ReactNode;
+  icon?: ReactNode;
   className?: string;
   headerClassName?: string;
   bodyClassName?: string;
 }
 
-export function DataCard({ 
-  title, 
-  subtitle, 
-  children, 
+export function DataCard({
+  title,
+  subtitle,
+  children,
   action,
+  icon,
   className,
   headerClassName,
   bodyClassName
@@ -23,9 +25,16 @@ export function DataCard({
   return (
     <div className={cn("industrial-card", className)}>
       <div className={cn("industrial-card-header flex items-center justify-between", headerClassName)}>
-        <div>
-          <h3 className="font-semibold text-foreground">{title}</h3>
-          {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
+        <div className="flex items-center gap-2">
+          {icon && (
+            <div className="h-8 w-8 rounded-md bg-muted/50 flex items-center justify-center text-muted-foreground">
+              {icon}
+            </div>
+          )}
+          <div>
+            <h3 className="font-semibold text-foreground">{title}</h3>
+            {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
+          </div>
         </div>
         {action && <div>{action}</div>}
       </div>
