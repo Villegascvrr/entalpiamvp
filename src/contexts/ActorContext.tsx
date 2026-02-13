@@ -116,22 +116,27 @@ export function ActorProvider({ children }: { children: ReactNode }) {
                     // CRITICAL: Stop loading immediately after Auth check
                     setIsLoading(false);
                 }
-
                 // ═══════════════════════════════════════════════════════
-                // PHASE 2: ACTOR RESOLUTION (Non-blocking)
+                // PHASE 2: ACTOR RESOLUTION (Blocking for clean state)
                 // ═══════════════════════════════════════════════════════
                 if (data.session?.user) {
                     console.log("[AUTH] resolving actor...");
-                    resolveActor(data.session.user.id, data.session.user.email ?? "")
-                        .then(actor => {
-                            if (mountedRef.current) {
-                                setSession(actor);
-                                console.log("[ActorContext] ✅ Actor resolved background:", actor?.role);
-                            }
-                        })
-                        .catch(err => console.error("[ActorContext] 💥 Actor resolution failed:", err));
+                    try {
+                        const actor = await resolveActor(data.session.user.id, data.session.user.email ?? "");
+                        if (mountedRef.current) {
+                            setSession(actor);
+                            console.log("[ActorContext] ✅ Actor resolved:", actor?.role);
+                        }
+                    } catch (err) {
+                        console.error("[ActorContext] 💥 Actor resolution failed:", err);
+                    }
                 } else {
                     if (mountedRef.current) setSession(null);
+                }
+
+                if (mountedRef.current) {
+                    // STOP LOADING only after everything is ready
+                    setIsLoading(false);
                 }
 
             } catch (err) {
@@ -182,8 +187,8 @@ export function ActorProvider({ children }: { children: ReactNode }) {
 
         // MOCK MODE LOGIN
         if (appConfig.mode === "demo") {
-            // Simulate network delay
-            await new Promise(r => setTimeout(r, 800));
+            // REMOVED: Artificial delay
+            // await new Promise(r => setTimeout(r, 800));
 
             // Simple mock logic based on email
             let role: ActorRole = "customer";

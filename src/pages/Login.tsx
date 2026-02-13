@@ -54,8 +54,7 @@ export default function Login() {
 
         try {
             await login(email, password);
-            // Force redirect to dashboard to avoid lingering on previous routes (e.g. pricing)
-            navigate("/dashboard");
+            // No need to navigate manually, AuthGate handles it by unmounting Login
         } catch (err: any) {
             setError(err.message || "Error al iniciar sesión");
         }
