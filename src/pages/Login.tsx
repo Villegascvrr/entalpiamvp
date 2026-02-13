@@ -30,9 +30,9 @@ export default function Login() {
     // DEV: Data Mode State
     const [dataMode, setDataMode] = useState(() => {
         if (typeof window !== 'undefined') {
-            return localStorage.getItem("dev_data_mode") || "supabase-demo";
+            return localStorage.getItem("dev_data_mode") || "mock";
         }
-        return "supabase-demo";
+        return "mock";
     });
 
     const handleDataModeChange = async (mode: string) => {
@@ -66,13 +66,24 @@ export default function Login() {
         setError(null);
     };
 
+    // Auto-select Cliente on first load if no email set
+    useState(() => {
+        if (!email) {
+            const clienteAccount = DEMO_ACCOUNTS.find(a => a.role === "customer");
+            if (clienteAccount) {
+                setEmail(clienteAccount.email);
+                setPassword("Demo2024!");
+            }
+        }
+    });
+
     return (
         <div className="h-screen w-screen overflow-hidden flex items-center justify-center bg-slate-50 p-4 font-sans text-slate-900">
             {/* Main Container - Industrial Card */}
             <div className="w-full max-w-5xl h-full max-h-[750px] bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden grid grid-cols-1 lg:grid-cols-12">
 
                 {/* LEFT: Authentication (Primary) - Spans 7 cols */}
-                <div className="lg:col-span-7 p-6 lg:p-10 bg-white flex flex-col justify-center h-full overflow-y-auto">
+                <div className="lg:col-span-7 p-6 lg:p-10 bg-white flex flex-col justify-center h-full overflow-hidden">
 
                     {/* Header */}
                     <div className="mb-6 flex-shrink-0">
@@ -165,6 +176,14 @@ export default function Login() {
                             </h3>
                         </div>
 
+                        {/* Demo UI recommendation badge */}
+                        <div className="mb-3 flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-md px-3 py-2">
+                            <span className="text-blue-600 text-[10px] mt-0.5">💡</span>
+                            <p className="text-[10px] text-blue-700 leading-snug">
+                                <strong>Recomendado:</strong> Para ver el prototipo/demo completo, usa siempre <strong>Demo UI</strong>. Los otros modos requieren conexión al backend.
+                            </p>
+                        </div>
+
                         <div className="space-y-1.5">
                             {[
                                 {
@@ -219,7 +238,7 @@ export default function Login() {
                 </div>
 
                 {/* RIGHT: Contextual Roles (Secondary) - Spans 5 cols */}
-                <div className="lg:col-span-5 p-6 lg:p-8 bg-slate-50 border-t lg:border-t-0 lg:border-l border-slate-200 flex flex-col justify-center h-full overflow-y-auto">
+                <div className="lg:col-span-5 p-6 lg:p-8 bg-slate-50 border-t lg:border-t-0 lg:border-l border-slate-200 flex flex-col justify-center h-full overflow-hidden">
                     <div className="mb-4 flex-shrink-0">
                         <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                             Cuentas Demo Disponibles
