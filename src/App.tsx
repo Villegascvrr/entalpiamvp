@@ -15,6 +15,7 @@ import CustomerDashboard from "./pages/CustomerDashboard";
 import OrderBuilder from "./pages/OrderBuilder";
 import OrderPreview from "./pages/OrderPreview";
 import MyOrders from "./pages/MyOrders";
+import OrderDetail from "./pages/OrderDetail";
 import OrderHistory from "./pages/OrderHistory";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminPricing from "./pages/admin/AdminPricing";
@@ -88,6 +89,14 @@ const App = () => (
                       element={
                         <RoleGate roles={['customer', 'admin']}>
                           <MyOrders />
+                        </RoleGate>
+                      }
+                    />
+                    <Route
+                      path="/orders/:id"
+                      element={
+                        <RoleGate roles={['customer', 'admin']}>
+                          <OrderDetail />
                         </RoleGate>
                       }
                     />

@@ -164,3 +164,20 @@ export interface LMEPrice {
     created_by?: string;
     created_at?: string;
 }
+
+/** Event in the order timeline */
+export interface OrderTimelineEvent {
+    from_status: OrderStatus | null;
+    to_status: OrderStatus;
+    changed_by: string; // Name of the actor
+    notes?: string;
+    created_at: string;
+}
+
+/** USD/EUR Exchange Rate */
+export interface FXRate {
+    id: string;
+    rate: number;
+    updated_at: string;
+    updated_by: string;
+}

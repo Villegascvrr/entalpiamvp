@@ -1,73 +1,98 @@
-# Welcome to your Lovable project
+# Entalpia MVP 🚀
 
-## Project info
+**Industrial Supplies Management Dashboard**
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+![Status](https://img.shields.io/badge/Status-Development-blue)
+![Tech](https://img.shields.io/badge/Stack-React_|_Vite_|_Supabase-green)
 
-## How can I edit this code?
+A comprehensive B2B dashboard for managing industrial supplies orders, pricing, and customer relationships. Built for efficiency, transparency, and real-time control.
 
-There are several ways of editing your application.
+## 🌟 Key Features
 
-**Use Lovable**
+### 📊 Dashboard & Analytics
+- **Real-time Overview**: Instant visibility into active orders, critical stock levels, and sales performance.
+- **Role-Based Views**: Tailored dashboards for **Admins** (Strategic view) and **Customers** (Operational view).
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+### 📦 Order Management
+- **Active vs. History**: Clear separation of ongoing orders and historical archives.
+- **Order Timeline**: Visual tracking of every order stage from *Draft* to *Delivered*.
+- **Detailed Order View**: comprehensive breakdown of line items, delivery details, and status history.
 
-Changes made via Lovable will be committed automatically to this repo.
+### 💰 Pricing Engine
+- **LME Integration**: Real-time copper price tracking from the London Metal Exchange.
+- **FX Rate Control**: Manual management of **USD/EUR exchange rates** to calculate final prices accurately.
+- **Dynamic Pricing**: `Base Price ($) * FX Rate * Index * Margin = Final Price (€)`.
+- **Margin Management**: Granular control over product margins and global market indices.
 
-**Use your preferred IDE**
+### 🔐 Security & Access
+- **RBAC**: Strict role-based access control (Admin, Commercial, Customer).
+- **Supabase Auth**: Secure authentication and session management.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🛠️ Tech Stack
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Frontend**: React 18, TypeScript, Vite
+- **Styling**: Tailwind CSS, Shadcn UI, Lucide Icons
+- **Backend / BaaS**: Supabase (PostgreSQL, Auth, Realtime)
+- **State Management**: React Context API
+- **Routing**: React Router DOM
 
-Follow these steps:
+## 🚀 Getting Started
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Prerequisites
+- Node.js (v18+)
+- npm or pnpm
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Installation
 
-# Step 3: Install the necessary dependencies.
-npm i
+1.  **Clone the repository**
+    ```bash
+    git clone <repository-url>
+    cd entalpiamvp
+    ```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+2.  **Install dependencies**
+    ```bash
+    npm install
+    ```
+
+3.  **Start the development server**
+    ```bash
+    npm run dev
+    ```
+
+4.  **Open in your browser**
+    Navigate to `http://localhost:5173`
+
+## 📂 Project Structure
+
+```
+src/
+├── components/        # Reusable UI components
+│   ├── layout/        # App shell, Sidebar, Header
+│   ├── orders/        # Order specific components (Timeline, Tables)
+│   └── ui/            # Shadcn UI primitives
+├── contexts/          # React Contexts (ActorContext, etc.)
+├── data/              # Data Layer
+│   ├── repositories/  # Repository Pattern implementation
+│   └── types.ts       # TypeScript definitions
+├── hooks/             # Custom React hooks (useOrders, etc.)
+├── pages/             # Route components (AdminPricing, MyOrders, etc.)
+└── lib/               # Utilities (Supabase client, utils)
 ```
 
-**Edit a file directly in GitHub**
+## ✨ Feature Highlights
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Order Timeline
+visualizes the lifecycle of an order. It shows:
+- Status changes (e.g., *Confirmed* -> *Preparing*)
+- Timestamps
+- The actor who performed the action (User or Admin)
 
-**Use GitHub Codespaces**
+### FX Rate Control (`/admin/pricing`)
+Allows admins to:
+1.  Input the current **USD/EUR** exchange rate.
+2.  Update the **LME Copper** price in USD.
+3.  Automatically recalculate all product prices in EUR based on the defined formula.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+---
+*Built with ❤️ for Entalpia*

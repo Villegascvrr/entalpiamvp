@@ -18,7 +18,7 @@ export const recentOrders: RecentOrder[] = [
 export const adminOrders: Order[] = [
     {
         id: "PED-2024-0145",
-        customer: { id: "mock-carlos", name: "Carlos Martínez" },
+        customer: { id: "usr_mock_customer", name: "Mock CUSTOMER" },
         company: "Distribuciones Norte S.L.",
         date: "15/01/2024 09:45",
         status: "pending_validation" as OrderStatus,
@@ -49,7 +49,7 @@ export const adminOrders: Order[] = [
     },
     {
         id: "PED-2024-0142",
-        customer: { id: "mock-carlos", name: "Carlos Martínez" },
+        customer: { id: "usr_mock_customer", name: "Mock CUSTOMER" },
         company: "Distribuciones Norte S.L.",
         date: "15/01/2024 07:15",
         status: "confirmed" as OrderStatus,
@@ -62,7 +62,7 @@ export const adminOrders: Order[] = [
     },
     {
         id: "PED-2024-0138",
-        customer: { id: "mock-jose", name: "José García" },
+        customer: { id: "usr_mock_customer", name: "Mock CUSTOMER" },
         company: "Comercial Sur",
         date: "14/01/2024 16:20",
         status: "shipped" as OrderStatus,
@@ -75,7 +75,7 @@ export const adminOrders: Order[] = [
     },
     {
         id: "PED-2024-0131",
-        customer: { id: "mock-ana", name: "Ana Fernández" },
+        customer: { id: "usr_mock_customer", name: "Mock CUSTOMER" },
         company: "Instalaciones Oeste",
         date: "14/01/2024 11:00",
         status: "delivered" as OrderStatus,
@@ -88,7 +88,7 @@ export const adminOrders: Order[] = [
     },
     {
         id: "PED-2024-0125",
-        customer: { id: "mock-roberto", name: "Roberto Sánchez" },
+        customer: { id: "usr_mock_customer", name: "Mock CUSTOMER" },
         company: "Materiales Centro",
         date: "13/01/2024 14:30",
         status: "cancelled" as OrderStatus,
@@ -99,21 +99,72 @@ export const adminOrders: Order[] = [
         address: "C/ Mayor 99, 45001 Toledo",
         notes: "Cancelado por cliente - sin stock"
     },
+    // ── Migrated History Orders (to populate "History" view in Demo) ──
+    {
+        id: "PED-2024-0118",
+        customer: { id: "usr_mock_customer", name: "Mock CUSTOMER" },
+        company: "Instalaciones Oeste",
+        date: "08/01/2024 10:00",
+        status: "delivered" as OrderStatus,
+        items: [
+            { id: "ENT-CU-15", name: "Tubo Cobre 15mm", quantity: 50, price: 245.00 }, // Simplified items
+        ],
+        total: 12450.00,
+        address: "Pol. Ind. Oeste, Nave 12, 41001 Sevilla"
+    },
+    {
+        id: "PED-2024-0112",
+        customer: { id: "usr_mock_customer", name: "Mock CUSTOMER" },
+        company: "Comercial Sur",
+        date: "05/01/2024 09:30",
+        status: "delivered" as OrderStatus,
+        items: [
+            { id: "ENT-ACC-01", name: "Codo Cobre 90°", quantity: 100, price: 2.45 },
+        ],
+        total: 890.50,
+        address: "C/ del Comercio 78, 29001 Málaga"
+    },
+    {
+        id: "PED-2023-1250",
+        customer: { id: "mock-carlos", name: "Carlos Martínez" },
+        company: "Distribuciones Norte S.L.",
+        date: "28/12/2023 16:45",
+        status: "delivered" as OrderStatus,
+        items: [
+            { id: "ENT-CU-18", name: "Tubo Cobre 18mm", quantity: 40, price: 312.00 },
+        ],
+        total: 15600.00,
+        address: "Pol. Ind. Norte, C/ Principal 45, 28001 Madrid"
+    },
+    {
+        id: "PED-2023-1248",
+        customer: { id: "mock-maria", name: "María López" },
+        company: "Suministros Este S.A.",
+        date: "26/12/2023 11:20",
+        status: "cancelled" as OrderStatus,
+        items: [
+            { id: "ENT-ACC-05", name: "Válvula Esfera 1/2", quantity: 50, price: 9.00 },
+        ],
+        total: 450.00,
+        address: "Av. de la Industria 123, 28850 Torrejón",
+        notes: "Error en direccion"
+    },
+    {
+        id: "PED-2023-1242",
+        customer: { id: "mock-roberto", name: "Roberto Sánchez" },
+        company: "Materiales Centro",
+        date: "20/12/2023 15:10",
+        status: "delivered" as OrderStatus,
+        items: [
+            { id: "ENT-CU-22", name: "Tubo Cobre 22mm", quantity: 20, price: 160.00 },
+        ],
+        total: 3200.00,
+        address: "C/ Mayor 99, 45001 Toledo"
+    },
 ];
 
-/** Order history (customer-facing simplified view) */
-export const historyOrders: OrderSummary[] = [
-    { id: "PED-2024-0142", date: "15/01/2024", status: "confirmed" as OrderStatus, items: 4, total: 4250.00 },
-    { id: "PED-2024-0138", date: "14/01/2024", status: "shipped" as OrderStatus, items: 2, total: 8920.50 },
-    { id: "PED-2024-0131", date: "12/01/2024", status: "delivered" as OrderStatus, items: 6, total: 2180.00 },
-    { id: "PED-2024-0125", date: "10/01/2024", status: "delivered" as OrderStatus, items: 3, total: 5640.25 },
-    { id: "PED-2024-0118", date: "08/01/2024", status: "delivered" as OrderStatus, items: 5, total: 12450.00 },
-    { id: "PED-2024-0112", date: "05/01/2024", status: "delivered" as OrderStatus, items: 2, total: 890.50 },
-    { id: "PED-2023-1250", date: "28/12/2023", status: "delivered" as OrderStatus, items: 8, total: 15600.00 },
-    { id: "PED-2023-1248", date: "26/12/2023", status: "cancelled" as OrderStatus, items: 1, total: 450.00 },
-    { id: "PED-2023-1242", date: "20/12/2023", status: "delivered" as OrderStatus, items: 4, total: 3200.00 },
-    { id: "PED-2023-1215", date: "15/12/2023", status: "delivered" as OrderStatus, items: 12, total: 24500.00 },
-];
+/** Order history (customer-facing simplified view) - DEPRECATED: Now derived from adminOrders */
+export const historyOrders: OrderSummary[] = [];
 
 // ─────────────────────────────────────────────────────────────
 // Status display configuration (uses canonical keys)

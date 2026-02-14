@@ -48,6 +48,9 @@ function createOrderRepository(): OrderRepository {
             createOrder: async (s, d) => { await ready; return impl!.createOrder(s, d); },
             validateOrder: async (s, id) => { await ready; return impl!.validateOrder(s, id); },
             updateOrderStatus: async (s, id, st) => { await ready; return impl!.updateOrderStatus(s, id, st); },
+            getActiveOrders: async (s) => { await ready; return impl ? impl.getActiveOrders(s) : []; },
+            getArchivedOrders: async (s) => { await ready; return impl ? impl.getArchivedOrders(s) : []; },
+            getOrderTimeline: async (s, id) => { await ready; return impl ? impl.getOrderTimeline(s, id) : []; },
         };
     }
     return new MockOrderRepository();
@@ -55,9 +58,11 @@ function createOrderRepository(): OrderRepository {
 
 import type { CustomerRepository } from "./CustomerRepository";
 import type { LMERepository } from "./LMERepository";
+import type { FXRateRepository } from "./FXRateRepository";
 
 import { MockCustomerRepository } from "./MockCustomerRepository";
 import { MockLMERepository } from "./MockLMERepository";
+import { MockFXRateRepository } from "./FXRateRepository";
 
 function createCustomerRepository(): CustomerRepository {
     try {
@@ -110,7 +115,14 @@ function createLMERepository(): LMERepository {
     }
 }
 
+function createFXRateRepository(): FXRateRepository {
+    // For now only Mock is implemented as per MVP requirements
+    // In future this can switch like others
+    return new MockFXRateRepository();
+}
+
 export const productRepository: ProductRepository = createProductRepository();
 export const orderRepository: OrderRepository = createOrderRepository();
 export const customerRepository: CustomerRepository = createCustomerRepository();
 export const lmeRepository: LMERepository = createLMERepository();
+export const fxRateRepository: FXRateRepository = createFXRateRepository();

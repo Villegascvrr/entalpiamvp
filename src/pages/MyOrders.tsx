@@ -13,6 +13,7 @@ import {
   Package
 } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useOrders } from "@/hooks/useOrders";
 
@@ -36,21 +37,16 @@ const statusConfig: Record<string, { label: string; icon: any; className: string
     label: "Enviado",
     icon: Truck,
     className: "bg-primary/10 text-primary border-primary/20"
-  },
-  delivered: {
-    label: "Entregado",
-    icon: CheckCircle,
-    className: "bg-status-available/10 text-status-available border-status-available/20"
-  },
+  }
 };
 
 export default function MyOrders() {
-  const { historyOrders, isLoading } = useOrders();
+  const { activeOrders, isLoading } = useOrders();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
 
-  // Show recent subset
-  const orders = historyOrders.slice(0, 6);
+  // Show recent subset (or all active) - let's show all active for now as it's the main view
+  const orders = activeOrders;
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = order.id.toLowerCase().includes(searchQuery.toLowerCase());
@@ -63,7 +59,7 @@ export default function MyOrders() {
       <div className="max-w-5xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Mis Pedidos</h1>
-          <p className="text-muted-foreground">Seguimiento y gestión de tus pedidos</p>
+          <p className="text-muted-foreground">Pedidos en curso y gestión operativa</p>
         </div>
 
         {/* Filters */}
@@ -101,7 +97,7 @@ export default function MyOrders() {
         </div>
 
         {/* Orders List */}
-        <DataCard title="Historial de Pedidos" bodyClassName="p-0">
+        <DataCard title="Pedidos Activos" bodyClassName="p-0">
           {isLoading ? (
             <div className="p-6 space-y-4">
               {Array.from({ length: 4 }).map((_, i) => (
@@ -132,7 +128,7 @@ export default function MyOrders() {
                           <span className="font-mono font-medium">{order.id}</span>
                         </td>
                         <td className="text-muted-foreground">{order.date}</td>
-                        <td>{order.items} artículos</td>
+                        <td>{order.items.length} artículos</td>
                         <td>
                           <Badge variant="outline" className={cn("gap-1", status.className)}>
                             <StatusIcon className="h-3 w-3" />
@@ -143,10 +139,12 @@ export default function MyOrders() {
                           €{order.total.toFixed(2)}
                         </td>
                         <td>
-                          <Button variant="ghost" size="sm" className="gap-1">
-                            <Eye className="h-3 w-3" />
-                            Ver
-                          </Button>
+                          <Link to={`/orders/${order.id}`}>
+                            <Button variant="ghost" size="sm" className="gap-1">
+                              <Eye className="h-3 w-3" />
+                              Ver
+                            </Button>
+                          </Link>
                         </td>
                       </tr>
                     );

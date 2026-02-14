@@ -16,32 +16,13 @@ import {
     XCircle as XCircleIcon
 } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useOrders } from "@/hooks/useOrders";
 import { ORDER_STATUS_LABELS } from "@/data/types";
 import type { OrderStatus } from "@/data/types";
 
 const statusConfig: Record<string, { label: string; icon: any; className: string }> = {
-    pending_validation: {
-        label: "Pend. Validación",
-        icon: Clock,
-        className: "bg-status-low/10 text-status-low border-status-low/20"
-    },
-    confirmed: {
-        label: "Confirmado",
-        icon: CheckCircle,
-        className: "bg-blue-500/10 text-blue-600 border-blue-500/20"
-    },
-    preparing: {
-        label: "En Preparación",
-        icon: Package,
-        className: "bg-primary/10 text-primary border-primary/20"
-    },
-    shipped: {
-        label: "Enviado",
-        icon: Truck,
-        className: "bg-primary/10 text-primary border-primary/20"
-    },
     delivered: {
         label: "Entregado",
         icon: CheckCircle,
@@ -55,11 +36,11 @@ const statusConfig: Record<string, { label: string; icon: any; className: string
 };
 
 export default function OrderHistory() {
-    const { historyOrders, isLoading } = useOrders();
+    const { archivedOrders, isLoading } = useOrders();
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
 
-    const filteredOrders = historyOrders.filter(order => {
+    const filteredOrders = archivedOrders.filter(order => {
         const matchesSearch = order.id.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStatus = !selectedStatus || order.status === selectedStatus;
         return matchesSearch && matchesStatus;
@@ -70,8 +51,8 @@ export default function OrderHistory() {
             <div className="max-w-5xl mx-auto space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-foreground">Histórico de Pedidos</h1>
-                        <p className="text-muted-foreground">Consulta todos tus pedidos pasados</p>
+                        <h1 className="text-2xl font-bold text-foreground">Histórico</h1>
+                        <p className="text-muted-foreground">Pedidos completados y cancelados</p>
                     </div>
                     <Button variant="outline" className="gap-2">
                         <Download className="h-4 w-4" />
@@ -157,7 +138,7 @@ export default function OrderHistory() {
                                                     <span className="font-mono font-medium">{order.id}</span>
                                                 </td>
                                                 <td className="text-muted-foreground">{order.date}</td>
-                                                <td>{order.items} artículos</td>
+                                                <td>{order.items.length} artículos</td>
                                                 <td>
                                                     <Badge variant="outline" className={cn("gap-1", status.className)}>
                                                         <StatusIcon className="h-3 w-3" />
@@ -168,10 +149,12 @@ export default function OrderHistory() {
                                                     €{order.total.toFixed(2)}
                                                 </td>
                                                 <td>
-                                                    <Button variant="ghost" size="sm" className="gap-1">
-                                                        <Eye className="h-3 w-3" />
-                                                        Detalles
-                                                    </Button>
+                                                    <Link to={`/orders/${order.id}`}>
+                                                        <Button variant="ghost" size="sm" className="gap-1">
+                                                            <Eye className="h-3 w-3" />
+                                                            Detalles
+                                                        </Button>
+                                                    </Link>
                                                 </td>
                                             </tr>
                                         );

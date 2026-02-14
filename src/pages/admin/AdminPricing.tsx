@@ -1,46 +1,48 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { DataCard } from "@/components/ui/data-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Upload,
   Save,
-  RefreshCw,
   TrendingUp,
   TrendingDown,
   Edit2,
   Check,
   X,
   AlertCircle,
-  Calculator
+  Calculator,
+  RefreshCw,
+  DollarSign,
+  Euro
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { lmeRepository } from "@/data/repositories";
+import { lmeRepository, fxRateRepository } from "@/data/repositories";
 import { useActor } from "@/contexts/ActorContext";
-import { useEffect } from "react";
 
 interface PriceEntry {
   id: string;
   name: string;
   category: string;
-  basePrice: number;
+  basePrice: number; // Now in USD
   marketIndex: number;
   margin: number;
-  finalPrice: number;
+  finalPrice: number; // In EUR
   lastUpdated: string;
   change: number;
 }
 
+// Adjusted Base Prices (USD) to keep Final Price (EUR) similar with ~0.92 FX Rate
+// Old Base (EUR) -> New Base (USD) ~= Old Base / 0.92
 const initialPrices: PriceEntry[] = [
-  { id: "ENT-CU-15", name: "Tubo Cobre 15mm - Rollo 50m", category: "Rollos", basePrice: 198.50, marketIndex: 1.15, margin: 1.08, finalPrice: 245.80, lastUpdated: "08:30", change: 2.3 },
-  { id: "ENT-CU-18", name: "Tubo Cobre 18mm - Rollo 50m", category: "Rollos", basePrice: 252.40, marketIndex: 1.15, margin: 1.08, finalPrice: 312.50, lastUpdated: "08:30", change: 1.8 },
-  { id: "ENT-CU-22", name: "Tubo Cobre 22mm - Rollo 25m", category: "Rollos", basePrice: 160.60, marketIndex: 1.15, margin: 1.08, finalPrice: 198.90, lastUpdated: "08:30", change: 2.1 },
-  { id: "ENT-CU-28", name: "Tubo Cobre 28mm - Barra 5m", category: "Barras", basePrice: 72.20, marketIndex: 1.15, margin: 1.08, finalPrice: 89.40, lastUpdated: "08:30", change: 1.5 },
-  { id: "ENT-CU-35", name: "Tubo Cobre 35mm - Barra 5m", category: "Barras", basePrice: 115.20, marketIndex: 1.15, margin: 1.08, finalPrice: 142.60, lastUpdated: "08:30", change: -0.5 },
-  { id: "ENT-CU-42", name: "Tubo Cobre 42mm - Barra 5m", category: "Barras", basePrice: 144.00, marketIndex: 1.15, margin: 1.08, finalPrice: 178.30, lastUpdated: "08:30", change: 0.0 },
+  { id: "ENT-CU-15", name: "Tubo Cobre 15mm - Rollo 50m", category: "Rollos", basePrice: 215.76, marketIndex: 1.15, margin: 1.08, finalPrice: 245.80, lastUpdated: "08:30", change: 2.3 },
+  { id: "ENT-CU-18", name: "Tubo Cobre 18mm - Rollo 50m", category: "Rollos", basePrice: 274.35, marketIndex: 1.15, margin: 1.08, finalPrice: 312.50, lastUpdated: "08:30", change: 1.8 },
+  { id: "ENT-CU-22", name: "Tubo Cobre 22mm - Rollo 25m", category: "Rollos", basePrice: 174.56, marketIndex: 1.15, margin: 1.08, finalPrice: 198.90, lastUpdated: "08:30", change: 2.1 },
+  { id: "ENT-CU-28", name: "Tubo Cobre 28mm - Barra 5m", category: "Barras", basePrice: 78.48, marketIndex: 1.15, margin: 1.08, finalPrice: 89.40, lastUpdated: "08:30", change: 1.5 },
+  { id: "ENT-CU-35", name: "Tubo Cobre 35mm - Barra 5m", category: "Barras", basePrice: 125.21, marketIndex: 1.15, margin: 1.08, finalPrice: 142.60, lastUpdated: "08:30", change: -0.5 },
+  { id: "ENT-CU-42", name: "Tubo Cobre 42mm - Barra 5m", category: "Barras", basePrice: 156.52, marketIndex: 1.15, margin: 1.08, finalPrice: 178.30, lastUpdated: "08:30", change: 0.0 },
 ];
 
 export default function AdminPricing() {
@@ -48,13 +50,32 @@ export default function AdminPricing() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<{ margin: number } | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
+
+  // Market Data State
   const [lmeIndex, setLmeIndex] = useState("1.15");
   const [lmePrice, setLmePrice] = useState<number | null>(null);
   const [lmeInputValue, setLmeInputValue] = useState("");
   const [lmeHistory, setLmeHistory] = useState<any[]>([]);
+
+  // FX Rate State
+  const [fxRate, setFxRate] = useState(0.92);
+  const [fxRateInputValue, setFxRateInputValue] = useState("0.92");
+
   const { session } = useActor();
   const [isImporting, setIsImporting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Recalculate logic: Base(USD) * FX * Index * Margin = Final(EUR)
+  const recalculatePrices = (currentPrices: PriceEntry[], rate: number, index: number) => {
+    return currentPrices.map(p => {
+      const newFinalPrice = p.basePrice * rate * index * p.margin;
+      return {
+        ...p,
+        marketIndex: index,
+        finalPrice: newFinalPrice
+      };
+    });
+  };
 
   const startEdit = (entry: PriceEntry) => {
     setEditingId(entry.id);
@@ -69,9 +90,11 @@ export default function AdminPricing() {
   const saveEdit = (id: string) => {
     if (!editValues) return;
 
-    setPrices(prices.map(p => {
+    setPrices(prev => prev.map(p => {
       if (p.id === id) {
-        const newFinalPrice = p.basePrice * p.marketIndex * editValues.margin;
+        // Base(USD) * FX * Index * NewMargin
+        const index = parseFloat(lmeIndex) || 1.15;
+        const newFinalPrice = p.basePrice * fxRate * index * editValues.margin;
         return { ...p, margin: editValues.margin, finalPrice: newFinalPrice };
       }
       return p;
@@ -84,11 +107,38 @@ export default function AdminPricing() {
 
   const applyMarketIndex = () => {
     const index = parseFloat(lmeIndex) || 1.15;
-    setPrices(prices.map(p => {
-      const newFinalPrice = p.basePrice * index * p.margin;
-      return { ...p, marketIndex: index, finalPrice: newFinalPrice };
-    }));
+    const newPrices = recalculatePrices(prices, fxRate, index);
+    setPrices(newPrices);
     setHasChanges(true);
+    toast.success("Índice global aplicado", { description: `Nuevos precios calculados con índice ${index}x` });
+  };
+
+  const handleSaveFXRate = async () => {
+    if (!session || !fxRateInputValue) return;
+    const newRate = parseFloat(fxRateInputValue);
+    if (isNaN(newRate) || newRate <= 0) {
+      toast.error("Tasa de cambio inválida");
+      return;
+    }
+
+    try {
+      setIsSyncing(true);
+      await fxRateRepository.updateRate(session, newRate);
+      setFxRate(newRate);
+
+      // Update all prices with new FX rate
+      const index = parseFloat(lmeIndex) || 1.15;
+      const newPrices = recalculatePrices(prices, newRate, index);
+      setPrices(newPrices);
+      setHasChanges(true);
+
+      toast.success("Tipo de cambio actualizado", { description: `1 USD = ${newRate} EUR` });
+    } catch (error) {
+      console.error("Error saving FX rate", error);
+      toast.error("Error actualizando tipo de cambio");
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const handleImportCSV = () => {
@@ -108,22 +158,30 @@ export default function AdminPricing() {
 
   useEffect(() => {
     if (session) {
-      loadLMEData();
+      loadData();
     }
   }, [session]);
 
-  const loadLMEData = async () => {
+  const loadData = async () => {
     if (!session) return;
     try {
-      const latest = await lmeRepository.getLatestPrice(session);
-      if (latest) {
-        setLmePrice(latest.price);
-        setLmeInputValue(latest.price.toString());
+      // Load LME
+      const latestLme = await lmeRepository.getLatestPrice(session);
+      if (latestLme) {
+        setLmePrice(latestLme.price);
+        setLmeInputValue(latestLme.price.toString());
       }
       const history = await lmeRepository.getHistory(session);
       setLmeHistory(history);
+
+      // Load FX Rate
+      const fxData = await fxRateRepository.getCurrentRate(session);
+      if (fxData) {
+        setFxRate(fxData.rate);
+        setFxRateInputValue(fxData.rate.toString());
+      }
     } catch (error) {
-      console.error("Error loading LME data:", error);
+      console.error("Error loading data:", error);
     }
   };
 
@@ -139,7 +197,7 @@ export default function AdminPricing() {
       }
 
       await lmeRepository.setManualPrice(session, price);
-      await loadLMEData();
+      await loadData(); // Reload all to be safe
 
       toast.success("Precio LME actualizado", {
         description: `Nuevo precio base: $${price.toFixed(2)}`
@@ -205,25 +263,26 @@ export default function AdminPricing() {
 
           <div className="flex items-center justify-between bg-card border border-border/60 rounded-sm p-3 shadow-sm">
             <div className="flex items-center gap-6">
+
+              {/* LME Price Section */}
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">LME Cobre (Hoy)</p>
                 <div className="flex items-center gap-2">
-                  {/* Manual Input for LME */}
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-lg text-foreground font-bold">$</span>
                     <Input
                       value={lmeInputValue}
                       onChange={(e) => setLmeInputValue(e.target.value)}
-                      className="w-28 h-8 font-mono font-bold text-lg px-2"
+                      className="w-24 h-8 font-mono font-bold text-lg px-2" // Slightly narrower
                       placeholder="0.00"
                     />
                     <Button
                       size="sm"
-                      className="h-8 text-xs"
+                      className="h-8 text-xs px-2"
                       onClick={handleSaveLME}
                       disabled={isSyncing}
                     >
-                      {isSyncing ? "Guardando..." : "Actualizar precio"}
+                      <RefreshCw className="h-3.5 w-3.5" />
                     </Button>
                   </div>
 
@@ -237,39 +296,59 @@ export default function AdminPricing() {
                     </div>
                   )}
                 </div>
-                {lmeHistory.length > 0 && (
-                  <p className="text-[9px] text-muted-foreground mt-1">
-                    Actualizado: {new Date(lmeHistory[0]?.created_at || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                )}
               </div>
+
               <div className="h-8 w-px bg-border/60" />
-              <div className="flex items-center gap-3">
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">Indice Global</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={lmeIndex}
-                        onChange={(e) => setLmeIndex(e.target.value)}
-                        className="w-20 h-8 font-mono text-sm text-right px-2"
-                      />
-                      <span className="text-xs text-muted-foreground font-mono">x</span>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={applyMarketIndex}
-                        className="h-8 text-xs px-3"
-                      >
-                        Aplicar
-                      </Button>
-                    </div>
-                  </div>
+
+              {/* FX Rate Section */}
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">USD / EUR</p>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={fxRateInputValue}
+                    onChange={(e) => setFxRateInputValue(e.target.value)}
+                    className="w-20 h-8 font-mono font-bold text-lg px-2"
+                  />
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="h-8 text-xs px-2"
+                    onClick={handleSaveFXRate}
+                    disabled={isSyncing}
+                  >
+                    Actualizar
+                  </Button>
+                </div>
+              </div>
+
+              <div className="h-8 w-px bg-border/60" />
+
+              {/* Market Index Section */}
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">Indice Global</p>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={lmeIndex}
+                    onChange={(e) => setLmeIndex(e.target.value)}
+                    className="w-20 h-8 font-mono text-sm text-right px-2"
+                  />
+                  <span className="text-xs text-muted-foreground font-mono">x</span>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={applyMarketIndex}
+                    className="h-8 text-xs px-3"
+                  >
+                    Aplicar
+                  </Button>
                 </div>
               </div>
             </div>
+
             <div className="text-right">
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Última Act.</p>
               <p className="text-xs font-mono">08:30 AM</p>
@@ -286,10 +365,10 @@ export default function AdminPricing() {
                   <tr className="border-b border-border/60 text-[10px] text-muted-foreground uppercase tracking-wider text-left">
                     <th className="px-3 py-2 font-medium">Producto</th>
                     <th className="px-2 py-2 font-medium">Categoría</th>
-                    <th className="px-2 py-2 font-medium text-right">Precio Base</th>
+                    <th className="px-2 py-2 font-medium text-right">Precio Base ($)</th>
                     <th className="px-2 py-2 font-medium text-right">Index</th>
                     <th className="px-2 py-2 font-medium text-right">Margen</th>
-                    <th className="px-2 py-2 font-medium text-right">P. Final</th>
+                    <th className="px-2 py-2 font-medium text-right">P. Final (€)</th>
                     <th className="px-2 py-2 font-medium text-right">Var.</th>
                     <th className="px-2 py-2 font-medium text-center">Estado</th>
                     <th className="px-2 py-2 font-medium text-right w-[80px]"></th>
@@ -315,7 +394,7 @@ export default function AdminPricing() {
                           </Badge>
                         </td>
                         <td className="px-2 py-1.5 align-middle text-right font-mono text-muted-foreground">
-                          €{entry.basePrice.toFixed(2)}
+                          ${entry.basePrice.toFixed(2)}
                         </td>
                         <td className="px-2 py-1.5 align-middle text-right font-mono text-muted-foreground">
                           {entry.marketIndex.toFixed(2)}x

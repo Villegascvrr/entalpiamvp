@@ -12,6 +12,8 @@ import type { Order, RecentOrder, OrderSummary, OrderStatus } from "@/data/types
 interface UseOrdersResult {
     // ── Read state ──
     adminOrders: Order[];
+    activeOrders: Order[];
+    archivedOrders: Order[];
     recentOrders: RecentOrder[];
     historyOrders: OrderSummary[];
     isLoading: boolean;
@@ -30,6 +32,8 @@ interface UseOrdersResult {
 export function useOrders(): UseOrdersResult {
     const { session } = useActor();
     const [adminOrders, setAdminOrders] = useState<Order[]>([]);
+    const [activeOrders, setActiveOrders] = useState<Order[]>([]);
+    const [archivedOrders, setArchivedOrders] = useState<Order[]>([]);
     const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
     const [historyOrders, setHistoryOrders] = useState<OrderSummary[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -49,14 +53,19 @@ export function useOrders(): UseOrdersResult {
             setError(null);
 
             try {
-                const [admin, recent, history] = await Promise.all([
+                // Fetch all data in parallel
+                const [admin, recent, active, archived, history] = await Promise.all([
                     orderRepository.getAdminOrders(session),
                     orderRepository.getRecentOrders(session),
+                    orderRepository.getActiveOrders(session),
+                    orderRepository.getArchivedOrders(session),
                     orderRepository.getCustomerHistory(session, "current-user")
                 ]);
 
                 setAdminOrders(admin);
                 setRecentOrders(recent);
+                setActiveOrders(active);
+                setArchivedOrders(archived);
                 setHistoryOrders(history);
             } catch (err) {
                 console.error("Failed to fetch orders:", err);
@@ -128,6 +137,8 @@ export function useOrders(): UseOrdersResult {
 
     return {
         adminOrders,
+        activeOrders,
+        archivedOrders,
         recentOrders,
         historyOrders,
         isLoading,
