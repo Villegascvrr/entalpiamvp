@@ -46,6 +46,7 @@ interface ProductSelectorProps {
     onSelectProduct: (product: Product) => void;
     selectedItems: { id: string, quantity: number }[];
     onUpdateQuantity: (id: string, quantity: number) => void;
+    initialCategory?: string | null;
 }
 
 const ICON_MAP: Record<string, any> = {
@@ -56,10 +57,10 @@ const ICON_MAP: Record<string, any> = {
 };
 
 
-export function ProductSelector({ onSelectProduct, selectedItems, onUpdateQuantity }: ProductSelectorProps) {
+export function ProductSelector({ onSelectProduct, selectedItems, onUpdateQuantity, initialCategory }: ProductSelectorProps) {
     const { products, categories: hookCategories } = useProducts();
     const [searchQuery, setSearchQuery] = useState("");
-    const [activeCategory, setActiveCategory] = useState<string | null>(null);
+    const [activeCategory, setActiveCategory] = useState<string | null>(initialCategory || null);
     const [infoCategory, setInfoCategory] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -82,6 +83,13 @@ export function ProductSelector({ onSelectProduct, selectedItems, onUpdateQuanti
             return () => clearTimeout(timer);
         }
     }, [activeCategory]);
+
+    // Update active category if prop changes (deep linking)
+    useEffect(() => {
+        if (initialCategory) {
+            setActiveCategory(initialCategory);
+        }
+    }, [initialCategory]);
 
     const categories = Array.from(new Set(products.map(p => p.category)));
 

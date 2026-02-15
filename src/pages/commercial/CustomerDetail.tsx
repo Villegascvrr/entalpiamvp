@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useCustomers } from "@/hooks/useCustomers";
+import { useDiscountTiers } from "@/hooks/useDiscountTiers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +25,7 @@ export default function CustomerDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { getCustomerById, createCustomer, updateCustomer } = useCustomers();
+    const { tiers, isLoading: loadingTiers } = useDiscountTiers();
     const isNew = id === "new";
 
     const [isLoading, setIsLoading] = useState(!isNew);
@@ -38,7 +40,8 @@ export default function CustomerDetail() {
         province: "",
         contact_name: "",
         email: "",
-        phone: ""
+        phone: "",
+        discount_tier_id: ""
     });
 
     useEffect(() => {
@@ -56,7 +59,8 @@ export default function CustomerDetail() {
                         province: customer.province || "",
                         contact_name: customer.contact_name || "",
                         email: customer.email || "",
-                        phone: customer.phone || ""
+                        phone: customer.phone || "",
+                        discount_tier_id: customer.discount_tier_id || ""
                     });
                 } else {
                     toast.error("Cliente no encontrado");
@@ -147,6 +151,23 @@ export default function CustomerDetail() {
                                 className="h-full"
                             >
                                 <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="tier">Nivel de Descuento (Tier)</Label>
+                                        <select
+                                            id="tier"
+                                            className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                            value={formData.discount_tier_id}
+                                            onChange={(e) => handleChange("discount_tier_id", e.target.value)}
+                                            disabled={loadingTiers}
+                                        >
+                                            <option value="">Sin descuento asignado</option>
+                                            {tiers.map(tier => (
+                                                <option key={tier.id} value={tier.id}>
+                                                    {tier.name} ({(tier.discount_percentage * 100).toFixed(0)}%)
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="name">Razón Social / Nombre *</Label>
                                         <Input

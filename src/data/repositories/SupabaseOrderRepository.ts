@@ -202,6 +202,10 @@ export class SupabaseOrderRepository implements OrderRepository {
                 quantity: item.quantity,
                 unit: "Ud",
                 is_custom: item.isCustom ?? false,
+                // Price Snapshot
+                base_price: (item as any).basePrice ?? null,
+                discount_percentage: (item as any).discountPercentage ?? null,
+                // line_total is GENERATED ALWAYS AS (unit_price * quantity) STORED
             }));
 
             const { data: itemsData, error: itemsError } = await supabase

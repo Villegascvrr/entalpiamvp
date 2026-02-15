@@ -17,6 +17,7 @@ export interface ActorSession {
     tenantId: string;
     name: string;
     email: string;
+    customerId?: string; // Links actor to a specific customer profile
 }
 
 interface ActorContextType {
@@ -103,6 +104,7 @@ async function resolveActor(authUserId: string, email: string): Promise<ActorSes
         tenantId: effectiveTenantId,
         name: data.name,
         email,
+        customerId: data.customer_id // Include the linked customer ID
     };
 }
 

@@ -27,6 +27,8 @@ export interface Product {
     unit: string;
     specs: string;
     image?: string;
+    basePrice?: number;         // Original price (Admin only)
+    discountPercentage?: number; // Applied discount (0-1)
 }
 
 /** A category in the product catalog */
@@ -37,6 +39,16 @@ export interface Category {
     description: string;
     image?: string;
     detailedText?: string;
+}
+
+/** Session actor details */
+export interface ActorSession {
+    actorId: string;
+    role: 'admin' | 'commercial' | 'logistics' | 'customer';
+    tenantId: string;
+    email: string;
+    name: string;
+    customerId?: string;
 }
 
 /** A line item within an order */
@@ -152,6 +164,14 @@ export interface Customer {
     sales_points: number;
     created_at?: string;
     updated_at?: string;
+    discount_tier_id?: string;
+    discount_tier?: DiscountTier; // Joined data
+}
+
+export interface DiscountTier {
+    id: string;
+    name: string;
+    discount_percentage: number;
 }
 
 /** LME Price Entity for manual entry */

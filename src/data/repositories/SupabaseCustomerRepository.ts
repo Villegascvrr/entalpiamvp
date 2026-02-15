@@ -9,7 +9,7 @@ export class SupabaseCustomerRepository implements CustomerRepository {
         // RLS handles tenant filtering automatically
         const { data, error } = await supabase
             .from("customers")
-            .select("*")
+            .select("*, discount_tier:discount_tiers(*)")
             .order("created_at", { ascending: false });
 
         if (error) {
@@ -23,7 +23,7 @@ export class SupabaseCustomerRepository implements CustomerRepository {
     async getCustomerById(session: ActorSession, id: string): Promise<Customer | null> {
         const { data, error } = await supabase
             .from("customers")
-            .select("*")
+            .select("*, discount_tier:discount_tiers(*)")
             .eq("id", id)
             .single();
 

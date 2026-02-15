@@ -24,7 +24,21 @@ export class MockProductRepository implements ProductRepository {
     async getProducts(session: ActorSession): Promise<Product[]> {
         await this._delay(300);
         console.log(`[MockProductRepo] READ products for ${session.role} @ ${session.tenantId}`);
-        return [...mockProducts];
+
+        // Simulate Tier 2 (5%) for demo customers
+        const simulatedDiscount = session.role === 'customer' ? 0.05 : 0;
+        const isAdmin = session.role === 'admin';
+
+        return mockProducts.map(p => {
+            const basePrice = p.price;
+            const finalPrice = basePrice * (1 - simulatedDiscount);
+            return {
+                ...p,
+                price: finalPrice,
+                basePrice: isAdmin ? basePrice : undefined,
+                discountPercentage: isAdmin ? simulatedDiscount : undefined
+            };
+        });
     }
 
     async getCategories(session: ActorSession): Promise<Category[]> {
@@ -34,7 +48,22 @@ export class MockProductRepository implements ProductRepository {
 
     async getProductsByCategory(session: ActorSession, categoryId: string): Promise<Product[]> {
         await this._delay(250);
-        return mockProducts.filter(p => p.category === categoryId);
+        const filtered = mockProducts.filter(p => p.category === categoryId);
+
+        // Simulate Tier 2 (5%) for demo customers
+        const simulatedDiscount = session.role === 'customer' ? 0.05 : 0;
+        const isAdmin = session.role === 'admin';
+
+        return filtered.map(p => {
+            const basePrice = p.price;
+            const finalPrice = basePrice * (1 - simulatedDiscount);
+            return {
+                ...p,
+                price: finalPrice,
+                basePrice: isAdmin ? basePrice : undefined,
+                discountPercentage: isAdmin ? simulatedDiscount : undefined
+            };
+        });
     }
 
     private _delay(ms: number): Promise<void> {

@@ -26,13 +26,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AssistedContactDialog } from "@/components/layout/AssistedContactDialog";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useActor } from "@/contexts/ActorContext";
 import { useOrder } from "@/contexts/OrderContext";
 import { cn } from "@/lib/utils";
 
 export default function CreateOrder() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const initialCategory = searchParams.get("category");
     const { session, hasRole } = useActor();
     const isInterno = hasRole("admin");
     const {
@@ -204,6 +206,7 @@ export default function CreateOrder() {
                                     onSelectProduct={addItem}
                                     selectedItems={items}
                                     onUpdateQuantity={updateQuantity}
+                                    initialCategory={initialCategory}
                                 />
                             </div>
 

@@ -135,6 +135,7 @@ export default function Customers() {
                             <TableHeader className="bg-muted/40">
                                 <TableRow>
                                     <TableHead className="w-[300px]">Empresa</TableHead>
+                                    <TableHead>Tier</TableHead>
                                     <TableHead>Estado</TableHead>
                                     <TableHead>Provincia</TableHead>
                                     <TableHead>CIF/NIF</TableHead>
@@ -203,6 +204,15 @@ export default function Customers() {
                                                             </span>
                                                         </div>
                                                     </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    {customer.discount_tier ? (
+                                                        <Badge variant="secondary" className="font-normal text-[10px] bg-violet-50 text-violet-700 border-violet-200">
+                                                            {customer.discount_tier.name}
+                                                        </Badge>
+                                                    ) : (
+                                                        <span className="text-muted-foreground text-xs">-</span>
+                                                    )}
                                                 </TableCell>
                                                 <TableCell>
                                                     <StatusBadge status={status} />
