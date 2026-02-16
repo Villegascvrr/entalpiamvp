@@ -1,88 +1,112 @@
+import type { ActorSession } from "@/contexts/ActorContext";
+import type { Customer } from "@/data/types";
 import { supabase } from "@/lib/supabaseClient";
 import type { CustomerRepository } from "./CustomerRepository";
-import type { Customer } from "@/data/types";
-import type { ActorSession } from "@/contexts/ActorContext";
 
 export class SupabaseCustomerRepository implements CustomerRepository {
+  async getCustomers(session: ActorSession): Promise<Customer[]> {
+    // RLS handles tenant filtering automatically
+    const { data, error } = await supabase
+      .from("customers")
+      .select("*, discount_tier:discount_tiers(*)")
+      .order("created_at", { ascending: false });
 
-    async getCustomers(session: ActorSession): Promise<Customer[]> {
-        // RLS handles tenant filtering automatically
-        const { data, error } = await supabase
-            .from("customers")
-            .select("*, discount_tier:discount_tiers(*)")
-            .order("created_at", { ascending: false });
-
-        if (error) {
-            console.error("[SupabaseCustomerRepo] Error fetching customers:", error.message);
-            return [];
-        }
-
-        return data as Customer[];
+    if (error) {
+      console.error(
+        "[SupabaseCustomerRepo] Error fetching customers:",
+        error.message,
+      );
+      return [];
     }
 
-    async getCustomerById(session: ActorSession, id: string): Promise<Customer | null> {
-        const { data, error } = await supabase
-            .from("customers")
-            .select("*, discount_tier:discount_tiers(*)")
-            .eq("id", id)
-            .single();
+    return data as Customer[];
+  }
 
-        if (error) {
-            console.error("[SupabaseCustomerRepo] Error fetching customer by id:", error.message);
-            return null;
-        }
+  async getCustomerById(
+    session: ActorSession,
+    id: string,
+  ): Promise<Customer | null> {
+    const { data, error } = await supabase
+      .from("customers")
+      .select("*, discount_tier:discount_tiers(*)")
+      .eq("id", id)
+      .single();
 
-        return data as Customer;
+    if (error) {
+      console.error(
+        "[SupabaseCustomerRepo] Error fetching customer by id:",
+        error.message,
+      );
+      return null;
     }
 
-    async createCustomer(session: ActorSession, customerData: Partial<Customer>): Promise<Customer> {
-        console.log("[SupabaseCustomerRepo] createCustomer called by:", session.name);
+    return data as Customer;
+  }
 
-        // Inject tenant_id from session (server-side RLS validates it)
-        const payload = {
-            ...customerData,
-            tenant_id: session.tenantId, // Critical for multi-tenancy
-        };
+  async createCustomer(
+    session: ActorSession,
+    customerData: Partial<Customer>,
+  ): Promise<Customer> {
+    console.log(
+      "[SupabaseCustomerRepo] createCustomer called by:",
+      session.name,
+    );
 
-        const { data, error } = await supabase
-            .from("customers")
-            .insert(payload)
-            .select()
-            .single();
+    // Inject tenant_id from session (server-side RLS validates it)
+    const payload = {
+      ...customerData,
+      tenant_id: session.tenantId, // Critical for multi-tenancy
+    };
 
-        if (error) {
-            console.error("[SupabaseCustomerRepo] Error creating customer:", error.message);
-            throw new Error(`Error creando cliente: ${error.message}`);
-        }
+    const { data, error } = await supabase
+      .from("customers")
+      .insert(payload)
+      .select()
+      .single();
 
-        return data as Customer;
+    if (error) {
+      console.error(
+        "[SupabaseCustomerRepo] Error creating customer:",
+        error.message,
+      );
+      throw new Error(`Error creando cliente: ${error.message}`);
     }
 
-    async updateCustomer(session: ActorSession, id: string, customerData: Partial<Customer>): Promise<Customer> {
-        console.log("[SupabaseCustomerRepo] updateCustomer:", id);
+    return data as Customer;
+  }
 
-        const payload = {
-            ...customerData,
-            updated_at: new Date().toISOString(),
-        };
+  async updateCustomer(
+    session: ActorSession,
+    id: string,
+    customerData: Partial<Customer>,
+  ): Promise<Customer> {
+    console.log("[SupabaseCustomerRepo] updateCustomer:", id);
 
-        // Remove immutable fields if present in partial data
-        delete (payload as any).id;
-        delete (payload as any).tenant_id;
-        delete (payload as any).created_at;
+    const payload = {
+      ...customerData,
+      updated_at: new Date().toISOString(),
+    };
 
-        const { data, error } = await supabase
-            .from("customers")
-            .update(payload)
-            .eq("id", id)
-            .select()
-            .single();
+    // Remove immutable fields if present in partial data
+    delete (payload as any).id;
+    delete (payload as any).tenant_id;
+    delete (payload as any).created_at;
 
-        if (error) {
-            console.error("[SupabaseCustomerRepo] Error updating customer:", error.message);
-            throw new Error(`Error actualizando cliente: ${error.message}`);
-        }
+    const { data, error } = await supabase
+      .from("customers")
+      .update(payload)
+      .eq("id", id)
+      .select()
+      .single();
 
-        return data as Customer;
+    if (error) {
+      console.error(
+        "[SupabaseCustomerRepo] Error updating customer:",
+        error.message,
+      );
+      throw new Error(`Error actualizando cliente: ${error.message}`);
     }
+
+    return data as Customer;
+  }
 }

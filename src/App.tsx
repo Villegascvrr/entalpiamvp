@@ -1,32 +1,30 @@
-import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { RoleProvider } from "@/contexts/RoleContext";
-import { OrderProvider } from "@/contexts/OrderContext";
-import { TenantProvider } from "@/contexts/TenantContext";
 import { ActorProvider, useActor } from "@/contexts/ActorContext";
-import NotFound from "./pages/NotFound";
+import { OrderProvider } from "@/contexts/OrderContext";
+import { RoleProvider } from "@/contexts/RoleContext";
+import { TenantProvider } from "@/contexts/TenantContext";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import Login from "./pages/Login";
+import NotFound from "./pages/NotFound";
 
 // Pages
-import CustomerDashboard from "./pages/CustomerDashboard";
-import OrderBuilder from "./pages/OrderBuilder";
-import OrderPreview from "./pages/OrderPreview";
+import { RoleGate } from "./components/auth/RoleGate";
+import MainDashboard from "./pages/MainDashboard";
 import MyOrders from "./pages/MyOrders";
 import OrderDetail from "./pages/OrderDetail";
 import OrderHistory from "./pages/OrderHistory";
+import OrderPreview from "./pages/OrderPreview";
+import PlaceholderPage from "./pages/PlaceholderPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminOrders from "./pages/admin/AdminOrders";
 import AdminPricing from "./pages/admin/AdminPricing";
 import AdminStock from "./pages/admin/AdminStock";
-import AdminOrders from "./pages/admin/AdminOrders";
 import CreateOrder from "./pages/admin/CreateOrder";
-import MainDashboard from "./pages/MainDashboard";
-import { RoleGate } from "./components/auth/RoleGate";
-import PlaceholderPage from "./pages/PlaceholderPage";
-import Customers from "./pages/commercial/Customers";
 import CustomerDetail from "./pages/commercial/CustomerDetail";
+import Customers from "./pages/commercial/Customers";
 
 const queryClient = new QueryClient();
 
@@ -39,7 +37,9 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4 animate-in fade-in duration-300">
           <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground font-medium animate-pulse">Iniciando aplicación...</p>
+          <p className="text-sm text-muted-foreground font-medium animate-pulse">
+            Iniciando aplicación...
+          </p>
         </div>
       </div>
     );
@@ -71,7 +71,7 @@ const App = () => (
                     <Route
                       path="/order/new"
                       element={
-                        <RoleGate roles={['customer', 'admin']}>
+                        <RoleGate roles={["customer", "admin"]}>
                           <CreateOrder />
                         </RoleGate>
                       }
@@ -79,7 +79,7 @@ const App = () => (
                     <Route
                       path="/order/preview"
                       element={
-                        <RoleGate roles={['customer', 'admin']}>
+                        <RoleGate roles={["customer", "admin"]}>
                           <OrderPreview />
                         </RoleGate>
                       }
@@ -87,7 +87,7 @@ const App = () => (
                     <Route
                       path="/orders"
                       element={
-                        <RoleGate roles={['customer', 'admin']}>
+                        <RoleGate roles={["customer", "admin"]}>
                           <MyOrders />
                         </RoleGate>
                       }
@@ -95,7 +95,7 @@ const App = () => (
                     <Route
                       path="/orders/:id"
                       element={
-                        <RoleGate roles={['customer', 'admin']}>
+                        <RoleGate roles={["customer", "admin"]}>
                           <OrderDetail />
                         </RoleGate>
                       }
@@ -103,7 +103,7 @@ const App = () => (
                     <Route
                       path="/orders/history"
                       element={
-                        <RoleGate roles={['customer', 'admin']}>
+                        <RoleGate roles={["customer", "admin"]}>
                           <OrderHistory />
                         </RoleGate>
                       }
@@ -113,7 +113,7 @@ const App = () => (
                     <Route
                       path="/commercial/orders"
                       element={
-                        <RoleGate roles={['commercial', 'admin']}>
+                        <RoleGate roles={["commercial", "admin"]}>
                           <PlaceholderPage title="Pedidos Pendientes (Comercial)" />
                         </RoleGate>
                       }
@@ -121,7 +121,7 @@ const App = () => (
                     <Route
                       path="/commercial/customers"
                       element={
-                        <RoleGate roles={['commercial', 'admin']}>
+                        <RoleGate roles={["commercial", "admin"]}>
                           <Customers />
                         </RoleGate>
                       }
@@ -129,7 +129,7 @@ const App = () => (
                     <Route
                       path="/commercial/customers/:id"
                       element={
-                        <RoleGate roles={['commercial', 'admin']}>
+                        <RoleGate roles={["commercial", "admin"]}>
                           <CustomerDetail />
                         </RoleGate>
                       }
@@ -139,7 +139,7 @@ const App = () => (
                     <Route
                       path="/logistics/prep"
                       element={
-                        <RoleGate roles={['logistics', 'admin']}>
+                        <RoleGate roles={["logistics", "admin"]}>
                           <PlaceholderPage title="Preparación de Pedidos" />
                         </RoleGate>
                       }
@@ -147,7 +147,7 @@ const App = () => (
                     <Route
                       path="/logistics/shipping"
                       element={
-                        <RoleGate roles={['logistics', 'admin']}>
+                        <RoleGate roles={["logistics", "admin"]}>
                           <PlaceholderPage title="Gestión de Envíos" />
                         </RoleGate>
                       }
@@ -155,7 +155,7 @@ const App = () => (
                     <Route
                       path="/logistics/delivery-notes"
                       element={
-                        <RoleGate roles={['logistics', 'admin']}>
+                        <RoleGate roles={["logistics", "admin"]}>
                           <PlaceholderPage title="Albaranes" />
                         </RoleGate>
                       }
@@ -165,7 +165,7 @@ const App = () => (
                     <Route
                       path="/admin/dashboard"
                       element={
-                        <RoleGate roles={['admin']}>
+                        <RoleGate roles={["admin"]}>
                           <AdminDashboard />
                         </RoleGate>
                       }
@@ -173,7 +173,7 @@ const App = () => (
                     <Route
                       path="/admin/pricing"
                       element={
-                        <RoleGate roles={['admin', 'commercial']}>
+                        <RoleGate roles={["admin", "commercial"]}>
                           <AdminPricing />
                         </RoleGate>
                       }
@@ -181,7 +181,7 @@ const App = () => (
                     <Route
                       path="/admin/stock"
                       element={
-                        <RoleGate roles={['admin', 'logistics']}>
+                        <RoleGate roles={["admin", "logistics"]}>
                           <AdminStock />
                         </RoleGate>
                       }
@@ -189,7 +189,7 @@ const App = () => (
                     <Route
                       path="/admin/orders"
                       element={
-                        <RoleGate roles={['admin']}>
+                        <RoleGate roles={["admin"]}>
                           <AdminOrders />
                         </RoleGate>
                       }
@@ -197,14 +197,17 @@ const App = () => (
                     <Route
                       path="/admin/orders/new"
                       element={
-                        <RoleGate roles={['admin']}>
+                        <RoleGate roles={["admin"]}>
                           <CreateOrder />
                         </RoleGate>
                       }
                     />
 
                     {/* Redirects */}
-                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                    <Route
+                      path="/"
+                      element={<Navigate to="/dashboard" replace />}
+                    />
 
                     {/* 404 */}
                     <Route path="*" element={<NotFound />} />

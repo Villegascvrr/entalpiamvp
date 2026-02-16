@@ -1,5 +1,5 @@
-import type { FXRate } from "@/data/types";
 import type { ActorSession } from "@/contexts/ActorContext";
+import type { FXRate } from "@/data/types";
 
 // ─────────────────────────────────────────────────────────────
 // FX Rate Repository Interface
@@ -7,9 +7,9 @@ import type { ActorSession } from "@/contexts/ActorContext";
 // ─────────────────────────────────────────────────────────────
 
 export interface FXRateRepository {
-    getCurrentRate(session: ActorSession): Promise<FXRate>;
-    updateRate(session: ActorSession, rate: number): Promise<FXRate>;
-    getHistory(session: ActorSession): Promise<FXRate[]>;
+  getCurrentRate(session: ActorSession): Promise<FXRate>;
+  updateRate(session: ActorSession, rate: number): Promise<FXRate>;
+  getHistory(session: ActorSession): Promise<FXRate[]>;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -17,47 +17,47 @@ export interface FXRateRepository {
 // ─────────────────────────────────────────────────────────────
 
 export class MockFXRateRepository implements FXRateRepository {
-    // Single source of truth for the current rate
-    private _currentRate: FXRate = {
-        id: "fx-initial",
-        rate: 0.92, // Default 1 USD = 0.92 EUR
-        updated_at: new Date().toISOString(),
-        updated_by: "system"
+  // Single source of truth for the current rate
+  private _currentRate: FXRate = {
+    id: "fx-initial",
+    rate: 0.92, // Default 1 USD = 0.92 EUR
+    updated_at: new Date().toISOString(),
+    updated_by: "system",
+  };
+
+  private _history: FXRate[] = [this._currentRate];
+
+  async getCurrentRate(session: ActorSession): Promise<FXRate> {
+    await this._delay(300);
+    return { ...this._currentRate };
+  }
+
+  async updateRate(session: ActorSession, rate: number): Promise<FXRate> {
+    await this._delay(500);
+
+    if (session.role !== "admin") {
+      throw new Error("Unauthorized: Only admins can update FX rate");
+    }
+
+    const newRate: FXRate = {
+      id: `fx-${Date.now()}`,
+      rate: rate,
+      updated_at: new Date().toISOString(),
+      updated_by: session.name,
     };
 
-    private _history: FXRate[] = [this._currentRate];
+    this._currentRate = newRate;
+    this._history.unshift(newRate); // Add to history
 
-    async getCurrentRate(session: ActorSession): Promise<FXRate> {
-        await this._delay(300);
-        return { ...this._currentRate };
-    }
+    return newRate;
+  }
 
-    async updateRate(session: ActorSession, rate: number): Promise<FXRate> {
-        await this._delay(500);
+  async getHistory(session: ActorSession): Promise<FXRate[]> {
+    await this._delay(300);
+    return [...this._history];
+  }
 
-        if (session.role !== "admin") {
-            throw new Error("Unauthorized: Only admins can update FX rate");
-        }
-
-        const newRate: FXRate = {
-            id: `fx-${Date.now()}`,
-            rate: rate,
-            updated_at: new Date().toISOString(),
-            updated_by: session.name
-        };
-
-        this._currentRate = newRate;
-        this._history.unshift(newRate); // Add to history
-
-        return newRate;
-    }
-
-    async getHistory(session: ActorSession): Promise<FXRate[]> {
-        await this._delay(300);
-        return [...this._history];
-    }
-
-    private _delay(ms: number): Promise<void> {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
+  private _delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
 }

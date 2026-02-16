@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
-import { AppSidebar } from "./AppSidebar";
 import { AppHeader } from "./AppHeader";
+import { AppSidebar } from "./AppSidebar";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -15,7 +15,9 @@ export function AppLayout({ children, mainClassName }: AppLayoutProps) {
       </div>
       <div className="flex-1 flex flex-col overflow-hidden">
         <AppHeader />
-        <main className={`flex-1 overflow-auto p-6 scrollbar-thin ${mainClassName}`}>
+        <main
+          className={`flex-1 overflow-auto p-6 scrollbar-thin ${mainClassName}`}
+        >
           {children}
         </main>
       </div>

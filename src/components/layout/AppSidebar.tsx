@@ -1,27 +1,27 @@
-import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
-import {
-  LayoutDashboard,
-  Package,
-  ClipboardList,
-  TrendingUp,
-  Warehouse,
-  FileText,
-  ChevronLeft,
-  ChevronRight,
-  User,
-  History,
-  Activity,
-  LogOut,
-  Users,
-  Truck,
-  ScrollText
-} from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+import {
+  Activity,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardList,
+  FileText,
+  History,
+  LayoutDashboard,
+  LogOut,
+  Package,
+  ScrollText,
+  TrendingUp,
+  Truck,
+  User,
+  Users,
+  Warehouse,
+} from "lucide-react";
+import { useState } from "react";
+import { NavLink, useLocation } from "react-router-dom";
 
-import { useActor, ActorRole } from "@/contexts/ActorContext";
+import { ActorRole, useActor } from "@/contexts/ActorContext";
 
 interface NavItem {
   title: string;
@@ -43,15 +43,15 @@ const NAV_CONFIG: Record<ActorRole, NavGroup[]> = {
       items: [
         { title: "Panel Principal", icon: LayoutDashboard, href: "/dashboard" },
         { title: "Histórico", icon: History, href: "/orders/history" },
-      ]
+      ],
     },
     {
       title: "Operaciones",
       items: [
         { title: "Crear Pedido", icon: Package, href: "/order/new" },
         { title: "Mis Pedidos", icon: ClipboardList, href: "/orders" },
-      ]
-    }
+      ],
+    },
   ],
   commercial: [
     {
@@ -59,31 +59,35 @@ const NAV_CONFIG: Record<ActorRole, NavGroup[]> = {
       items: [
         { title: "Dashboard", icon: Activity, href: "/dashboard" },
         { title: "Precios", icon: TrendingUp, href: "/admin/pricing" },
-      ]
+      ],
     },
     {
       title: "Operaciones",
       items: [
         { title: "Pedidos", icon: FileText, href: "/commercial/orders" },
         { title: "Clientes", icon: Users, href: "/commercial/customers" },
-      ]
-    }
+      ],
+    },
   ],
   logistics: [
     {
       title: "Analítica",
       items: [
         { title: "Panel Logística", icon: Warehouse, href: "/dashboard" },
-      ]
+      ],
     },
     {
       title: "Operaciones",
       items: [
         { title: "Preparación", icon: Package, href: "/logistics/prep" },
         { title: "Envíos", icon: Truck, href: "/logistics/shipping" },
-        { title: "Albaranes", icon: ScrollText, href: "/logistics/delivery-notes" },
-      ]
-    }
+        {
+          title: "Albaranes",
+          icon: ScrollText,
+          href: "/logistics/delivery-notes",
+        },
+      ],
+    },
   ],
   admin: [
     {
@@ -91,7 +95,7 @@ const NAV_CONFIG: Record<ActorRole, NavGroup[]> = {
       items: [
         { title: "Resumen Global", icon: LayoutDashboard, href: "/dashboard" },
         { title: "Precios", icon: TrendingUp, href: "/admin/pricing" },
-      ]
+      ],
     },
     {
       title: "Operaciones",
@@ -99,12 +103,18 @@ const NAV_CONFIG: Record<ActorRole, NavGroup[]> = {
         { title: "Pedidos", icon: FileText, href: "/admin/orders" },
         { title: "Stock", icon: Warehouse, href: "/admin/stock" },
         { title: "Clientes", icon: Users, href: "/commercial/customers" },
-      ]
-    }
-  ]
+      ],
+    },
+  ],
 };
 
-export function AppSidebar({ className, onNavigate }: { className?: string, onNavigate?: () => void }) {
+export function AppSidebar({
+  className,
+  onNavigate,
+}: {
+  className?: string;
+  onNavigate?: () => void;
+}) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const { session, signOut } = useActor();
@@ -124,16 +134,18 @@ export function AppSidebar({ className, onNavigate }: { className?: string, onNa
         "flex items-center gap-3 px-3 py-2 rounded-sm transition-all duration-200 group text-[13px] border border-transparent",
         isActive(item.href)
           ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium border-sidebar-border"
-          : "text-sidebar-muted hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+          : "text-sidebar-muted hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
       )}
     >
-      <item.icon className={cn(
-        "h-4 w-4 flex-shrink-0 transition-colors opacity-70 group-hover:opacity-100",
-        isActive(item.href) ? "text-sidebar-primary opacity-100" : "text-sidebar-muted group-hover:text-sidebar-foreground"
-      )} />
-      {!collapsed && (
-        <span className="leading-none">{item.title}</span>
-      )}
+      <item.icon
+        className={cn(
+          "h-4 w-4 flex-shrink-0 transition-colors opacity-70 group-hover:opacity-100",
+          isActive(item.href)
+            ? "text-sidebar-primary opacity-100"
+            : "text-sidebar-muted group-hover:text-sidebar-foreground",
+        )}
+      />
+      {!collapsed && <span className="leading-none">{item.title}</span>}
     </NavLink>
   );
 
@@ -142,7 +154,7 @@ export function AppSidebar({ className, onNavigate }: { className?: string, onNa
       className={cn(
         "bg-sidebar flex flex-col border-r border-sidebar-border transition-all duration-300 h-full",
         collapsed ? "w-14" : "w-60",
-        className
+        className,
       )}
     >
       {/* Header */}
@@ -153,9 +165,11 @@ export function AppSidebar({ className, onNavigate }: { className?: string, onNa
               <Package className="h-4 w-4 text-sidebar-primary" />
             </div>
             <div>
-              <h1 className="font-bold text-sidebar-foreground text-sm tracking-tight leading-none">ENTALPIA</h1>
+              <h1 className="font-bold text-sidebar-foreground text-sm tracking-tight leading-none">
+                ENTALPIA
+              </h1>
               <p className="text-[10px] text-sidebar-muted uppercase tracking-wider font-medium mt-0.5">
-                {role === 'admin' ? 'Administración' : role}
+                {role === "admin" ? "Administración" : role}
               </p>
             </div>
           </div>
@@ -191,10 +205,12 @@ export function AppSidebar({ className, onNavigate }: { className?: string, onNa
 
       {/* Footer */}
       <div className="p-4 space-y-2">
-        <div className={cn(
-          "flex items-center gap-3 px-2 py-2 rounded-md bg-sidebar-accent/30 border border-sidebar-border",
-          collapsed ? "justify-center px-0 bg-transparent border-0" : ""
-        )}>
+        <div
+          className={cn(
+            "flex items-center gap-3 px-2 py-2 rounded-md bg-sidebar-accent/30 border border-sidebar-border",
+            collapsed ? "justify-center px-0 bg-transparent border-0" : "",
+          )}
+        >
           <div className="h-8 w-8 rounded-full bg-sidebar-accent border border-sidebar-border flex items-center justify-center flex-shrink-0 shadow-sm">
             <User className="h-4 w-4 text-sidebar-foreground" />
           </div>
@@ -217,11 +233,15 @@ export function AppSidebar({ className, onNavigate }: { className?: string, onNa
             onClick={signOut}
             className={cn(
               "w-full justify-start text-sidebar-muted hover:text-red-400 hover:bg-red-500/10 h-8",
-              collapsed ? "justify-center px-0" : "px-2"
+              collapsed ? "justify-center px-0" : "px-2",
             )}
           >
             <LogOut className="h-3.5 w-3.5" />
-            {!collapsed && <span className="text-[11px] ml-2 font-medium">Cerrar Sesión</span>}
+            {!collapsed && (
+              <span className="text-[11px] ml-2 font-medium">
+                Cerrar Sesión
+              </span>
+            )}
           </Button>
 
           <Button
@@ -230,7 +250,7 @@ export function AppSidebar({ className, onNavigate }: { className?: string, onNa
             onClick={() => setCollapsed(!collapsed)}
             className={cn(
               "w-full justify-start text-sidebar-muted hover:text-sidebar-foreground h-8",
-              collapsed ? "justify-center px-0" : "px-2"
+              collapsed ? "justify-center px-0" : "px-2",
             )}
           >
             {collapsed ? (
@@ -238,7 +258,9 @@ export function AppSidebar({ className, onNavigate }: { className?: string, onNa
             ) : (
               <>
                 <ChevronLeft className="h-3.5 w-3.5" />
-                <span className="text-[11px] ml-2 font-medium">Colapsar Menú</span>
+                <span className="text-[11px] ml-2 font-medium">
+                  Colapsar Menú
+                </span>
               </>
             )}
           </Button>
