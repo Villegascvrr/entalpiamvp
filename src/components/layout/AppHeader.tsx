@@ -1,17 +1,27 @@
-import { useState } from "react";
-import { Bell, Calendar, RefreshCw, TrendingUp, TrendingDown, Check, X, Info, Package, Truck, AlertTriangle, Menu } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
+import {
+  AlertTriangle,
+  Bell,
+  Calendar,
+  Info,
+  Menu,
+  RefreshCw,
+  TrendingDown,
+  TrendingUp,
+  Truck,
+  X,
+} from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 import { AppSidebar } from "./AppSidebar";
 
 // Mock Notifications
@@ -22,7 +32,7 @@ const initialNotifications = [
     message: "Tu pedido #PED-2024-0150 ha salido del almacén.",
     time: "Hace 2 min",
     read: false,
-    type: "order"
+    type: "order",
   },
   {
     id: 2,
@@ -30,7 +40,7 @@ const initialNotifications = [
     message: "Tubo Cobre 15mm está por debajo del mínimo.",
     time: "Hace 1 hora",
     read: false,
-    type: "alert"
+    type: "alert",
   },
   {
     id: 3,
@@ -38,8 +48,8 @@ const initialNotifications = [
     message: "Nuevas tarifas LME aplicadas correctamente.",
     time: "Ayer, 08:30",
     read: true,
-    type: "info"
-  }
+    type: "info",
+  },
 ];
 
 export function AppHeader() {
@@ -49,19 +59,19 @@ export function AppHeader() {
 
   // Simulated LME copper price state
   const [lmeData, setLmeData] = useState({
-    price: 8432.50,
-    change: 2.3
+    price: 8432.5,
+    change: 2.3,
   });
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+    setNotifications(notifications.map((n) => ({ ...n, read: true })));
   };
 
   const removeNotification = (id: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    setNotifications(notifications.filter(n => n.id !== id));
+    setNotifications(notifications.filter((n) => n.id !== id));
   };
 
   const handleUpdatePrices = () => {
@@ -77,7 +87,7 @@ export function AppHeader() {
 
       setLmeData({
         price: newPrice,
-        change: parseFloat(randomChange)
+        change: parseFloat(randomChange),
       });
 
       setIsUpdating(false);
@@ -92,19 +102,22 @@ export function AppHeader() {
         message: `LME Cobre actualizado a $${newPrice.toLocaleString("es-ES", { maximumFractionDigits: 2 })}.`,
         time: "Ahora mismo",
         read: false,
-        type: "info"
+        type: "info",
       };
       setNotifications([newNotification, ...notifications]);
-
     }, 2000);
   };
 
   const getIcon = (type: string) => {
     switch (type) {
-      case "order": return <Truck className="h-4 w-4 text-blue-500" />;
-      case "alert": return <AlertTriangle className="h-4 w-4 text-amber-500" />;
-      case "info": return <Info className="h-4 w-4 text-primary" />;
-      default: return <Bell className="h-4 w-4 text-muted-foreground" />;
+      case "order":
+        return <Truck className="h-4 w-4 text-blue-500" />;
+      case "alert":
+        return <AlertTriangle className="h-4 w-4 text-amber-500" />;
+      case "info":
+        return <Info className="h-4 w-4 text-primary" />;
+      default:
+        return <Bell className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -115,10 +128,7 @@ export function AppHeader() {
     day: "numeric",
   });
 
-
-
   return (
-
     <header className="h-14 border-b border-border bg-card px-4 md:px-6 flex items-center justify-between flex-shrink-0 sticky top-0 z-10 w-full">
       {/* Left side - Date and market info */}
       <div className="flex items-center gap-4">
@@ -130,8 +140,14 @@ export function AppHeader() {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 border-0 w-64 bg-sidebar text-sidebar-foreground">
-              <AppSidebar className="border-0 w-full" onNavigate={() => document.body.click()} />
+            <SheetContent
+              side="left"
+              className="p-0 border-0 w-64 bg-sidebar text-sidebar-foreground"
+            >
+              <AppSidebar
+                className="border-0 w-full"
+                onNavigate={() => document.body.click()}
+              />
               {/* Note: In a real app we'd control open state, but click-to-close via outside click or simple callback works for MVP */}
             </SheetContent>
           </Sheet>
@@ -143,20 +159,33 @@ export function AppHeader() {
         </div>
         <div className="hidden md:block h-4 w-px bg-border" />
         <div className="flex items-center gap-2 md:gap-3">
-          <span className="text-xs text-muted-foreground uppercase tracking-wider hidden sm:inline">LME Cobre:</span>
+          <span className="text-xs text-muted-foreground uppercase tracking-wider hidden sm:inline">
+            LME Cobre:
+          </span>
           <div className="flex items-center gap-2">
             <span className="font-mono font-semibold text-foreground text-sm md:text-base">
-              ${lmeData.price.toLocaleString("es-ES", { maximumFractionDigits: 2, minimumFractionDigits: 2 })}
+              $
+              {lmeData.price.toLocaleString("es-ES", {
+                maximumFractionDigits: 2,
+                minimumFractionDigits: 2,
+              })}
             </span>
             <Badge
               variant="outline"
               className={cn(
                 "gap-1 border-0 text-[10px] md:text-xs px-1.5",
-                lmeData.change >= 0 ? "text-market-up bg-market-up/10" : "text-market-down bg-market-down/10"
+                lmeData.change >= 0
+                  ? "text-market-up bg-market-up/10"
+                  : "text-market-down bg-market-down/10",
               )}
             >
-              {lmeData.change >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-              {lmeData.change >= 0 ? "+" : ""}{lmeData.change}%
+              {lmeData.change >= 0 ? (
+                <TrendingUp className="h-3 w-3" />
+              ) : (
+                <TrendingDown className="h-3 w-3" />
+              )}
+              {lmeData.change >= 0 ? "+" : ""}
+              {lmeData.change}%
             </Badge>
           </div>
         </div>
@@ -172,7 +201,9 @@ export function AppHeader() {
           disabled={isUpdating}
         >
           <RefreshCw className={cn("h-4 w-4", isUpdating && "animate-spin")} />
-          <span className="hidden md:inline text-xs">{isUpdating ? "Actualizando..." : "Actualizar Precios"}</span>
+          <span className="hidden md:inline text-xs">
+            {isUpdating ? "Actualizando..." : "Actualizar Precios"}
+          </span>
         </Button>
         <div className="h-4 w-px bg-border" />
 
@@ -210,15 +241,19 @@ export function AppHeader() {
                   {notifications.map((notification) => (
                     <div
                       key={notification.id}
-                      className={`p-4 hover:bg-muted/50 transition-colors relative group ${!notification.read ? 'bg-muted/10' : ''}`}
+                      className={`p-4 hover:bg-muted/50 transition-colors relative group ${!notification.read ? "bg-muted/10" : ""}`}
                     >
                       <div className="flex gap-3">
-                        <div className={`mt-0.5 h-8 w-8 rounded-full flex items-center justify-center bg-background border shadow-sm shrink-0`}>
+                        <div
+                          className={`mt-0.5 h-8 w-8 rounded-full flex items-center justify-center bg-background border shadow-sm shrink-0`}
+                        >
                           {getIcon(notification.type)}
                         </div>
                         <div className="space-y-1 flex-1">
                           <div className="flex justify-between items-start">
-                            <p className={`text-sm ${!notification.read ? 'font-semibold text-foreground' : 'font-medium text-muted-foreground'}`}>
+                            <p
+                              className={`text-sm ${!notification.read ? "font-semibold text-foreground" : "font-medium text-muted-foreground"}`}
+                            >
                               {notification.title}
                             </p>
                             <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">
@@ -247,7 +282,11 @@ export function AppHeader() {
               )}
             </ScrollArea>
             <div className="p-2 border-t bg-muted/10">
-              <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground h-8">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-xs text-muted-foreground h-8"
+              >
                 Ver historial completo
               </Button>
             </div>

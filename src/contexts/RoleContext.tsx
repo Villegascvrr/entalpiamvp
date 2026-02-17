@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, ReactNode, useContext, useState } from "react";
 
 type Role = "cliente" | "interno";
 
@@ -14,7 +14,9 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<Role>("cliente");
 
   return (
-    <RoleContext.Provider value={{ role, setRole, isInterno: role === "interno" }}>
+    <RoleContext.Provider
+      value={{ role, setRole, isInterno: role === "interno" }}
+    >
       {children}
     </RoleContext.Provider>
   );

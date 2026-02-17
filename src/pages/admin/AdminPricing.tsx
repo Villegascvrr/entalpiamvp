@@ -1,26 +1,24 @@
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { useActor } from "@/contexts/ActorContext";
+import { fxRateRepository, lmeRepository } from "@/data/repositories";
+import { cn } from "@/lib/utils";
 import {
-  Upload,
-  Save,
-  TrendingUp,
-  TrendingDown,
-  Edit2,
-  Check,
-  X,
   AlertCircle,
   Calculator,
+  Check,
+  Edit2,
   RefreshCw,
-  DollarSign,
-  Euro
+  Save,
+  TrendingDown,
+  TrendingUp,
+  Upload,
+  X,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { lmeRepository, fxRateRepository } from "@/data/repositories";
-import { useActor } from "@/contexts/ActorContext";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface PriceEntry {
   id: string;
@@ -37,12 +35,72 @@ interface PriceEntry {
 // Adjusted Base Prices (USD) to keep Final Price (EUR) similar with ~0.92 FX Rate
 // Old Base (EUR) -> New Base (USD) ~= Old Base / 0.92
 const initialPrices: PriceEntry[] = [
-  { id: "ENT-CU-15", name: "Tubo Cobre 15mm - Rollo 50m", category: "Rollos", basePrice: 215.76, marketIndex: 1.15, margin: 1.08, finalPrice: 245.80, lastUpdated: "08:30", change: 2.3 },
-  { id: "ENT-CU-18", name: "Tubo Cobre 18mm - Rollo 50m", category: "Rollos", basePrice: 274.35, marketIndex: 1.15, margin: 1.08, finalPrice: 312.50, lastUpdated: "08:30", change: 1.8 },
-  { id: "ENT-CU-22", name: "Tubo Cobre 22mm - Rollo 25m", category: "Rollos", basePrice: 174.56, marketIndex: 1.15, margin: 1.08, finalPrice: 198.90, lastUpdated: "08:30", change: 2.1 },
-  { id: "ENT-CU-28", name: "Tubo Cobre 28mm - Barra 5m", category: "Barras", basePrice: 78.48, marketIndex: 1.15, margin: 1.08, finalPrice: 89.40, lastUpdated: "08:30", change: 1.5 },
-  { id: "ENT-CU-35", name: "Tubo Cobre 35mm - Barra 5m", category: "Barras", basePrice: 125.21, marketIndex: 1.15, margin: 1.08, finalPrice: 142.60, lastUpdated: "08:30", change: -0.5 },
-  { id: "ENT-CU-42", name: "Tubo Cobre 42mm - Barra 5m", category: "Barras", basePrice: 156.52, marketIndex: 1.15, margin: 1.08, finalPrice: 178.30, lastUpdated: "08:30", change: 0.0 },
+  {
+    id: "ENT-CU-15",
+    name: "Tubo Cobre 15mm - Rollo 50m",
+    category: "Rollos",
+    basePrice: 215.76,
+    marketIndex: 1.15,
+    margin: 1.08,
+    finalPrice: 245.8,
+    lastUpdated: "08:30",
+    change: 2.3,
+  },
+  {
+    id: "ENT-CU-18",
+    name: "Tubo Cobre 18mm - Rollo 50m",
+    category: "Rollos",
+    basePrice: 274.35,
+    marketIndex: 1.15,
+    margin: 1.08,
+    finalPrice: 312.5,
+    lastUpdated: "08:30",
+    change: 1.8,
+  },
+  {
+    id: "ENT-CU-22",
+    name: "Tubo Cobre 22mm - Rollo 25m",
+    category: "Rollos",
+    basePrice: 174.56,
+    marketIndex: 1.15,
+    margin: 1.08,
+    finalPrice: 198.9,
+    lastUpdated: "08:30",
+    change: 2.1,
+  },
+  {
+    id: "ENT-CU-28",
+    name: "Tubo Cobre 28mm - Barra 5m",
+    category: "Barras",
+    basePrice: 78.48,
+    marketIndex: 1.15,
+    margin: 1.08,
+    finalPrice: 89.4,
+    lastUpdated: "08:30",
+    change: 1.5,
+  },
+  {
+    id: "ENT-CU-35",
+    name: "Tubo Cobre 35mm - Barra 5m",
+    category: "Barras",
+    basePrice: 125.21,
+    marketIndex: 1.15,
+    margin: 1.08,
+    finalPrice: 142.6,
+    lastUpdated: "08:30",
+    change: -0.5,
+  },
+  {
+    id: "ENT-CU-42",
+    name: "Tubo Cobre 42mm - Barra 5m",
+    category: "Barras",
+    basePrice: 156.52,
+    marketIndex: 1.15,
+    margin: 1.08,
+    finalPrice: 178.3,
+    lastUpdated: "08:30",
+    change: 0.0,
+  },
 ];
 
 export default function AdminPricing() {
@@ -66,13 +124,17 @@ export default function AdminPricing() {
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Recalculate logic: Base(USD) * FX * Index * Margin = Final(EUR)
-  const recalculatePrices = (currentPrices: PriceEntry[], rate: number, index: number) => {
-    return currentPrices.map(p => {
+  const recalculatePrices = (
+    currentPrices: PriceEntry[],
+    rate: number,
+    index: number,
+  ) => {
+    return currentPrices.map((p) => {
       const newFinalPrice = p.basePrice * rate * index * p.margin;
       return {
         ...p,
         marketIndex: index,
-        finalPrice: newFinalPrice
+        finalPrice: newFinalPrice,
       };
     });
   };
@@ -90,15 +152,18 @@ export default function AdminPricing() {
   const saveEdit = (id: string) => {
     if (!editValues) return;
 
-    setPrices(prev => prev.map(p => {
-      if (p.id === id) {
-        // Base(USD) * FX * Index * NewMargin
-        const index = parseFloat(lmeIndex) || 1.15;
-        const newFinalPrice = p.basePrice * fxRate * index * editValues.margin;
-        return { ...p, margin: editValues.margin, finalPrice: newFinalPrice };
-      }
-      return p;
-    }));
+    setPrices((prev) =>
+      prev.map((p) => {
+        if (p.id === id) {
+          // Base(USD) * FX * Index * NewMargin
+          const index = parseFloat(lmeIndex) || 1.15;
+          const newFinalPrice =
+            p.basePrice * fxRate * index * editValues.margin;
+          return { ...p, margin: editValues.margin, finalPrice: newFinalPrice };
+        }
+        return p;
+      }),
+    );
 
     setEditingId(null);
     setEditValues(null);
@@ -110,7 +175,9 @@ export default function AdminPricing() {
     const newPrices = recalculatePrices(prices, fxRate, index);
     setPrices(newPrices);
     setHasChanges(true);
-    toast.success("Índice global aplicado", { description: `Nuevos precios calculados con índice ${index}x` });
+    toast.success("Índice global aplicado", {
+      description: `Nuevos precios calculados con índice ${index}x`,
+    });
   };
 
   const handleSaveFXRate = async () => {
@@ -132,7 +199,9 @@ export default function AdminPricing() {
       setPrices(newPrices);
       setHasChanges(true);
 
-      toast.success("Tipo de cambio actualizado", { description: `1 USD = ${newRate} EUR` });
+      toast.success("Tipo de cambio actualizado", {
+        description: `1 USD = ${newRate} EUR`,
+      });
     } catch (error) {
       console.error("Error saving FX rate", error);
       toast.error("Error actualizando tipo de cambio");
@@ -143,16 +212,22 @@ export default function AdminPricing() {
 
   const handleImportCSV = () => {
     setIsImporting(true);
-    toast.info("Importando archivo...", { description: "Analizando precios_2024.csv" });
+    toast.info("Importando archivo...", {
+      description: "Analizando precios_2024.csv",
+    });
 
     setTimeout(() => {
       setIsImporting(false);
-      setPrices(prev => prev.map(p => ({
-        ...p,
-        basePrice: p.basePrice * (1 + (Math.random() * 0.05 - 0.025))
-      })));
+      setPrices((prev) =>
+        prev.map((p) => ({
+          ...p,
+          basePrice: p.basePrice * (1 + (Math.random() * 0.05 - 0.025)),
+        })),
+      );
       setHasChanges(true);
-      toast.success("Importación completada", { description: "Se han actualizado 6 productos." });
+      toast.success("Importación completada", {
+        description: "Se han actualizado 6 productos.",
+      });
     }, 1500);
   };
 
@@ -200,7 +275,7 @@ export default function AdminPricing() {
       await loadData(); // Reload all to be safe
 
       toast.success("Precio LME actualizado", {
-        description: `Nuevo precio base: $${price.toFixed(2)}`
+        description: `Nuevo precio base: $${price.toFixed(2)}`,
       });
     } catch (error) {
       console.error("Error saving LME price:", error);
@@ -212,7 +287,7 @@ export default function AdminPricing() {
 
   const handlePublish = () => {
     toast.success("Precios publicados correctamente", {
-      description: "Los clientes verán las nuevas tarifas inmediatamente."
+      description: "Los clientes verán las nuevas tarifas inmediatamente.",
     });
     setHasChanges(false);
   };
@@ -236,7 +311,9 @@ export default function AdminPricing() {
               onClick={handleImportCSV}
               disabled={isImporting}
             >
-              <Upload className={cn("h-3.5 w-3.5", isImporting && "animate-bounce")} />
+              <Upload
+                className={cn("h-3.5 w-3.5", isImporting && "animate-bounce")}
+              />
               {isImporting ? "Importando..." : "Importar"}
             </Button>
 
@@ -257,19 +334,24 @@ export default function AdminPricing() {
           {hasChanges && (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-sm bg-status-low/10 text-status-low border border-status-low/30 animate-pulse">
               <AlertCircle className="h-3.5 w-3.5" />
-              <span className="text-xs font-medium">Cambios pendientes de publicar</span>
+              <span className="text-xs font-medium">
+                Cambios pendientes de publicar
+              </span>
             </div>
           )}
 
           <div className="flex items-center justify-between bg-card border border-border/60 rounded-sm p-3 shadow-sm">
             <div className="flex items-center gap-6">
-
               {/* LME Price Section */}
               <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">LME Cobre (Hoy)</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">
+                  LME Cobre (Hoy)
+                </p>
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-lg text-foreground font-bold">$</span>
+                    <span className="font-mono text-lg text-foreground font-bold">
+                      $
+                    </span>
                     <Input
                       value={lmeInputValue}
                       onChange={(e) => setLmeInputValue(e.target.value)}
@@ -287,12 +369,25 @@ export default function AdminPricing() {
                   </div>
 
                   {lmeHistory.length > 1 && (
-                    <div className={cn(
-                      "flex items-center text-xs font-medium px-1.5 py-0.5 rounded-sm",
-                      (lmePrice || 0) >= lmeHistory[1].price ? "text-green-600 bg-green-500/10" : "text-red-600 bg-red-500/10"
-                    )}>
-                      {(lmePrice || 0) >= lmeHistory[1].price ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
-                      {Math.abs(((lmePrice || 0) - lmeHistory[1].price) / lmeHistory[1].price * 100).toFixed(1)}%
+                    <div
+                      className={cn(
+                        "flex items-center text-xs font-medium px-1.5 py-0.5 rounded-sm",
+                        (lmePrice || 0) >= lmeHistory[1].price
+                          ? "text-green-600 bg-green-500/10"
+                          : "text-red-600 bg-red-500/10",
+                      )}
+                    >
+                      {(lmePrice || 0) >= lmeHistory[1].price ? (
+                        <TrendingUp className="h-3 w-3 mr-1" />
+                      ) : (
+                        <TrendingDown className="h-3 w-3 mr-1" />
+                      )}
+                      {Math.abs(
+                        (((lmePrice || 0) - lmeHistory[1].price) /
+                          lmeHistory[1].price) *
+                          100,
+                      ).toFixed(1)}
+                      %
                     </div>
                   )}
                 </div>
@@ -302,7 +397,9 @@ export default function AdminPricing() {
 
               {/* FX Rate Section */}
               <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">USD / EUR</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">
+                  USD / EUR
+                </p>
                 <div className="flex items-center gap-2">
                   <Input
                     type="number"
@@ -327,7 +424,9 @@ export default function AdminPricing() {
 
               {/* Market Index Section */}
               <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">Indice Global</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">
+                  Indice Global
+                </p>
                 <div className="flex items-center gap-2">
                   <Input
                     type="number"
@@ -336,7 +435,9 @@ export default function AdminPricing() {
                     onChange={(e) => setLmeIndex(e.target.value)}
                     className="w-20 h-8 font-mono text-sm text-right px-2"
                   />
-                  <span className="text-xs text-muted-foreground font-mono">x</span>
+                  <span className="text-xs text-muted-foreground font-mono">
+                    x
+                  </span>
                   <Button
                     variant="secondary"
                     size="sm"
@@ -350,7 +451,9 @@ export default function AdminPricing() {
             </div>
 
             <div className="text-right">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Última Act.</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
+                Última Act.
+              </p>
               <p className="text-xs font-mono">08:30 AM</p>
             </div>
           </div>
@@ -365,31 +468,50 @@ export default function AdminPricing() {
                   <tr className="border-b border-border/60 text-[10px] text-muted-foreground uppercase tracking-wider text-left">
                     <th className="px-3 py-2 font-medium">Producto</th>
                     <th className="px-2 py-2 font-medium">Categoría</th>
-                    <th className="px-2 py-2 font-medium text-right">Precio Base ($)</th>
+                    <th className="px-2 py-2 font-medium text-right">
+                      Precio Base ($)
+                    </th>
                     <th className="px-2 py-2 font-medium text-right">Index</th>
                     <th className="px-2 py-2 font-medium text-right">Margen</th>
-                    <th className="px-2 py-2 font-medium text-right">P. Final (€)</th>
+                    <th className="px-2 py-2 font-medium text-right">
+                      P. Final (€)
+                    </th>
                     <th className="px-2 py-2 font-medium text-right">Var.</th>
-                    <th className="px-2 py-2 font-medium text-center">Estado</th>
+                    <th className="px-2 py-2 font-medium text-center">
+                      Estado
+                    </th>
                     <th className="px-2 py-2 font-medium text-right w-[80px]"></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {prices.map(entry => {
+                  {prices.map((entry) => {
                     // Margin Color Logic
                     let marginClass = "text-muted-foreground";
-                    if (entry.margin >= 1.1) marginClass = "text-green-600 font-bold bg-green-500/10";
-                    else if (entry.margin > 1.05) marginClass = "text-amber-600 font-medium bg-amber-500/10";
+                    if (entry.margin >= 1.1)
+                      marginClass = "text-green-600 font-bold bg-green-500/10";
+                    else if (entry.margin > 1.05)
+                      marginClass =
+                        "text-amber-600 font-medium bg-amber-500/10";
                     else marginClass = "text-red-500 font-bold bg-red-500/10";
 
                     return (
-                      <tr key={entry.id} className="border-b border-border/40 last:border-0 hover:bg-muted/20 transition-colors">
+                      <tr
+                        key={entry.id}
+                        className="border-b border-border/40 last:border-0 hover:bg-muted/20 transition-colors"
+                      >
                         <td className="px-3 py-1.5 align-middle">
-                          <div className="font-medium text-foreground/90 line-clamp-1">{entry.name}</div>
-                          <div className="text-[9px] text-muted-foreground font-mono mt-0.5">{entry.id}</div>
+                          <div className="font-medium text-foreground/90 line-clamp-1">
+                            {entry.name}
+                          </div>
+                          <div className="text-[9px] text-muted-foreground font-mono mt-0.5">
+                            {entry.id}
+                          </div>
                         </td>
                         <td className="px-2 py-1.5 align-middle">
-                          <Badge variant="secondary" className="h-5 text-[10px] px-1.5 font-normal bg-muted text-muted-foreground border-border/50">
+                          <Badge
+                            variant="secondary"
+                            className="h-5 text-[10px] px-1.5 font-normal bg-muted text-muted-foreground border-border/50"
+                          >
                             {entry.category}
                           </Badge>
                         </td>
@@ -406,32 +528,50 @@ export default function AdminPricing() {
                                 type="number"
                                 step="0.01"
                                 value={editValues?.margin || entry.margin}
-                                onChange={(e) => setEditValues({ margin: parseFloat(e.target.value) || 1 })}
+                                onChange={(e) =>
+                                  setEditValues({
+                                    margin: parseFloat(e.target.value) || 1,
+                                  })
+                                }
                                 className="w-16 font-mono text-right h-6 text-xs"
                                 autoFocus
                               />
                             </div>
                           ) : (
                             <div className="flex justify-end">
-                              <span className={cn("font-mono px-1.5 py-0.5 rounded-sm inline-block min-w-[3.5rem] text-center", marginClass)}>
+                              <span
+                                className={cn(
+                                  "font-mono px-1.5 py-0.5 rounded-sm inline-block min-w-[3.5rem] text-center",
+                                  marginClass,
+                                )}
+                              >
                                 {entry.margin.toFixed(2)}x
                               </span>
                             </div>
                           )}
                         </td>
                         <td className="px-2 py-1.5 align-middle text-right">
-                          <span className="font-mono font-bold text-foreground">€{entry.finalPrice.toFixed(2)}</span>
+                          <span className="font-mono font-bold text-foreground">
+                            €{entry.finalPrice.toFixed(2)}
+                          </span>
                         </td>
                         <td className="px-2 py-1.5 align-middle text-right">
-                          <span className={cn(
-                            "inline-flex items-center justify-end gap-1 font-mono text-xs w-full",
-                            entry.change > 0 && "text-green-600",
-                            entry.change < 0 && "text-red-500",
-                            entry.change === 0 && "text-muted-foreground"
-                          )}>
-                            {entry.change > 0 && <TrendingUp className="h-3 w-3" />}
-                            {entry.change < 0 && <TrendingDown className="h-3 w-3" />}
-                            {entry.change > 0 ? "+" : ""}{entry.change.toFixed(1)}%
+                          <span
+                            className={cn(
+                              "inline-flex items-center justify-end gap-1 font-mono text-xs w-full",
+                              entry.change > 0 && "text-green-600",
+                              entry.change < 0 && "text-red-500",
+                              entry.change === 0 && "text-muted-foreground",
+                            )}
+                          >
+                            {entry.change > 0 && (
+                              <TrendingUp className="h-3 w-3" />
+                            )}
+                            {entry.change < 0 && (
+                              <TrendingDown className="h-3 w-3" />
+                            )}
+                            {entry.change > 0 ? "+" : ""}
+                            {entry.change.toFixed(1)}%
                           </span>
                         </td>
                         <td className="px-2 py-1.5 align-middle text-center">

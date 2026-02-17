@@ -1,43 +1,39 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { DataCard } from "@/components/ui/data-card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { DataCard } from "@/components/ui/data-card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Search,
-  Eye,
-  Clock,
-  CheckCircle,
-  Truck,
-  Package
-} from "lucide-react";
+import { useOrders } from "@/hooks/useOrders";
+import { cn } from "@/lib/utils";
+import { CheckCircle, Clock, Eye, Package, Search, Truck } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { useOrders } from "@/hooks/useOrders";
 
-const statusConfig: Record<string, { label: string; icon: any; className: string }> = {
+const statusConfig: Record<
+  string,
+  { label: string; icon: any; className: string }
+> = {
   pending_validation: {
     label: "Pend. Validación",
     icon: Clock,
-    className: "bg-status-low/10 text-status-low border-status-low/20"
+    className: "bg-status-low/10 text-status-low border-status-low/20",
   },
   confirmed: {
     label: "Confirmado",
     icon: CheckCircle,
-    className: "bg-blue-500/10 text-blue-600 border-blue-500/20"
+    className: "bg-blue-500/10 text-blue-600 border-blue-500/20",
   },
   preparing: {
     label: "En Preparación",
     icon: Package,
-    className: "bg-primary/10 text-primary border-primary/20"
+    className: "bg-primary/10 text-primary border-primary/20",
   },
   shipped: {
     label: "Enviado",
     icon: Truck,
-    className: "bg-primary/10 text-primary border-primary/20"
-  }
+    className: "bg-primary/10 text-primary border-primary/20",
+  },
 };
 
 export default function MyOrders() {
@@ -48,8 +44,10 @@ export default function MyOrders() {
   // Show recent subset (or all active) - let's show all active for now as it's the main view
   const orders = activeOrders;
 
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.id.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredOrders = orders.filter((order) => {
+    const matchesSearch = order.id
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
     const matchesStatus = !selectedStatus || order.status === selectedStatus;
     return matchesSearch && matchesStatus;
   });
@@ -59,7 +57,9 @@ export default function MyOrders() {
       <div className="max-w-5xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Mis Pedidos</h1>
-          <p className="text-muted-foreground">Pedidos en curso y gestión operativa</p>
+          <p className="text-muted-foreground">
+            Pedidos en curso y gestión operativa
+          </p>
         </div>
 
         {/* Filters */}
@@ -118,19 +118,26 @@ export default function MyOrders() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredOrders.map(order => {
-                    const status = statusConfig[order.status] || statusConfig.pending_validation;
+                  {filteredOrders.map((order) => {
+                    const status =
+                      statusConfig[order.status] ||
+                      statusConfig.pending_validation;
                     const StatusIcon = status.icon;
 
                     return (
                       <tr key={order.id}>
                         <td>
-                          <span className="font-mono font-medium">{order.id}</span>
+                          <span className="font-mono font-medium">
+                            {order.id}
+                          </span>
                         </td>
                         <td className="text-muted-foreground">{order.date}</td>
                         <td>{order.items.length} artículos</td>
                         <td>
-                          <Badge variant="outline" className={cn("gap-1", status.className)}>
+                          <Badge
+                            variant="outline"
+                            className={cn("gap-1", status.className)}
+                          >
                             <StatusIcon className="h-3 w-3" />
                             {status.label}
                           </Badge>
