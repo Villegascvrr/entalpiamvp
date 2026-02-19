@@ -33,7 +33,6 @@ export interface Product {
   unit: string;
   specs: string;
   image?: string;
-  basePrice?: number; // Original price (Admin only)
   discountPercentage?: number; // Applied discount (0-1)
 }
 

@@ -241,7 +241,6 @@ export class SupabaseOrderRepository implements OrderRepository {
         product_id: item.id,
         unit_price: item.price,
         quantity: item.quantity,
-        base_price: (item as any).basePrice ?? null,
         discount_percentage: (item as any).discountPercentage ?? null,
       }));
 
