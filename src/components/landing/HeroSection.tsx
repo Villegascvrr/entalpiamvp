@@ -30,21 +30,19 @@ export function HeroSection() {
             {/* Content */}
             <div className="relative z-10 max-w-5xl mx-auto px-6 lg:px-8 text-center">
                 {/* Badge */}
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-green-500/30 bg-green-900/30 text-green-300 text-xs font-semibold uppercase tracking-widest mb-8">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-green-500/30 bg-green-900/30 text-green-300 text-xs font-semibold mb-8">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                    Plataforma B2B · Sector del Cobre
+                    Plataforma profesional de comercio y gestión de cobre
                 </div>
 
                 {/* Title */}
                 <h1 className="text-6xl sm:text-7xl lg:text-8xl font-bold text-white tracking-tight mb-4">
                     SHARY
                 </h1>
-                <p className="text-lg sm:text-xl lg:text-2xl font-semibold text-white mb-4 max-w-3xl mx-auto drop-shadow-sm">
-                    Plataforma profesional de comercio y gestión de cobre
-                </p>
+
 
                 {/* Subtitle */}
-                <p className="text-base sm:text-lg text-gray-200 max-w-2xl mx-auto mb-10 leading-relaxed drop-shadow-sm">
+                <p className="text-base sm:text-lg text-white max-w-2xl mx-auto mb-10 leading-relaxed drop-shadow-sm">
                     Gestiona catálogo, precios y pedidos desde un entorno digital seguro
                     respaldado por <span className="text-white font-bold underline decoration-green-500/50 underline-offset-4">Entalpia Europe</span>.
                 </p>

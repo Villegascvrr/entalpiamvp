@@ -19,6 +19,13 @@ A comprehensive B2B dashboard for managing industrial supplies orders, pricing, 
 - **Routing**: React Router DOM
 
 
+
+## 🌐 URLs y Acceso
+
+- **Landing Page Pública (SHARY):** `/shary`
+  - En local: `http://localhost:5173/shary`
+  - En Netlify: `https://[TU-PROYECTO].netlify.app/shary`
+
 ## 🚀 Getting Started
 
 
