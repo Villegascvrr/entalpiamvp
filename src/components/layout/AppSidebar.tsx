@@ -27,6 +27,7 @@ interface NavItem {
   title: string;
   icon: React.ElementType;
   href: string;
+  active?: boolean;
 }
 
 // ── Role-based Navigation Config ──
@@ -100,9 +101,22 @@ const NAV_CONFIG: Record<ActorRole, NavGroup[]> = {
     {
       title: "Operaciones",
       items: [
-        { title: "Pedidos", icon: FileText, href: "/admin/orders" },
-        { title: "Stock", icon: Warehouse, href: "/admin/stock" },
-        { title: "Clientes", icon: Users, href: "/commercial/customers" },
+        {
+          title: "Pedidos",
+          icon: FileText,
+          href: "/admin/orders",
+        },
+        {
+          title: "Stock",
+          icon: Warehouse,
+          href: "/admin/stock",
+          active: false,
+        },
+        {
+          title: "Clientes",
+          icon: Users,
+          href: "/commercial/customers",
+        },
       ],
     },
   ],
@@ -192,16 +206,14 @@ export function AppSidebar({
                 {group.title}
               </p>
             )}
-            {group.items.map((item) => (
+            {group.items.filter((item) => item.active ?? true).map((item) => (
               <NavItem key={item.href} item={item} />
             ))}
           </div>
         ))}
       </nav>
 
-      <div className="px-4">
-        <Separator className="bg-sidebar-border" />
-      </div>
+      <Separator className="bg-sidebar-border mx-4" />
 
       {/* Footer */}
       <div className="p-4 space-y-2">
