@@ -43,7 +43,9 @@ A comprehensive B2B dashboard for managing industrial supplies orders, pricing, 
 
 ### Local supabase setup
 
-1. `npx supabase start`
+1. `npx supabase login`
+2. `npx supabase link --project-ref syqhaewpxflmpmtmjspa`
+2. `npx supabase start`
 
 
 ## 📂 Project Structure
