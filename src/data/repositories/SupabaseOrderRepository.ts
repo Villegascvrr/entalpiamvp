@@ -11,9 +11,8 @@ import type { OrderRepository } from "./OrderRepository";
 
 // ─────────────────────────────────────────────────────────────
 // Supabase Order Repository — Full CRUD
-// RLS filters automatically by tenant via get_my_tenant_id().
-// Writes always inject tenant_id from ActorSession (server-side
-// RLS validates it matches auth.uid()'s tenant).
+// RLS filters by tenant via get_my_tenant_id(). Orders carry tenant_id;
+// order_items, order_documents, order_state_history are isolated via order_id.
 // ─────────────────────────────────────────────────────────────
 
 // Valid status transitions — prevents illegal state changes
@@ -238,7 +237,6 @@ export class SupabaseOrderRepository implements OrderRepository {
 
     if (items.length > 0) {
       const itemRows = items.map((item) => ({
-        tenant_id: session.tenantId,
         order_id: orderRow.id,
         product_id: item.id || null,
         name: item.name,
