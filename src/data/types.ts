@@ -65,7 +65,6 @@ export interface OrderItem {
   quantity: number;
   unit: string;
   notes?: string;
-  isCustom?: boolean;
   category?: string;
   image?: string;
   minOrder?: number;
@@ -78,7 +77,6 @@ export interface AdminOrderItem {
   quantity: number;
   price: number;
   total?: number;
-  isCustom?: boolean;
 }
 
 /** A full order (admin / internal view) */

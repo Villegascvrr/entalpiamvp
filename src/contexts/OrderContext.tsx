@@ -139,7 +139,6 @@ export function OrderProvider({ children }: { children: ReactNode }) {
           category: product.category,
           image: product.image,
           minOrder: product.minOrder,
-          isCustom: product.isCustom || false,
           notes: "",
         },
       ];

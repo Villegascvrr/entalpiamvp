@@ -43,7 +43,6 @@ interface Product {
   priceChange: number;
   unit: string;
   minOrder: number;
-  isCustom?: boolean;
 }
 
 interface OrderItem {
@@ -176,16 +175,6 @@ export default function OrderBuilder() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  // const [orderItems, setOrderItems] = useState<OrderItem[]>([]); // Removed local state
-
-  // Custom Item State
-  const [isCustomDialogOpen, setIsCustomDialogOpen] = useState(false);
-  const [customItem, setCustomItem] = useState({
-    name: "",
-    quantity: 1,
-    unit: "uds",
-    notes: "",
-  });
 
   const categories = [...new Set(products.map((p) => p.category))];
 
@@ -220,7 +209,6 @@ export default function OrderBuilder() {
       // Add first
       addItem({
         ...product,
-        isCustom: product.isCustom || false,
       });
       // Then update quantity if > 1 (addItem sets it to 1)
       if (quantity > 1) {
@@ -250,27 +238,6 @@ export default function OrderBuilder() {
       }
       toast.success(`Añadido: ${product.name}`);
     }
-  };
-
-  const addCustomItem = () => {
-    const tempId = `CUSTOM-${Date.now()}`;
-    addItem({
-      id: tempId,
-      name: customItem.name,
-      category: "Personalizado",
-      price: 0, // A cotizar
-      quantity: customItem.quantity,
-      unit: customItem.unit,
-      isCustom: true,
-    });
-
-    if (customItem.notes) {
-      setTimeout(() => updateItemNotes(tempId, customItem.notes!), 0);
-    }
-
-    setIsCustomDialogOpen(false);
-    setCustomItem({ name: "", quantity: 1, unit: "uds", notes: "" });
-    toast.success("Producto personalizado añadido");
   };
 
   // This updateQuantity is now redundant as it's provided by useOrder context.
@@ -303,21 +270,15 @@ export default function OrderBuilder() {
     const errors: { type: "error" | "warning"; message: string }[] = [];
 
     orderItems.forEach((item) => {
-      if (!item.isCustom) {
-        if (item.minOrder && item.quantity < item.minOrder) {
-          errors.push({
-            type: "error",
-            message: `${item.name}: Cantidad mínima ${item.minOrder} ${item.unit}`,
-          });
-        }
+      if (item.minOrder && item.quantity < item.minOrder) {
+        errors.push({
+          type: "error",
+          message: `${item.name}: Cantidad mínima ${item.minOrder} ${item.unit}`,
+        });
       }
     });
 
-    if (
-      orderItems.length > 0 &&
-      orderTotal < MINIMUM_ORDER_TOTAL &&
-      !orderItems.some((i) => i.isCustom)
-    ) {
+    if (orderItems.length > 0 && orderTotal < MINIMUM_ORDER_TOTAL) {
       errors.push({
         type: "warning",
         message: `Pedido mínimo €${MINIMUM_ORDER_TOTAL}`,
@@ -329,9 +290,7 @@ export default function OrderBuilder() {
 
   const hasErrors = validationErrors.some((e) => e.type === "error");
   const canProceed =
-    orderItems.length > 0 &&
-    !hasErrors &&
-    (orderTotal >= MINIMUM_ORDER_TOTAL || orderItems.some((i) => i.isCustom));
+    orderItems.length > 0 && !hasErrors && orderTotal >= MINIMUM_ORDER_TOTAL;
   const progressPercentage = Math.min(
     (orderTotal / MINIMUM_ORDER_TOTAL) * 100,
     100,
@@ -410,90 +369,6 @@ export default function OrderBuilder() {
             </Button>
           ))}
         </div>
-      </div>
-
-      {/* Custom Item Action */}
-      <div className="px-3 py-2 bg-primary/5 border-b flex items-center justify-between">
-        <div className="text-xs font-medium text-primary">
-          ¿No encuentras lo que buscas?
-        </div>
-        <Dialog open={isCustomDialogOpen} onOpenChange={setIsCustomDialogOpen}>
-          <DialogTrigger asChild>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs gap-1 border-primary/20 text-primary hover:bg-primary/10"
-            >
-              <FileEdit className="h-3.5 w-3.5" />
-              Solicitar Personalizado
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Solicitar Artículo Personalizado</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="name">Descripción del Producto</Label>
-                <Input
-                  id="name"
-                  placeholder="Ej: Tubo especial 45mm corte a medida"
-                  value={customItem.name}
-                  onChange={(e) =>
-                    setCustomItem({ ...customItem, name: e.target.value })
-                  }
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="quantity">Cantidad</Label>
-                  <Input
-                    id="quantity"
-                    type="number"
-                    min="1"
-                    value={customItem.quantity}
-                    onChange={(e) =>
-                      setCustomItem({
-                        ...customItem,
-                        quantity: parseInt(e.target.value) || 0,
-                      })
-                    }
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="unit">Unidad</Label>
-                  <Input
-                    id="unit"
-                    placeholder="Ej: metros, piezas, kg"
-                    value={customItem.unit}
-                    onChange={(e) =>
-                      setCustomItem({ ...customItem, unit: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="notes">Notas Adicionales (Opcional)</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Especificaciones técnicas, tolerancias, fecha requerida..."
-                  value={customItem.notes}
-                  onChange={(e) =>
-                    setCustomItem({ ...customItem, notes: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                onClick={addCustomItem}
-                disabled={!customItem.name || customItem.quantity <= 0}
-              >
-                Añadir al Pedido
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
 
       {/* Product Table */}
@@ -615,11 +490,7 @@ export default function OrderBuilder() {
           {orderItems.length > 0 && (
             <div className="text-right">
               <p className="text-2xl font-bold font-mono">
-                {orderItems.every((i) => !i.isCustom) ? (
-                  `€${orderTotal.toFixed(2)}`
-                ) : (
-                  <span className="text-amber-600 text-lg">A Cotizar</span>
-                )}
+                `€${orderTotal.toFixed(2)}`
               </p>
               <p className="text-[10px] text-muted-foreground">
                 IVA no incluido
@@ -650,9 +521,7 @@ export default function OrderBuilder() {
             <DataCard title="Productos Seleccionados" bodyClassName="p-0">
               <div className="divide-y divide-border">
                 {orderItems.map((item) => {
-                  const isCustom = item.isCustom;
-                  const hasMinError =
-                    !isCustom && item.quantity < (item.minOrder || 1);
+                  const hasMinError = item.quantity < (item.minOrder || 1);
                   const lineTotal = item.quantity * item.price;
 
                   return (
@@ -660,31 +529,19 @@ export default function OrderBuilder() {
                       key={item.id}
                       className={cn(
                         "flex items-center gap-4 p-4 transition-colors",
-                        isCustom
-                          ? "bg-amber-50/50"
-                          : hasMinError && "bg-destructive/5",
+                        hasMinError && "bg-destructive/5",
                       )}
                     >
                       {/* Product Info */}
                       <div className="flex-1 min-w-0">
-                        {isCustom && (
-                          <Badge
-                            variant="outline"
-                            className="mb-1 text-[10px] border-amber-200 text-amber-700 bg-amber-50"
-                          >
-                            Personalizado
-                          </Badge>
-                        )}
                         <p className="text-sm font-medium">{item.name}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="font-mono text-[11px] text-muted-foreground">
                             {item.id}
                           </span>
-                          {!isCustom && (
-                            <span className="text-[11px] text-muted-foreground">
-                              €{item.price.toFixed(2)}/{item.unit}
-                            </span>
-                          )}
+                          <span className="text-[11px] text-muted-foreground">
+                            €{item.price.toFixed(2)}/{item.unit}
+                          </span>
                         </div>
                         {item.notes && (
                           <p className="text-xs text-muted-foreground mt-1 italic">
@@ -708,7 +565,7 @@ export default function OrderBuilder() {
                           onClick={() =>
                             updateQuantity(
                               item.id,
-                              item.quantity - (isCustom ? 1 : item.minOrder),
+                              item.quantity - item.minOrder,
                             )
                           }
                         >
@@ -732,7 +589,7 @@ export default function OrderBuilder() {
                           onClick={() =>
                             updateQuantity(
                               item.id,
-                              item.quantity + (isCustom ? 1 : item.minOrder),
+                              item.quantity + item.minOrder,
                             )
                           }
                         >
@@ -742,15 +599,9 @@ export default function OrderBuilder() {
 
                       {/* Line Total */}
                       <div className="text-right w-28">
-                        {isCustom ? (
-                          <p className="text-xs font-medium text-amber-600">
-                            A Cotizar
-                          </p>
-                        ) : (
-                          <p className="font-mono font-semibold">
-                            €{lineTotal.toFixed(2)}
-                          </p>
-                        )}
+                        <p className="font-mono font-semibold">
+                          €{lineTotal.toFixed(2)}
+                        </p>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -779,31 +630,23 @@ export default function OrderBuilder() {
                     <span
                       className={cn(
                         "font-mono font-medium",
-                        orderItems.some((i) => i.isCustom) ||
-                          orderTotal >= MINIMUM_ORDER_TOTAL
+                        orderTotal >= MINIMUM_ORDER_TOTAL
                           ? "text-green-600"
                           : "text-amber-500",
                       )}
                     >
-                      {orderItems.some((i) => i.isCustom)
-                        ? "Personalizado"
-                        : `€${orderTotal.toFixed(2)} / €${MINIMUM_ORDER_TOTAL}`}
+                      `€${orderTotal.toFixed(2)} / €${MINIMUM_ORDER_TOTAL}`
                     </span>
                   </div>
-                  {!orderItems.some((i) => i.isCustom) && (
-                    <>
-                      <Progress value={progressPercentage} className="h-2" />
-                      {orderTotal < MINIMUM_ORDER_TOTAL && (
-                        <p className="text-[11px] text-amber-600">
-                          Faltan €
-                          {(MINIMUM_ORDER_TOTAL - orderTotal).toFixed(2)} para
-                          el pedido mínimo
-                        </p>
-                      )}
-                    </>
+                  <Progress value={progressPercentage} className="h-2" />
+                  {orderTotal < MINIMUM_ORDER_TOTAL && (
+                    <p className="text-[11px] text-amber-600">
+                      Faltan €
+                      {(MINIMUM_ORDER_TOTAL - orderTotal).toFixed(2)} para
+                      el pedido mínimo
+                    </p>
                   )}
-                  {(orderTotal >= MINIMUM_ORDER_TOTAL ||
-                    orderItems.some((i) => i.isCustom)) && (
+                  {orderTotal >= MINIMUM_ORDER_TOTAL && (
                     <p className="text-[11px] text-green-600 flex items-center gap-1">
                       <CheckCircle className="h-3 w-3" />
                       Listos para procesar
@@ -821,11 +664,6 @@ export default function OrderBuilder() {
                     <p className="text-[11px] text-muted-foreground">
                       3-5 días laborables
                     </p>
-                    {orderItems.some((i) => i.isCustom) && (
-                      <p className="text-[10px] text-amber-600 mt-1 font-medium">
-                        * Ítems personalizados pueden demorar más
-                      </p>
-                    )}
                   </div>
                 </div>
               </DataCard>
@@ -878,9 +716,7 @@ export default function OrderBuilder() {
             <div>
               <p className="text-sm text-muted-foreground">Total Estimado</p>
               <p className="text-2xl font-bold font-mono">
-                {orderItems.some((i) => i.isCustom)
-                  ? "A Cotizar"
-                  : `€${orderTotal.toFixed(2)}`}
+                `€${orderTotal.toFixed(2)}`
               </p>
             </div>
             <Button
@@ -889,9 +725,7 @@ export default function OrderBuilder() {
               disabled={!canProceed}
               onClick={() => navigate("/order/preview")}
             >
-              {orderItems.some((i) => i.isCustom)
-                ? "Solicitar Presupuesto"
-                : "Revisar Pedido"}
+              Revisar Pedido
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </div>

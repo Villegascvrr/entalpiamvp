@@ -41,7 +41,7 @@ export class SupabaseOrderRepository implements OrderRepository {
                 delivery_time_slot, delivery_type, delivery_instructions,
                 delivery_requires_call_before, delivery_has_unloading_requirements, delivery_vehicle_access_notes,
                 actors ( name ),
-                order_items ( id, name, quantity, unit_price, line_total, is_custom )
+                order_items ( id, name, quantity, unit_price, line_total )
             `,
       )
       .order("created_at", { ascending: false });
@@ -243,7 +243,6 @@ export class SupabaseOrderRepository implements OrderRepository {
         unit_price: item.price,
         quantity: item.quantity,
         unit: "Ud",
-        is_custom: item.isCustom ?? false,
         // Price Snapshot
         base_price: (item as any).basePrice ?? null,
         discount_percentage: (item as any).discountPercentage ?? null,
@@ -253,7 +252,7 @@ export class SupabaseOrderRepository implements OrderRepository {
       const { data: itemsData, error: itemsError } = await supabase
         .from("order_items")
         .insert(itemRows)
-        .select("id, name, quantity, unit_price, line_total, is_custom");
+        .select("id, name, quantity, unit_price, line_total");
 
       if (itemsError) {
         console.error(
@@ -269,7 +268,6 @@ export class SupabaseOrderRepository implements OrderRepository {
           quantity: row.quantity,
           price: Number(row.unit_price),
           total: Number(row.line_total),
-          isCustom: row.is_custom,
         }));
       }
     }
@@ -319,7 +317,7 @@ export class SupabaseOrderRepository implements OrderRepository {
         `
                 id, reference, customer_name, company_name, status, total,
                 notes, shipping_address, shipping_date, created_at,
-                order_items (id, name, quantity, unit_price, line_total, is_custom)
+                order_items (id, name, quantity, unit_price, line_total)
             `,
       )
       .single();
@@ -466,7 +464,6 @@ export class SupabaseOrderRepository implements OrderRepository {
         total: Number(
           item.line_total || Number(item.unit_price) * Number(item.quantity),
         ),
-        isCustom: item.isCustom ?? (item.is_custom as boolean),
       })),
     };
   }

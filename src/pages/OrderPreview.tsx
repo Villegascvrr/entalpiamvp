@@ -30,7 +30,6 @@ interface OrderItem {
     category: string;
     price: number;
     unit: string;
-    isCustom?: boolean;
   };
   quantity: number;
   notes?: string;
@@ -65,7 +64,6 @@ export default function OrderPreview() {
 
   // We use items from context directly
   const orderItems = items;
-  const hasCustomItems = orderItems.some((i) => i.isCustom);
   // orderTotal is from context
 
   // Used from context now
@@ -86,18 +84,14 @@ export default function OrderPreview() {
 
       if (result) {
         toast.success(
-          hasCustomItems
-            ? "Solicitud enviada correctamente"
-            : "Pedido enviado correctamente",
+          "Pedido enviado correctamente",
           {
             description: `Referencia: ${result.id}`,
           },
         );
       } else {
         toast.success(
-          hasCustomItems
-            ? "Solicitud enviada correctamente"
-            : "Pedido enviado correctamente",
+          "Pedido enviado correctamente",
           {
             description: `Referencia: ${orderNumber}`,
           },
@@ -142,19 +136,17 @@ export default function OrderPreview() {
               <CheckCircle className="h-8 w-8 text-status-available" />
             </div>
             <h2 className="text-2xl font-bold mb-2">
-              {hasCustomItems ? "¡Solicitud Enviada!" : "¡Pedido Enviado!"}
+              "¡Pedido Enviado!"
             </h2>
             <p className="text-muted-foreground mb-2">
-              Tu {hasCustomItems ? "solicitud" : "pedido"}{" "}
+              Tu pedido{" "}
               <span className="font-mono font-semibold text-foreground">
                 {orderNumber}
               </span>{" "}
-              ha sido {hasCustomItems ? "enviada" : "enviado"} correctamente.
+              ha sido enviado correctamente.
             </p>
             <p className="text-sm text-muted-foreground mb-6">
-              {hasCustomItems
-                ? "Revisaremos tu solicitud y te enviaremos un presupuesto formal en breve."
-                : "Recibirás una confirmación por email en breve. Nuestro equipo procesará tu pedido en las próximas 24 horas."}
+              Recibirás una confirmación por email en breve. Nuestro equipo procesará tu pedido en las próximas 24 horas.
             </p>
             <div className="bg-muted/30 rounded-lg p-6 mb-6 text-left space-y-3">
               <div className="flex items-center gap-3 text-sm">
@@ -578,14 +570,6 @@ export default function OrderPreview() {
                   >
                     <td className="py-3 px-3">
                       <div>
-                        {item.isCustom && (
-                          <Badge
-                            variant="outline"
-                            className="mb-1 text-[10px] border-amber-200 text-amber-700 bg-amber-50"
-                          >
-                            Personalizado
-                          </Badge>
-                        )}
                         <p className="font-medium">{item.name}</p>
                         <p className="text-xs text-muted-foreground font-mono">
                           {item.id}
@@ -601,22 +585,10 @@ export default function OrderPreview() {
                       {item.quantity.toLocaleString("es-ES")} {item.unit}
                     </td>
                     <td className="py-3 px-3 text-right font-mono align-top pt-4">
-                      {item.isCustom ? (
-                        <span className="text-xs text-muted-foreground">
-                          --
-                        </span>
-                      ) : (
-                        `€${item.price.toFixed(2)}`
-                      )}
+                      `€${item.price.toFixed(2)}`
                     </td>
                     <td className="py-3 px-3 text-right font-mono font-semibold align-top pt-4">
-                      {item.isCustom ? (
-                        <span className="text-xs text-amber-600">
-                          A Cotizar
-                        </span>
-                      ) : (
-                        `€${(item.quantity * item.price).toFixed(2)}`
-                      )}
+                      `€${(item.quantity * item.price).toFixed(2)}`
                     </td>
                   </tr>
                 ))}

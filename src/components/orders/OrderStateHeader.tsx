@@ -5,11 +5,10 @@ import { CheckCircle2 } from "lucide-react";
 export function OrderStateHeader() {
   const { orderReference, clientName, lastSaved, items, orderStatus } =
     useOrder();
-  const hasCustomItems = items.some((i) => i.isCustom);
 
   // Status mapping
   const statusLabels: Record<string, string> = {
-    draft: hasCustomItems ? "Borrador (Cotización)" : "Borrador",
+    draft: "Borrador",
     pendiente_validacion: "Pendiente Validación",
     confirmado: "Confirmado",
     en_preparacion: "En Preparación",
