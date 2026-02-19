@@ -244,7 +244,6 @@ export class MockOrderRepository implements OrderRepository {
 
     // 1. DRAFT / CREATED
     events.push({
-      from_status: null,
       to_status: "draft",
       changed_by: order.customer.name,
       created_at: this._formatDate(baseDate),
@@ -256,7 +255,6 @@ export class MockOrderRepository implements OrderRepository {
     // 2. PENDING VALIDATION (Submitted)
     const date2 = new Date(baseDate.getTime() + 15 * 60000); // +15 mins
     events.push({
-      from_status: "draft",
       to_status: "pending_validation",
       changed_by: order.customer.name,
       created_at: this._formatDate(date2),
@@ -269,7 +267,6 @@ export class MockOrderRepository implements OrderRepository {
     const date3 = new Date(date2.getTime() + 2 * 3600000); // +2 hours
     if (order.status === "cancelled") {
       events.push({
-        from_status: "pending_validation",
         to_status: "cancelled",
         changed_by: "Sistema",
         created_at: this._formatDate(date3),
@@ -279,7 +276,6 @@ export class MockOrderRepository implements OrderRepository {
     }
 
     events.push({
-      from_status: "pending_validation",
       to_status: "confirmed",
       changed_by: "Juan Pérez (Comercial)",
       created_at: this._formatDate(date3),
@@ -291,7 +287,6 @@ export class MockOrderRepository implements OrderRepository {
     // 4. PREPARING
     const date4 = new Date(date3.getTime() + 4 * 3600000); // +4 hours
     events.push({
-      from_status: "confirmed",
       to_status: "preparing",
       changed_by: "Almacén Central",
       created_at: this._formatDate(date4),
@@ -303,7 +298,6 @@ export class MockOrderRepository implements OrderRepository {
     // 5. SHIPPED
     const date5 = new Date(date4.getTime() + 24 * 3600000); // +1 day
     events.push({
-      from_status: "preparing",
       to_status: "shipped",
       changed_by: "Logística",
       created_at: this._formatDate(date5),
@@ -316,7 +310,6 @@ export class MockOrderRepository implements OrderRepository {
     // 6. DELIVERED
     const date6 = new Date(date5.getTime() + 24 * 3600000); // +1 day
     events.push({
-      from_status: "shipped",
       to_status: "delivered",
       changed_by: "Transportista",
       created_at: this._formatDate(date6),
