@@ -33,6 +33,11 @@ function getAppMode(): AppMode {
 
 const APP_MODE: AppMode = getAppMode();
 
+const defaultSupabaseUrl = "https://syqhaewpxflmpmtmjspa.supabase.co";
+const supabaseUrl =
+  (import.meta.env.VITE_SUPABASE_URL as string | undefined) ??
+  defaultSupabaseUrl;
+
 const configs: Record<AppMode, AppConfig> = {
   demo: {
     mode: "demo",
@@ -41,12 +46,12 @@ const configs: Record<AppMode, AppConfig> = {
   },
   development: {
     mode: "development",
-    apiBaseUrl: "https://syqhaewpxflmpmtmjspa.supabase.co",
+    apiBaseUrl: supabaseUrl,
     enableDevTools: true,
   },
   production: {
     mode: "production",
-    apiBaseUrl: "https://syqhaewpxflmpmtmjspa.supabase.co",
+    apiBaseUrl: supabaseUrl,
     enableDevTools: false,
   },
 };
