@@ -8,6 +8,7 @@ import { TenantProvider } from "@/contexts/TenantContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import Login from "./pages/Login";
+import SharyLanding from "./pages/landing/SharyLanding";
 import NotFound from "./pages/NotFound";
 
 // Pages
@@ -62,157 +63,168 @@ const App = () => (
               <Toaster />
               <Sonner />
               <BrowserRouter>
-                <AuthGate>
-                  <Routes>
-                    {/* Main Dashboard - Routes logic based on Role */}
-                    <Route path="/dashboard" element={<MainDashboard />} />
+                <Routes>
+                  {/* ── Public routes: no authentication required ── */}
+                  <Route path="/shary" element={<SharyLanding />} />
 
-                    {/* Customer Routes */}
-                    <Route
-                      path="/order/new"
-                      element={
-                        <RoleGate roles={["customer", "admin"]}>
-                          <CreateOrder />
-                        </RoleGate>
-                      }
-                    />
-                    <Route
-                      path="/order/preview"
-                      element={
-                        <RoleGate roles={["customer", "admin"]}>
-                          <OrderPreview />
-                        </RoleGate>
-                      }
-                    />
-                    <Route
-                      path="/orders"
-                      element={
-                        <RoleGate roles={["customer", "admin"]}>
-                          <MyOrders />
-                        </RoleGate>
-                      }
-                    />
-                    <Route
-                      path="/orders/:id"
-                      element={
-                        <RoleGate roles={["customer", "admin"]}>
-                          <OrderDetail />
-                        </RoleGate>
-                      }
-                    />
-                    <Route
-                      path="/orders/history"
-                      element={
-                        <RoleGate roles={["customer", "admin"]}>
-                          <OrderHistory />
-                        </RoleGate>
-                      }
-                    />
+                  {/* ── Protected app: everything else goes through AuthGate ── */}
+                  <Route
+                    path="/*"
+                    element={
+                      <AuthGate>
+                        <Routes>
+                          {/* Main Dashboard - Routes logic based on Role */}
+                          <Route path="/dashboard" element={<MainDashboard />} />
 
-                    {/* Commercial Routes */}
-                    <Route
-                      path="/commercial/orders"
-                      element={
-                        <RoleGate roles={["commercial", "admin"]}>
-                          <PlaceholderPage title="Pedidos Pendientes (Comercial)" />
-                        </RoleGate>
-                      }
-                    />
-                    <Route
-                      path="/commercial/customers"
-                      element={
-                        <RoleGate roles={["commercial", "admin"]}>
-                          <Customers />
-                        </RoleGate>
-                      }
-                    />
-                    <Route
-                      path="/commercial/customers/:id"
-                      element={
-                        <RoleGate roles={["commercial", "admin"]}>
-                          <CustomerDetail />
-                        </RoleGate>
-                      }
-                    />
+                          {/* Customer Routes */}
+                          <Route
+                            path="/order/new"
+                            element={
+                              <RoleGate roles={["customer", "admin"]}>
+                                <CreateOrder />
+                              </RoleGate>
+                            }
+                          />
+                          <Route
+                            path="/order/preview"
+                            element={
+                              <RoleGate roles={["customer", "admin"]}>
+                                <OrderPreview />
+                              </RoleGate>
+                            }
+                          />
+                          <Route
+                            path="/orders"
+                            element={
+                              <RoleGate roles={["customer", "admin"]}>
+                                <MyOrders />
+                              </RoleGate>
+                            }
+                          />
+                          <Route
+                            path="/orders/:id"
+                            element={
+                              <RoleGate roles={["customer", "admin"]}>
+                                <OrderDetail />
+                              </RoleGate>
+                            }
+                          />
+                          <Route
+                            path="/orders/history"
+                            element={
+                              <RoleGate roles={["customer", "admin"]}>
+                                <OrderHistory />
+                              </RoleGate>
+                            }
+                          />
 
-                    {/* Logistics Routes */}
-                    <Route
-                      path="/logistics/prep"
-                      element={
-                        <RoleGate roles={["logistics", "admin"]}>
-                          <PlaceholderPage title="Preparación de Pedidos" />
-                        </RoleGate>
-                      }
-                    />
-                    <Route
-                      path="/logistics/shipping"
-                      element={
-                        <RoleGate roles={["logistics", "admin"]}>
-                          <PlaceholderPage title="Gestión de Envíos" />
-                        </RoleGate>
-                      }
-                    />
-                    <Route
-                      path="/logistics/delivery-notes"
-                      element={
-                        <RoleGate roles={["logistics", "admin"]}>
-                          <PlaceholderPage title="Albaranes" />
-                        </RoleGate>
-                      }
-                    />
+                          {/* Commercial Routes */}
+                          <Route
+                            path="/commercial/orders"
+                            element={
+                              <RoleGate roles={["commercial", "admin"]}>
+                                <PlaceholderPage title="Pedidos Pendientes (Comercial)" />
+                              </RoleGate>
+                            }
+                          />
+                          <Route
+                            path="/commercial/customers"
+                            element={
+                              <RoleGate roles={["commercial", "admin"]}>
+                                <Customers />
+                              </RoleGate>
+                            }
+                          />
+                          <Route
+                            path="/commercial/customers/:id"
+                            element={
+                              <RoleGate roles={["commercial", "admin"]}>
+                                <CustomerDetail />
+                              </RoleGate>
+                            }
+                          />
 
-                    {/* Admin Routes */}
-                    <Route
-                      path="/admin/dashboard"
-                      element={
-                        <RoleGate roles={["admin"]}>
-                          <AdminDashboard />
-                        </RoleGate>
-                      }
-                    />
-                    <Route
-                      path="/admin/pricing"
-                      element={
-                        <RoleGate roles={["admin", "commercial"]}>
-                          <AdminPricing />
-                        </RoleGate>
-                      }
-                    />
-                    {/* <Route
-                      path="/admin/stock"
-                      element={
-                        <RoleGate roles={["admin", "logistics"]}>
-                          <AdminStock />
-                        </RoleGate>
-                      }
-                    /> */}
-                    <Route
-                      path="/admin/orders"
-                      element={
-                        <RoleGate roles={["admin"]}>
-                          <AdminOrders />
-                        </RoleGate>
-                      }
-                    />
-                    <Route
-                      path="/admin/orders/new"
-                      element={
-                        <RoleGate roles={["admin"]}>
-                          <CreateOrder />
-                        </RoleGate>
-                      }
-                    />
+                          {/* Logistics Routes */}
+                          <Route
+                            path="/logistics/prep"
+                            element={
+                              <RoleGate roles={["logistics", "admin"]}>
+                                <PlaceholderPage title="Preparación de Pedidos" />
+                              </RoleGate>
+                            }
+                          />
+                          <Route
+                            path="/logistics/shipping"
+                            element={
+                              <RoleGate roles={["logistics", "admin"]}>
+                                <PlaceholderPage title="Gestión de Envíos" />
+                              </RoleGate>
+                            }
+                          />
+                          <Route
+                            path="/logistics/delivery-notes"
+                            element={
+                              <RoleGate roles={["logistics", "admin"]}>
+                                <PlaceholderPage title="Albaranes" />
+                              </RoleGate>
+                            }
+                          />
 
-                    {/* Redirects */}
-                    <Route
-                      path="/"
-                      element={<Navigate to="/dashboard" replace />}
-                    />
+                          {/* Admin Routes */}
+                          <Route
+                            path="/admin/dashboard"
+                            element={
+                              <RoleGate roles={["admin"]}>
+                                <AdminDashboard />
+                              </RoleGate>
+                            }
+                          />
+                          <Route
+                            path="/admin/pricing"
+                            element={
+                              <RoleGate roles={["admin", "commercial"]}>
+                                <AdminPricing />
+                              </RoleGate>
+                            }
+                          />
+                          {/* <Route
+                            path="/admin/stock"
+                            element={
+                              <RoleGate roles={["admin", "logistics"]}>
+                                <AdminStock />
+                              </RoleGate>
+                            }
+                          /> */}
+                          <Route
+                            path="/admin/orders"
+                            element={
+                              <RoleGate roles={["admin"]}>
+                                <AdminOrders />
+                              </RoleGate>
+                            }
+                          />
+                          <Route
+                            path="/admin/orders/new"
+                            element={
+                              <RoleGate roles={["admin"]}>
+                                <CreateOrder />
+                              </RoleGate>
+                            }
+                          />
 
-                    {/* 404 */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </AuthGate>
+                          {/* Redirects */}
+                          <Route
+                            path="/"
+                            element={<Navigate to="/dashboard" replace />}
+                          />
+
+                          {/* 404 */}
+                          <Route path="*" element={<NotFound />} />
+                        </Routes>
+                      </AuthGate>
+                    }
+                  />
+                </Routes>
               </BrowserRouter>
             </OrderProvider>
           </ActorProvider>
