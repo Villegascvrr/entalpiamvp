@@ -34,13 +34,13 @@ export class SupabaseOrderRepository implements OrderRepository {
       .from("orders")
       .select(
         `
-                id, reference, customer_name, company_name, created_at, status, total, notes, actor_id,
+                id, reference, created_at, status, total, notes, actor_id,
                 shipping_address, shipping_date,
                 delivery_address, delivery_city, delivery_postal_code, delivery_province,
                 delivery_contact_name, delivery_contact_phone, delivery_contact_email,
                 delivery_time_slot, delivery_type, delivery_instructions,
                 delivery_requires_call_before, delivery_has_unloading_requirements, delivery_vehicle_access_notes,
-                actors ( name ),
+                actors ( name, customers ( name ) ),
                 order_items ( id, product_id, quantity, unit_price, line_total, products ( name, unit, category_id ) )
             `,
       )
@@ -66,9 +66,8 @@ export class SupabaseOrderRepository implements OrderRepository {
                 created_at, 
                 status, 
                 total,
-                customer_name,
-                actors (name),
-                order_items (id)
+                actors ( name ),
+                order_items ( id )
             `,
       )
       .order("created_at", { ascending: false })
@@ -111,8 +110,7 @@ export class SupabaseOrderRepository implements OrderRepository {
         status: row.status as OrderStatus,
         total: total,
         // New fields for Ops Dashboard
-        customer:
-          (row.actors as any)?.name || row.customer_name || "Desconocido",
+        customer: (row.actors as any)?.name ?? "Desconocido",
         time: dateLabel, // Reusing logic
         items: (row.order_items ?? []).length,
         priority: priority,
@@ -179,8 +177,6 @@ export class SupabaseOrderRepository implements OrderRepository {
         tenant_id: session.tenantId,
         actor_id: session.actorId,
         reference,
-        customer_name: session.name,
-        company_name: orderData.company ?? "",
         status: "pending_validation",
         total,
         notes: orderData.notes ?? null,
@@ -205,12 +201,13 @@ export class SupabaseOrderRepository implements OrderRepository {
       })
       .select(
         `
-                id, reference, customer_name, company_name, status, total, notes, created_at,
+                id, reference, status, total, notes, created_at, actor_id,
                 shipping_address, shipping_date,
                 delivery_address, delivery_city, delivery_postal_code, delivery_province,
                 delivery_contact_name, delivery_contact_phone, delivery_contact_email,
                 delivery_time_slot, delivery_type, delivery_instructions,
-                delivery_requires_call_before, delivery_has_unloading_requirements, delivery_vehicle_access_notes
+                delivery_requires_call_before, delivery_has_unloading_requirements, delivery_vehicle_access_notes,
+                actors ( name, customers ( name ) )
             `,
       )
       .single();
@@ -310,8 +307,8 @@ export class SupabaseOrderRepository implements OrderRepository {
       .eq("reference", orderId)
       .select(
         `
-                id, reference, customer_name, company_name, status, total,
-                notes, shipping_address, shipping_date, created_at,
+                id, reference, status, total, notes, shipping_address, shipping_date, created_at, actor_id,
+                actors ( name, customers ( name ) ),
                 order_items ( id, product_id, quantity, unit_price, line_total, products ( name, unit, category_id ) )
             `,
       )
@@ -373,8 +370,8 @@ export class SupabaseOrderRepository implements OrderRepository {
       .eq("reference", orderId)
       .select(
         `
-                id, reference, customer_name, company_name, status, total,
-                notes, shipping_address, shipping_date, created_at,
+                id, reference, status, total, notes, shipping_address, shipping_date, created_at, actor_id,
+                actors ( name, customers ( name ) ),
                 order_items ( id, product_id, quantity, unit_price, line_total, products ( name, unit, category_id ) )
             `,
       )
@@ -433,13 +430,14 @@ export class SupabaseOrderRepository implements OrderRepository {
       vehicleAccessNotes: (row.delivery_vehicle_access_notes as string) || "",
     };
 
+    const actors = row.actors as { name?: string; customers?: { name?: string } } | null | undefined;
     return {
       id: row.reference as string,
       customer: {
         id: row.actor_id as string,
-        name: (row.actors as any)?.name || (row.customer_name as string),
+        name: actors?.name ?? "",
       },
-      company: row.company_name as string,
+      company: actors?.customers?.name ?? "",
       date: new Date(row.created_at as string).toLocaleDateString("es-ES", {
         day: "2-digit",
         month: "2-digit",
