@@ -188,7 +188,6 @@ export interface LMEPrice {
 
 /** Event in the order timeline */
 export interface OrderTimelineEvent {
-  from_status: OrderStatus | null;
   to_status: OrderStatus;
   changed_by: string; // Name of the actor
   notes?: string;
