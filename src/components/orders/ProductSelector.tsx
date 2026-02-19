@@ -473,32 +473,6 @@ export function ProductSelector({
                                   /{product.unit}
                                 </span>
                               </div>
-
-                              {/* Stock Indicator */}
-                              <div className="flex items-center gap-1.5 mt-0.5">
-                                <div
-                                  className={cn(
-                                    "h-1.5 w-1.5 rounded-full shrink-0",
-                                    product.stock > 100
-                                      ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.3)]"
-                                      : product.stock > 50
-                                        ? "bg-amber-500"
-                                        : "bg-red-600 animate-pulse shadow-[0_0_8px_rgba(220,38,38,0.3)]",
-                                  )}
-                                />
-                                <span
-                                  className={cn(
-                                    "text-[9px] font-bold uppercase tracking-tight",
-                                    product.stock <= 50
-                                      ? "text-red-700"
-                                      : "text-muted-foreground/70",
-                                  )}
-                                >
-                                  {product.stock <= 50
-                                    ? "Stock Crítico"
-                                    : "Disponible"}
-                                </span>
-                              </div>
                             </div>
 
                             {/* Selection / Quantity Controls */}
@@ -558,23 +532,6 @@ export function ProductSelector({
                             )}
                           </div>
                         </div>
-                      </div>
-
-                      {/* Decorative Industrial Bottom Border for Stock Visual */}
-                      <div className="h-1 bg-muted/40">
-                        <div
-                          className={cn(
-                            "h-full transition-all duration-700",
-                            product.stock > 100
-                              ? "bg-green-500"
-                              : product.stock > 50
-                                ? "bg-amber-500"
-                                : "bg-red-600",
-                          )}
-                          style={{
-                            width: `${Math.min((product.stock / 200) * 100, 100)}%`,
-                          }}
-                        />
                       </div>
                     </div>
                   );

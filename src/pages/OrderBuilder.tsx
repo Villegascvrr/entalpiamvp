@@ -14,7 +14,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { StockIndicator } from "@/components/ui/stock-indicator";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
@@ -42,7 +41,6 @@ interface Product {
   category: string;
   price: number;
   priceChange: number;
-  stock: number;
   unit: string;
   minOrder: number;
   isCustom?: boolean;
@@ -62,7 +60,6 @@ const products: Product[] = [
     category: "Rollos",
     price: 245.8,
     priceChange: 2.3,
-    stock: 1250,
     unit: "rollos",
     minOrder: 10,
   },
@@ -72,7 +69,6 @@ const products: Product[] = [
     category: "Rollos",
     price: 312.5,
     priceChange: 1.8,
-    stock: 890,
     unit: "rollos",
     minOrder: 10,
   },
@@ -82,7 +78,6 @@ const products: Product[] = [
     category: "Rollos",
     price: 198.9,
     priceChange: 2.1,
-    stock: 420,
     unit: "rollos",
     minOrder: 5,
   },
@@ -92,7 +87,6 @@ const products: Product[] = [
     category: "Barras",
     price: 89.4,
     priceChange: 1.5,
-    stock: 85,
     unit: "barras",
     minOrder: 20,
   },
@@ -102,7 +96,6 @@ const products: Product[] = [
     category: "Barras",
     price: 142.6,
     priceChange: -0.5,
-    stock: 12,
     unit: "barras",
     minOrder: 10,
   },
@@ -112,7 +105,6 @@ const products: Product[] = [
     category: "Barras",
     price: 178.3,
     priceChange: 0.0,
-    stock: 0,
     unit: "barras",
     minOrder: 10,
   },
@@ -122,7 +114,6 @@ const products: Product[] = [
     category: "Barras",
     price: 234.2,
     priceChange: 1.2,
-    stock: 45,
     unit: "barras",
     minOrder: 5,
   },
@@ -132,7 +123,6 @@ const products: Product[] = [
     category: "Accesorios",
     price: 2.45,
     priceChange: 0.8,
-    stock: 5000,
     unit: "uds",
     minOrder: 100,
   },
@@ -142,7 +132,6 @@ const products: Product[] = [
     category: "Accesorios",
     price: 3.2,
     priceChange: 0.5,
-    stock: 3500,
     unit: "uds",
     minOrder: 100,
   },
@@ -152,7 +141,6 @@ const products: Product[] = [
     category: "Accesorios",
     price: 1.85,
     priceChange: 0.3,
-    stock: 8000,
     unit: "uds",
     minOrder: 200,
   },
@@ -320,12 +308,6 @@ export default function OrderBuilder() {
           errors.push({
             type: "error",
             message: `${item.name}: Cantidad mínima ${item.minOrder} ${item.unit}`,
-          });
-        }
-        if (item.stock !== undefined && item.quantity > item.stock) {
-          errors.push({
-            type: "error",
-            message: `${item.name}: Stock insuficiente (Disponible: ${item.stock})`,
           });
         }
       }
@@ -525,16 +507,12 @@ export default function OrderBuilder() {
               <th className="text-right font-medium text-muted-foreground text-[10px] uppercase tracking-wider py-2 px-3">
                 Precio
               </th>
-              <th className="text-right font-medium text-muted-foreground text-[10px] uppercase tracking-wider py-2 px-3 w-24">
-                Stock
-              </th>
               <th className="text-center font-medium text-muted-foreground text-[10px] uppercase tracking-wider py-2 px-3 w-12"></th>
             </tr>
           </thead>
           <tbody>
             {filteredProducts.map((product) => {
               const inOrder = orderItems.find((item) => item.id === product.id);
-              const isOutOfStock = product.stock === 0;
 
               return (
                 <tr
@@ -542,7 +520,6 @@ export default function OrderBuilder() {
                   className={cn(
                     "border-b border-border last:border-0 hover:bg-muted/30 transition-colors",
                     inOrder && "bg-primary/10 border-l-2 border-l-primary",
-                    isOutOfStock && "opacity-50",
                   )}
                 >
                   <td className="py-2 px-3">
@@ -585,13 +562,6 @@ export default function OrderBuilder() {
                       mín. {product.minOrder}
                     </p>
                   </td>
-                  <td className="py-2 px-3 text-right">
-                    <StockIndicator
-                      quantity={product.stock}
-                      unit={product.unit}
-                      showLabel={false}
-                    />
-                  </td>
                   <td className="py-2 px-3 text-center">
                     {inOrder ? (
                       <Badge variant="secondary" className="text-[10px]">
@@ -605,7 +575,6 @@ export default function OrderBuilder() {
                         onClick={() =>
                           addToOrder(product, product.minOrder || 1)
                         }
-                        disabled={isOutOfStock}
                       >
                         <Plus className="h-3.5 w-3.5" />
                       </Button>
@@ -620,8 +589,7 @@ export default function OrderBuilder() {
 
       {/* Footer Stats */}
       <div className="px-3 py-2 border-t bg-muted/20 text-[10px] text-muted-foreground">
-        {filteredProducts.length} productos •{" "}
-        {filteredProducts.filter((p) => p.stock > 0).length} disponibles
+        {filteredProducts.length} productos
       </div>
     </div>
   );
@@ -685,10 +653,6 @@ export default function OrderBuilder() {
                   const isCustom = item.isCustom;
                   const hasMinError =
                     !isCustom && item.quantity < (item.minOrder || 1);
-                  const hasStockError =
-                    !isCustom &&
-                    item.stock !== undefined &&
-                    item.quantity > item.stock;
                   const lineTotal = item.quantity * item.price;
 
                   return (
@@ -698,8 +662,7 @@ export default function OrderBuilder() {
                         "flex items-center gap-4 p-4 transition-colors",
                         isCustom
                           ? "bg-amber-50/50"
-                          : (hasMinError || hasStockError) &&
-                              "bg-destructive/5",
+                          : hasMinError && "bg-destructive/5",
                       )}
                     >
                       {/* Product Info */}
@@ -732,12 +695,6 @@ export default function OrderBuilder() {
                           <p className="text-[10px] text-destructive mt-1 flex items-center gap-1">
                             <AlertCircle className="h-3 w-3" />
                             Mínimo: {item.minOrder} {item.unit}
-                          </p>
-                        )}
-                        {hasStockError && (
-                          <p className="text-[10px] text-destructive mt-1 flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            Stock disponible: {item.stock}
                           </p>
                         )}
                       </div>

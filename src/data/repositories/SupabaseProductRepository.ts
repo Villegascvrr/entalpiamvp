@@ -15,7 +15,7 @@ export class SupabaseProductRepository implements ProductRepository {
 
     const { data, error } = await supabase
       .from("products")
-      .select("id, name, category_id, price, stock, unit, specs, image_url")
+      .select("id, name, category_id, price, unit, specs, image_url")
       .eq("is_active", true)
       .order("category_id")
       .order("name");
@@ -66,7 +66,7 @@ export class SupabaseProductRepository implements ProductRepository {
 
     const { data, error } = await supabase
       .from("products")
-      .select("id, name, category_id, price, stock, unit, specs, image_url")
+      .select("id, name, category_id, price, unit, specs, image_url")
       .eq("category_id", categoryId)
       .eq("is_active", true)
       .order("name");
@@ -136,7 +136,6 @@ export class SupabaseProductRepository implements ProductRepository {
         name: row.name,
         category: row.category_id,
         price: finalPrice,
-        stock: row.stock,
         unit: row.unit,
         specs: row.specs,
         image: row.image_url ?? undefined,

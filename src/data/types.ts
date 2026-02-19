@@ -30,7 +30,6 @@ export interface Product {
   name: string;
   category: string;
   price: number;
-  stock: number;
   unit: string;
   specs: string;
   image?: string;
@@ -69,7 +68,6 @@ export interface OrderItem {
   isCustom?: boolean;
   category?: string;
   image?: string;
-  stock?: number;
   minOrder?: number;
 }
 
@@ -146,7 +144,6 @@ export interface QuickProduct {
   name: string;
   price: number;
   change: number;
-  stock: "disponible" | "bajo";
 }
 
 /** LME market data */
