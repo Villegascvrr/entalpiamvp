@@ -41,7 +41,7 @@ export class SupabaseOrderRepository implements OrderRepository {
                 delivery_time_slot, delivery_type, delivery_instructions,
                 delivery_requires_call_before, delivery_has_unloading_requirements, delivery_vehicle_access_notes,
                 actors ( name ),
-                order_items ( id, name, quantity, unit_price, line_total )
+                order_items ( id, product_id, quantity, unit_price, line_total, products ( name, unit, category_id ) )
             `,
       )
       .order("created_at", { ascending: false });
@@ -238,21 +238,17 @@ export class SupabaseOrderRepository implements OrderRepository {
     if (items.length > 0) {
       const itemRows = items.map((item) => ({
         order_id: orderRow.id,
-        product_id: item.id || null,
-        name: item.name,
+        product_id: item.id,
         unit_price: item.price,
         quantity: item.quantity,
-        unit: "Ud",
-        // Price Snapshot
         base_price: (item as any).basePrice ?? null,
         discount_percentage: (item as any).discountPercentage ?? null,
-        // line_total is GENERATED ALWAYS AS (unit_price * quantity) STORED
       }));
 
       const { data: itemsData, error: itemsError } = await supabase
         .from("order_items")
         .insert(itemRows)
-        .select("id, name, quantity, unit_price, line_total");
+        .select("id, quantity, unit_price, line_total");
 
       if (itemsError) {
         console.error(
@@ -262,9 +258,9 @@ export class SupabaseOrderRepository implements OrderRepository {
         await supabase.from("orders").delete().eq("id", orderRow.id);
         throw new Error(`Error insertando items: ${itemsError.message}`);
       } else {
-        insertedItems = (itemsData ?? []).map((row) => ({
+        insertedItems = (itemsData ?? []).map((row, i) => ({
           id: row.id,
-          name: row.name,
+          name: items[i].name,
           quantity: row.quantity,
           price: Number(row.unit_price),
           total: Number(row.line_total),
@@ -317,7 +313,7 @@ export class SupabaseOrderRepository implements OrderRepository {
         `
                 id, reference, customer_name, company_name, status, total,
                 notes, shipping_address, shipping_date, created_at,
-                order_items (id, name, quantity, unit_price, line_total)
+                order_items ( id, product_id, quantity, unit_price, line_total, products ( name, unit, category_id ) )
             `,
       )
       .single();
@@ -380,7 +376,7 @@ export class SupabaseOrderRepository implements OrderRepository {
         `
                 id, reference, customer_name, company_name, status, total,
                 notes, shipping_address, shipping_date, created_at,
-                order_items (id, name, quantity, unit_price)
+                order_items ( id, product_id, quantity, unit_price, line_total, products ( name, unit, category_id ) )
             `,
       )
       .single();
@@ -456,15 +452,19 @@ export class SupabaseOrderRepository implements OrderRepository {
       address: (row.shipping_address as string) ?? undefined,
       shippingDate: (row.shipping_date as string) ?? undefined,
       delivery: deliveryDetails,
-      items: items.map((item) => ({
-        id: item.id as string,
-        name: item.name as string,
-        quantity: item.quantity as number,
-        price: Number(item.unit_price),
-        total: Number(
-          item.line_total || Number(item.unit_price) * Number(item.quantity),
-        ),
-      })),
+      items: items.map((item) => {
+        const product = item.products as Record<string, unknown> | null | undefined;
+        const name = (product?.name as string) ?? "";
+        return {
+          id: item.id as string,
+          name,
+          quantity: item.quantity as number,
+          price: Number(item.unit_price),
+          total: Number(
+            item.line_total || Number(item.unit_price) * Number(item.quantity),
+          ),
+        };
+      }),
     };
   }
 }
