@@ -11,36 +11,38 @@ import {
   Warehouse,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-
-const quickLinks = [
-  {
-    title: "Preparación",
-    description: "Gestiona la preparación de pedidos",
-    icon: Package,
-    href: "/logistics/prep",
-    color: "text-blue-600",
-    bg: "bg-blue-500/10",
-  },
-  {
-    title: "Envíos",
-    description: "Control de envíos y rutas",
-    icon: Truck,
-    href: "/logistics/shipping",
-    color: "text-emerald-600",
-    bg: "bg-emerald-500/10",
-  },
-  {
-    title: "Albaranes",
-    description: "Documentos de entrega",
-    icon: ScrollText,
-    href: "/logistics/delivery-notes",
-    color: "text-violet-600",
-    bg: "bg-violet-500/10",
-  },
-];
+import { useTranslation } from "react-i18next";
 
 export default function LogisticsDashboard() {
   const { session, signOut } = useActor();
+  const { t } = useTranslation();
+
+  const quickLinks = [
+    {
+      title: t("sidebar.logistics.preparation"),
+      description: t("sidebar.logistics.preparation"),
+      icon: Package,
+      href: "/logistics/prep",
+      color: "text-blue-600",
+      bg: "bg-blue-500/10",
+    },
+    {
+      title: t("sidebar.logistics.shipments"),
+      description: t("sidebar.logistics.shipments"),
+      icon: Truck,
+      href: "/logistics/shipping",
+      color: "text-emerald-600",
+      bg: "bg-emerald-500/10",
+    },
+    {
+      title: t("sidebar.logistics.deliveryNotes"),
+      description: t("sidebar.logistics.deliveryNotes"),
+      icon: ScrollText,
+      href: "/logistics/delivery-notes",
+      color: "text-violet-600",
+      bg: "bg-violet-500/10",
+    },
+  ];
 
   return (
     <AppLayout>
@@ -49,10 +51,10 @@ export default function LogisticsDashboard() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">
-              Panel de Logística
+              {t("logisticsDashboard.title")}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Bienvenido, {session?.name ?? "Operador"}
+              {session?.name ?? "Operador"}
             </p>
           </div>
           <Button
@@ -62,7 +64,7 @@ export default function LogisticsDashboard() {
             className="gap-2 text-muted-foreground hover:text-red-500 hover:border-red-200"
           >
             <LogOut className="h-4 w-4" />
-            Cambiar Perfil
+            {t("auth.signOut")}
           </Button>
         </div>
 
@@ -76,16 +78,12 @@ export default function LogisticsDashboard() {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-800">
-                Módulo en Desarrollo
+                {t("auth.demoComingSoon")}
               </h2>
-              <p className="text-sm text-slate-500 mt-1 leading-relaxed">
-                El panel de logística está en construcción. Próximamente podrás
-                gestionar preparación, envíos y albaranes desde aquí.
-              </p>
               <div className="flex items-center gap-2 mt-3">
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-100/80 text-blue-700 text-xs font-medium">
                   <Construction className="h-3 w-3" />
-                  En construcción
+                  {t("auth.demoComingSoon")}
                 </div>
               </div>
             </div>
@@ -95,7 +93,7 @@ export default function LogisticsDashboard() {
         {/* Quick Access Cards */}
         <div>
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-            Accesos Rápidos
+            {t("adminDashboard.quickAccess")}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {quickLinks.map((link) => (

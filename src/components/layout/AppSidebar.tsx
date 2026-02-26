@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { ActorRole, useActor } from "@/contexts/ActorContext";
 import { cn } from "@/lib/utils";
 import {
   Activity,
@@ -19,104 +20,84 @@ import {
   Warehouse,
 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { NavLink, useLocation } from "react-router-dom";
 
-import { ActorRole, useActor } from "@/contexts/ActorContext";
-
 interface NavItem {
-  title: string;
+  titleKey: string;
   icon: React.ElementType;
   href: string;
   active?: boolean;
 }
 
-// ── Role-based Navigation Config ──
-
 interface NavGroup {
-  title?: string;
+  titleKey?: string;
   items: NavItem[];
 }
 
 const NAV_CONFIG: Record<ActorRole, NavGroup[]> = {
   customer: [
     {
-      title: "Cuenta",
+      titleKey: "sidebar.account",
       items: [
-        { title: "Panel Principal", icon: LayoutDashboard, href: "/dashboard" },
-        { title: "Histórico", icon: History, href: "/orders/history" },
+        { titleKey: "sidebar.customer.dashboard", icon: LayoutDashboard, href: "/dashboard" },
+        { titleKey: "sidebar.customer.history", icon: History, href: "/orders/history" },
       ],
     },
     {
-      title: "Operaciones",
+      titleKey: "sidebar.operations",
       items: [
-        { title: "Crear Pedido", icon: Package, href: "/order/new" },
-        { title: "Mis Pedidos", icon: ClipboardList, href: "/orders" },
+        { titleKey: "sidebar.customer.createOrder", icon: Package, href: "/order/new" },
+        { titleKey: "sidebar.customer.myOrders", icon: ClipboardList, href: "/orders" },
       ],
     },
   ],
   commercial: [
     {
-      title: "Analítica",
+      titleKey: "sidebar.analytics",
       items: [
-        { title: "Dashboard", icon: Activity, href: "/dashboard" },
-        { title: "Precios", icon: TrendingUp, href: "/admin/pricing" },
+        { titleKey: "sidebar.commercial.dashboard", icon: Activity, href: "/dashboard" },
+        { titleKey: "sidebar.commercial.pricing", icon: TrendingUp, href: "/admin/pricing" },
       ],
     },
     {
-      title: "Operaciones",
+      titleKey: "sidebar.operations",
       items: [
-        { title: "Pedidos", icon: FileText, href: "/commercial/orders" },
-        { title: "Clientes", icon: Users, href: "/commercial/customers" },
+        { titleKey: "sidebar.commercial.orders", icon: FileText, href: "/commercial/orders" },
+        { titleKey: "sidebar.commercial.customers", icon: Users, href: "/commercial/customers" },
       ],
     },
   ],
   logistics: [
     {
-      title: "Analítica",
+      titleKey: "sidebar.analytics",
       items: [
-        { title: "Panel Logística", icon: Warehouse, href: "/dashboard" },
+        { titleKey: "sidebar.logistics.dashboard", icon: Warehouse, href: "/dashboard" },
       ],
     },
     {
-      title: "Operaciones",
+      titleKey: "sidebar.operations",
       items: [
-        { title: "Preparación", icon: Package, href: "/logistics/prep" },
-        { title: "Envíos", icon: Truck, href: "/logistics/shipping" },
-        {
-          title: "Albaranes",
-          icon: ScrollText,
-          href: "/logistics/delivery-notes",
-        },
+        { titleKey: "sidebar.logistics.preparation", icon: Package, href: "/logistics/prep" },
+        { titleKey: "sidebar.logistics.shipments", icon: Truck, href: "/logistics/shipping" },
+        { titleKey: "sidebar.logistics.deliveryNotes", icon: ScrollText, href: "/logistics/delivery-notes" },
       ],
     },
   ],
   admin: [
     {
-      title: "Analítica",
+      titleKey: "sidebar.analytics",
       items: [
-        { title: "Resumen Global", icon: LayoutDashboard, href: "/dashboard" },
-        { title: "Precios", icon: TrendingUp, href: "/admin/pricing" },
+        { titleKey: "sidebar.admin.globalSummary", icon: LayoutDashboard, href: "/dashboard" },
+        { titleKey: "sidebar.admin.pricing", icon: TrendingUp, href: "/admin/pricing" },
+        { titleKey: "sidebar.admin.stock", icon: Warehouse, href: "/admin/stock" },
       ],
     },
     {
-      title: "Operaciones",
+      titleKey: "sidebar.operations",
       items: [
-        {
-          title: "Pedidos",
-          icon: FileText,
-          href: "/admin/orders",
-        },
-        {
-          title: "Stock",
-          icon: Warehouse,
-          href: "/admin/stock",
-          active: false,
-        },
-        {
-          title: "Clientes",
-          icon: Users,
-          href: "/commercial/customers",
-        },
+        { titleKey: "sidebar.admin.orders", icon: FileText, href: "/admin/orders" },
+        { titleKey: "sidebar.admin.customers", icon: Users, href: "/commercial/customers" },
       ],
     },
   ],
@@ -132,15 +113,16 @@ export function AppSidebar({
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const { session, signOut } = useActor();
+  const { t } = useTranslation();
 
   const isActive = (path: string) => location.pathname === path;
 
-  // Determine navigation based on role
   const role = session?.role || "customer";
-  // Fallback to customer if role not found in config (safety)
   const navGroups = NAV_CONFIG[role] || NAV_CONFIG["customer"];
 
-  const NavItem = ({ item }: { item: NavItem }) => (
+  const roleLabel = t(`sidebar.roles.${role}`);
+
+  const NavItemComp = ({ item }: { item: NavItem }) => (
     <NavLink
       to={item.href}
       onClick={onNavigate}
@@ -159,7 +141,7 @@ export function AppSidebar({
             : "text-sidebar-muted group-hover:text-sidebar-foreground",
         )}
       />
-      {!collapsed && <span className="leading-none">{item.title}</span>}
+      {!collapsed && <span className="leading-none">{t(item.titleKey)}</span>}
     </NavLink>
   );
 
@@ -183,7 +165,7 @@ export function AppSidebar({
                 ENTALPIA
               </h1>
               <p className="text-[10px] text-sidebar-muted uppercase tracking-wider font-medium mt-0.5">
-                {role === "admin" ? "Administración" : role}
+                {roleLabel}
               </p>
             </div>
           </div>
@@ -201,13 +183,13 @@ export function AppSidebar({
       <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto scrollbar-thin">
         {navGroups.map((group, index) => (
           <div key={index} className="space-y-1">
-            {!collapsed && group.title && (
+            {!collapsed && group.titleKey && (
               <p className="px-3 mb-2 text-[10px] font-bold text-sidebar-muted/70 uppercase tracking-widest">
-                {group.title}
+                {t(group.titleKey)}
               </p>
             )}
             {group.items.filter((item) => item.active ?? true).map((item) => (
-              <NavItem key={item.href} item={item} />
+              <NavItemComp key={item.href} item={item} />
             ))}
           </div>
         ))}
@@ -251,7 +233,7 @@ export function AppSidebar({
             <LogOut className="h-3.5 w-3.5" />
             {!collapsed && (
               <span className="text-[11px] ml-2 font-medium">
-                Cerrar Sesión
+                {t("sidebar.signOut")}
               </span>
             )}
           </Button>
@@ -271,7 +253,7 @@ export function AppSidebar({
               <>
                 <ChevronLeft className="h-3.5 w-3.5" />
                 <span className="text-[11px] ml-2 font-medium">
-                  Colapsar Menú
+                  {t("sidebar.collapseMenu")}
                 </span>
               </>
             )}

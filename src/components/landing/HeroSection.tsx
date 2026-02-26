@@ -1,7 +1,10 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, ChevronDown } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export function HeroSection() {
+    const { t } = useTranslation();
+
     return (
         <section
             id="top"
@@ -32,19 +35,19 @@ export function HeroSection() {
                 {/* Badge */}
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-green-500/30 bg-green-900/30 text-green-300 text-xs font-semibold mb-8">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                    Plataforma profesional de comercio y gestión de cobre
+                    {t("landing.hero.badge")}
                 </div>
 
                 {/* Title */}
                 <h1 className="text-6xl sm:text-7xl lg:text-8xl font-bold text-white tracking-tight mb-4">
-                    SHARY
+                    {t("landing.hero.title")}
                 </h1>
 
 
                 {/* Subtitle */}
                 <p className="text-base sm:text-lg text-white max-w-2xl mx-auto mb-10 leading-relaxed drop-shadow-sm">
-                    Gestiona catálogo, precios y pedidos desde un entorno digital seguro
-                    respaldado por <span className="text-white font-bold underline decoration-green-500/50 underline-offset-4">Entalpia Europe</span>.
+                    {t("landing.hero.subtitle")}
+                    <span className="text-white font-bold underline decoration-green-500/50 underline-offset-4">Entalpia Europe</span>.
                 </p>
 
                 {/* CTA Buttons */}
@@ -53,23 +56,23 @@ export function HeroSection() {
                         to="/login"
                         className="group inline-flex items-center gap-2.5 px-8 py-3.5 rounded-md bg-green-700 text-white text-base font-semibold hover:bg-green-600 transition-all shadow-lg shadow-green-900/40 hover:shadow-green-700/40"
                     >
-                        Acceso Clientes
+                        {t("landing.hero.ctaClient")}
                         <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                     </Link>
                     <a
                         href="#entalpia"
                         className="inline-flex items-center gap-2 px-8 py-3.5 rounded-md border border-white/30 text-white text-base font-semibold hover:bg-white/10 hover:border-white/50 transition-all"
                     >
-                        Conocer Entalpia Europe
+                        {t("landing.hero.ctaAbout")}
                     </a>
                 </div>
 
                 {/* Stats row */}
                 <div className="grid grid-cols-3 gap-6 max-w-lg mx-auto mt-16 pt-12 border-t border-white/10">
                     {[
-                        { value: "+25", label: "Años de trayectoria" },
-                        { value: "EU", label: "Distribución europea" },
-                        { value: "ISO", label: "Certificado calidad" },
+                        { value: "+25", label: t("landing.hero.stats.years") },
+                        { value: "EU", label: t("landing.hero.stats.distr") },
+                        { value: "ISO", label: t("landing.hero.stats.cert") },
                     ].map((stat) => (
                         <div key={stat.label} className="text-center">
                             <div className="text-2xl font-bold text-green-400">{stat.value}</div>

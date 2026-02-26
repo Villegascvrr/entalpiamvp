@@ -154,18 +154,16 @@ export function ActorProvider({ children }: { children: ReactNode }) {
 
         if (error) {
           console.error("[ActorContext] ❌ getSession error:", error);
-          // Even on error, we must stop loading
         }
 
         console.log("[AUTH] getSession finished");
 
-        if (mountedRef.current) {
-          setAuthSession(data.session);
-          // CRITICAL: Stop loading immediately after Auth check
-          setIsLoading(false);
-        }
+        if (!mountedRef.current) return;
+
+        setAuthSession(data.session);
+
         // ═══════════════════════════════════════════════════════
-        // PHASE 2: ACTOR RESOLUTION (Blocking for clean state)
+        // PHASE 2: ACTOR RESOLUTION — keep isLoading=true until done
         // ═══════════════════════════════════════════════════════
         if (data.session?.user) {
           console.log("[AUTH] resolving actor...");
@@ -185,8 +183,8 @@ export function ActorProvider({ children }: { children: ReactNode }) {
           if (mountedRef.current) setSession(null);
         }
 
+        // Only unblock UI after BOTH auth AND actor are ready
         if (mountedRef.current) {
-          // STOP LOADING only after everything is ready
           setIsLoading(false);
         }
       } catch (err) {
@@ -209,6 +207,7 @@ export function ActorProvider({ children }: { children: ReactNode }) {
 
       if (event === "SIGNED_OUT") {
         setSession(null);
+        setAuthSession(null);
         return;
       }
 
@@ -216,12 +215,18 @@ export function ActorProvider({ children }: { children: ReactNode }) {
         (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") &&
         currentSession?.user
       ) {
-        // Re-resolve actor in background
+        // Keep the gate blocked while we resolve the actor
+        setIsLoading(true);
         resolveActor(
           currentSession.user.id,
           currentSession.user.email ?? "",
         ).then((actor) => {
-          if (mountedRef.current) setSession(actor);
+          if (mountedRef.current) {
+            setSession(actor);
+            setIsLoading(false);
+          }
+        }).catch(() => {
+          if (mountedRef.current) setIsLoading(false);
         });
       }
     });
@@ -328,7 +333,7 @@ export function ActorProvider({ children }: { children: ReactNode }) {
   const value: ActorContextType = {
     session,
     setSession,
-    isAuthenticated: appConfig.mode === "demo" ? !!session : !!authSession,
+    isAuthenticated: appConfig.mode === "demo" ? !!session : !!(authSession && session),
     isLoading,
     hasRole,
     login,

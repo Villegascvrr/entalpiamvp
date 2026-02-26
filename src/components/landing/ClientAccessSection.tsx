@@ -1,7 +1,10 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Shield } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export function ClientAccessSection() {
+    const { t } = useTranslation();
+
     return (
         <section className="py-20 bg-[#194f48]">
             <div className="max-w-4xl mx-auto px-6 lg:px-8 text-center">
@@ -11,11 +14,10 @@ export function ClientAccessSection() {
                 </div>
 
                 <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
-                    Acceso Clientes
+                    {t("landing.clientAccess.title")}
                 </h2>
                 <p className="text-green-100 text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
-                    Si ya eres cliente profesional, accede a tu entorno privado de pedidos
-                    y gestión. Tus precios, tu catálogo y tu historial, siempre disponibles.
+                    {t("landing.clientAccess.desc")}
                 </p>
 
                 {/* CTA */}
@@ -23,12 +25,12 @@ export function ClientAccessSection() {
                     to="/login"
                     className="group inline-flex items-center gap-3 px-10 py-4 rounded-md bg-white text-green-800 text-base font-bold hover:bg-green-50 transition-all shadow-xl shadow-green-900/30"
                 >
-                    Acceder ahora
+                    {t("landing.clientAccess.login")}
                     <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                 </Link>
 
                 <p className="text-green-300 text-sm mt-6">
-                    ¿No tienes cuenta? Contacta con tu gestor comercial de Entalpia Europe.
+                    {t("landing.clientAccess.registerTitle")} {t("landing.clientAccess.registerDesc")}
                 </p>
             </div>
         </section>

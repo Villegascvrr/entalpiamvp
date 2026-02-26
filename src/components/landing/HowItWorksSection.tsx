@@ -1,44 +1,44 @@
 import { UserCheck, Tag, Package } from "lucide-react";
-
-const steps = [
-    {
-        number: "01",
-        icon: UserCheck,
-        title: "Accede con tu cuenta profesional",
-        description:
-            "Accede con las credenciales de tu empresa. Cada cuenta está vinculada a tu perfil de cliente y condiciones negociadas con Entalpia Europe.",
-    },
-    {
-        number: "02",
-        icon: Tag,
-        title: "Consulta precios personalizados",
-        description:
-            "Visualiza el catálogo completo con tus precios específicos, calculados en tiempo real sobre el LME según tu tarifa de cliente.",
-    },
-    {
-        number: "03",
-        icon: Package,
-        title: "Realiza pedidos y gestiona entregas",
-        description:
-            "Genera pedidos directamente desde la plataforma, sigue el estado de preparación y coordina la logística de entrega sin intermediarios.",
-    },
-];
+import { useTranslation } from "react-i18next";
 
 export function HowItWorksSection() {
+    const { t, i18n } = useTranslation();
+    const isEs = i18n.language === "es";
+
+    const steps = [
+        {
+            number: "01",
+            icon: UserCheck,
+            title: t("landing.howItWorks.steps.oneTitle"),
+            description: t("landing.howItWorks.steps.oneDesc"),
+        },
+        {
+            number: "02",
+            icon: Tag,
+            title: t("landing.howItWorks.steps.twoTitle"),
+            description: t("landing.howItWorks.steps.twoDesc"),
+        },
+        {
+            number: "03",
+            icon: Package,
+            title: t("landing.howItWorks.steps.threeTitle"),
+            description: t("landing.howItWorks.steps.threeDesc"),
+        },
+    ];
+
     return (
         <section id="como-funciona" className="py-24 bg-white">
             <div className="max-w-7xl mx-auto px-6 lg:px-8">
                 {/* Header */}
                 <div className="text-center mb-16">
                     <p className="text-green-700 text-xs font-semibold uppercase tracking-widest mb-3">
-                        Proceso
+                        {t("landing.howItWorks.badge")}
                     </p>
                     <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-                        Cómo funciona SHARY
+                        {t("landing.howItWorks.title")}
                     </h2>
                     <p className="text-gray-500 max-w-xl mx-auto">
-                        Una plataforma diseñada para profesionales del sector. Sin
-                        complicaciones, sin márgenes ocultos.
+                        {t("landing.howItWorks.desc")}
                     </p>
                 </div>
 
@@ -57,8 +57,8 @@ export function HowItWorksSection() {
                                 </div>
 
                                 {/* Step number */}
-                                <span className="text-xs font-mono font-bold text-green-600 tracking-widest mb-2">
-                                    PASO {step.number}
+                                <span className="text-xs font-mono font-bold text-green-600 tracking-widest mb-2 uppercase">
+                                    {isEs ? "PASO" : "STEP"} {step.number}
                                 </span>
 
                                 <h3 className="text-lg font-bold text-gray-900 mb-3">{step.title}</h3>

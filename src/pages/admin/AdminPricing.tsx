@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 interface PriceEntry {
@@ -104,13 +105,13 @@ const initialPrices: PriceEntry[] = [
 ];
 
 export default function AdminPricing() {
+  const { t } = useTranslation();
   const [prices, setPrices] = useState<PriceEntry[]>(initialPrices);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<{ margin: number } | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
 
   // Market Data State
-  const [lmeIndex, setLmeIndex] = useState("1.15");
   const [lmePrice, setLmePrice] = useState<number | null>(null);
   const [lmeInputValue, setLmeInputValue] = useState("");
   const [lmeHistory, setLmeHistory] = useState<any[]>([]);
@@ -123,17 +124,15 @@ export default function AdminPricing() {
   const [isImporting, setIsImporting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // Recalculate logic: Base(USD) * FX * Index * Margin = Final(EUR)
+  // Recalculate logic: Base(USD) * FX * MarketIndex * Margin = Final(EUR)
   const recalculatePrices = (
     currentPrices: PriceEntry[],
     rate: number,
-    index: number,
   ) => {
     return currentPrices.map((p) => {
-      const newFinalPrice = p.basePrice * rate * index * p.margin;
+      const newFinalPrice = p.basePrice * rate * p.marketIndex * p.margin;
       return {
         ...p,
-        marketIndex: index,
         finalPrice: newFinalPrice,
       };
     });
@@ -155,10 +154,9 @@ export default function AdminPricing() {
     setPrices((prev) =>
       prev.map((p) => {
         if (p.id === id) {
-          // Base(USD) * FX * Index * NewMargin
-          const index = parseFloat(lmeIndex) || 1.15;
+          // Base(USD) * FX * MarketIndex * NewMargin
           const newFinalPrice =
-            p.basePrice * fxRate * index * editValues.margin;
+            p.basePrice * fxRate * p.marketIndex * editValues.margin;
           return { ...p, margin: editValues.margin, finalPrice: newFinalPrice };
         }
         return p;
@@ -170,41 +168,40 @@ export default function AdminPricing() {
     setHasChanges(true);
   };
 
-  const applyMarketIndex = () => {
-    const index = parseFloat(lmeIndex) || 1.15;
-    const newPrices = recalculatePrices(prices, fxRate, index);
-    setPrices(newPrices);
-    setHasChanges(true);
-    toast.success("Índice global aplicado", {
-      description: `Nuevos precios calculados con índice ${index}x`,
-    });
-  };
+  const handleUpdatePrices = async () => {
+    if (!session) return;
+    setIsSyncing(true);
 
-  const handleSaveFXRate = async () => {
-    if (!session || !fxRateInputValue) return;
-    const newRate = parseFloat(fxRateInputValue);
-    if (isNaN(newRate) || newRate <= 0) {
-      toast.error("Tasa de cambio inválida");
+    const newFxRate = parseFloat(fxRateInputValue);
+    const newLme = parseFloat(lmeInputValue);
+
+    if (isNaN(newFxRate) || newFxRate <= 0 || isNaN(newLme) || newLme <= 0) {
+      toast.error(t("adminPricing.invalidValues"), { description: t("adminPricing.invalidValuesDesc") });
+      setIsSyncing(false);
       return;
     }
 
     try {
-      setIsSyncing(true);
-      await fxRateRepository.updateRate(session, newRate);
-      setFxRate(newRate);
+      // Save LME
+      await lmeRepository.setManualPrice(session, newLme);
 
-      // Update all prices with new FX rate
-      const index = parseFloat(lmeIndex) || 1.15;
-      const newPrices = recalculatePrices(prices, newRate, index);
+      // Save FX Rate
+      await fxRateRepository.updateRate(session, newFxRate);
+      setFxRate(newFxRate);
+
+      // Update Prices
+      const newPrices = recalculatePrices(prices, newFxRate);
       setPrices(newPrices);
       setHasChanges(true);
 
-      toast.success("Tipo de cambio actualizado", {
-        description: `1 USD = ${newRate} EUR`,
+      await loadData(); // Reload history
+
+      toast.success(t("adminPricing.toasts.pricesUpdated"), {
+        description: t("adminPricing.toasts.pricesUpdatedDesc"),
       });
     } catch (error) {
-      console.error("Error saving FX rate", error);
-      toast.error("Error actualizando tipo de cambio");
+      console.error("Error updating prices", error);
+      toast.error(t("adminPricing.toasts.updateError"));
     } finally {
       setIsSyncing(false);
     }
@@ -212,8 +209,8 @@ export default function AdminPricing() {
 
   const handleImportCSV = () => {
     setIsImporting(true);
-    toast.info("Importando archivo...", {
-      description: "Analizando precios_2024.csv",
+    toast.info(t("adminPricing.toasts.importStarted"), {
+      description: t("adminPricing.toasts.importDesc"),
     });
 
     setTimeout(() => {
@@ -225,8 +222,8 @@ export default function AdminPricing() {
         })),
       );
       setHasChanges(true);
-      toast.success("Importación completada", {
-        description: "Se han actualizado 6 productos.",
+      toast.success(t("adminPricing.toasts.importComplete"), {
+        description: t("adminPricing.toasts.importCompleteDesc"),
       });
     }, 1500);
   };
@@ -260,34 +257,10 @@ export default function AdminPricing() {
     }
   };
 
-  const handleSaveLME = async () => {
-    if (!session || !lmeInputValue) return;
-    setIsSyncing(true);
-
-    try {
-      const price = parseFloat(lmeInputValue);
-      if (isNaN(price)) {
-        toast.error("Precio inválido");
-        return;
-      }
-
-      await lmeRepository.setManualPrice(session, price);
-      await loadData(); // Reload all to be safe
-
-      toast.success("Precio LME actualizado", {
-        description: `Nuevo precio base: $${price.toFixed(2)}`,
-      });
-    } catch (error) {
-      console.error("Error saving LME price:", error);
-      toast.error("Error guardando precio LME");
-    } finally {
-      setIsSyncing(false);
-    }
-  };
 
   const handlePublish = () => {
-    toast.success("Precios publicados correctamente", {
-      description: "Los clientes verán las nuevas tarifas inmediatamente.",
+    toast.success(t("adminPricing.toasts.publishSuccess"), {
+      description: t("adminPricing.toasts.publishDesc"),
     });
     setHasChanges(false);
   };
@@ -300,7 +273,7 @@ export default function AdminPricing() {
           <div>
             <h1 className="text-lg font-bold font-mono tracking-tight text-foreground/90 uppercase flex items-center gap-2">
               <Calculator className="h-5 w-5 text-primary" />
-              Gestión de Precios
+              {t("adminPricing.title")}
             </h1>
           </div>
           <div className="flex gap-2">
@@ -314,7 +287,7 @@ export default function AdminPricing() {
               <Upload
                 className={cn("h-3.5 w-3.5", isImporting && "animate-bounce")}
               />
-              {isImporting ? "Importando..." : "Importar"}
+              {isImporting ? t("adminPricing.importing") : t("adminPricing.importCSV")}
             </Button>
 
             <Button
@@ -324,7 +297,7 @@ export default function AdminPricing() {
               onClick={handlePublish}
             >
               <Save className="h-3.5 w-3.5" />
-              Publicar
+              {t("adminPricing.publishButton")}
             </Button>
           </div>
         </div>
@@ -335,7 +308,7 @@ export default function AdminPricing() {
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-sm bg-status-low/10 text-status-low border border-status-low/30 animate-pulse">
               <AlertCircle className="h-3.5 w-3.5" />
               <span className="text-xs font-medium">
-                Cambios pendientes de publicar
+                {t("adminPricing.pendingChanges")}
               </span>
             </div>
           )}
@@ -345,7 +318,7 @@ export default function AdminPricing() {
               {/* LME Price Section */}
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">
-                  LME Cobre (Hoy)
+                  {t("adminPricing.lmeCopperToday")}
                 </p>
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-2">
@@ -355,23 +328,15 @@ export default function AdminPricing() {
                     <Input
                       value={lmeInputValue}
                       onChange={(e) => setLmeInputValue(e.target.value)}
-                      className="w-24 h-8 font-mono font-bold text-lg px-2" // Slightly narrower
+                      className="w-24 h-8 font-mono font-bold text-lg px-2"
                       placeholder="0.00"
                     />
-                    <Button
-                      size="sm"
-                      className="h-8 text-xs px-2"
-                      onClick={handleSaveLME}
-                      disabled={isSyncing}
-                    >
-                      <RefreshCw className="h-3.5 w-3.5" />
-                    </Button>
                   </div>
 
                   {lmeHistory.length > 1 && (
                     <div
                       className={cn(
-                        "flex items-center text-xs font-medium px-1.5 py-0.5 rounded-sm",
+                        "flex items-center text-xs font-medium px-1.5 py-0.5 rounded-sm ml-2",
                         (lmePrice || 0) >= lmeHistory[1].price
                           ? "text-green-600 bg-green-500/10"
                           : "text-red-600 bg-red-500/10",
@@ -385,7 +350,7 @@ export default function AdminPricing() {
                       {Math.abs(
                         (((lmePrice || 0) - lmeHistory[1].price) /
                           lmeHistory[1].price) *
-                          100,
+                        100,
                       ).toFixed(1)}
                       %
                     </div>
@@ -398,7 +363,7 @@ export default function AdminPricing() {
               {/* FX Rate Section */}
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">
-                  USD / EUR
+                  {t("adminPricing.usdEur")}
                 </p>
                 <div className="flex items-center gap-2">
                   <Input
@@ -408,51 +373,26 @@ export default function AdminPricing() {
                     onChange={(e) => setFxRateInputValue(e.target.value)}
                     className="w-20 h-8 font-mono font-bold text-lg px-2"
                   />
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="h-8 text-xs px-2"
-                    onClick={handleSaveFXRate}
-                    disabled={isSyncing}
-                  >
-                    Actualizar
-                  </Button>
                 </div>
               </div>
 
-              <div className="h-8 w-px bg-border/60" />
-
-              {/* Market Index Section */}
-              <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">
-                  Indice Global
-                </p>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={lmeIndex}
-                    onChange={(e) => setLmeIndex(e.target.value)}
-                    className="w-20 h-8 font-mono text-sm text-right px-2"
-                  />
-                  <span className="text-xs text-muted-foreground font-mono">
-                    x
-                  </span>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={applyMarketIndex}
-                    className="h-8 text-xs px-3"
-                  >
-                    Aplicar
-                  </Button>
-                </div>
+              {/* Main Update Button */}
+              <div className="flex items-end h-[50px] pb-1 ml-4">
+                <Button
+                  size="default"
+                  className="font-bold px-6 py-2 shadow-sm gap-2"
+                  onClick={handleUpdatePrices}
+                  disabled={isSyncing}
+                >
+                  <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
+                  {t("adminPricing.updatePricesButton")}
+                </Button>
               </div>
             </div>
 
             <div className="text-right">
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
-                Última Act.
+                {t("adminPricing.lastUpdated")}
               </p>
               <p className="text-xs font-mono">08:30 AM</p>
             </div>
@@ -466,19 +406,18 @@ export default function AdminPricing() {
               <table className="w-full text-xs">
                 <thead className="bg-muted/40 sticky top-0 z-10 shadow-sm">
                   <tr className="border-b border-border/60 text-[10px] text-muted-foreground uppercase tracking-wider text-left">
-                    <th className="px-3 py-2 font-medium">Producto</th>
-                    <th className="px-2 py-2 font-medium">Categoría</th>
+                    <th className="px-3 py-2 font-medium">{t("adminPricing.columns.product")}</th>
+                    <th className="px-2 py-2 font-medium">{t("adminPricing.columns.category")}</th>
                     <th className="px-2 py-2 font-medium text-right">
-                      Precio Base ($)
+                      {t("adminPricing.columns.basePrice")}
                     </th>
-                    <th className="px-2 py-2 font-medium text-right">Index</th>
-                    <th className="px-2 py-2 font-medium text-right">Margen</th>
+                    <th className="px-2 py-2 font-medium text-right">{t("adminPricing.columns.margin")}</th>
                     <th className="px-2 py-2 font-medium text-right">
-                      P. Final (€)
+                      {t("adminPricing.columns.finalPrice")}
                     </th>
-                    <th className="px-2 py-2 font-medium text-right">Var.</th>
+                    <th className="px-2 py-2 font-medium text-right">{t("adminPricing.columns.variation")}</th>
                     <th className="px-2 py-2 font-medium text-center">
-                      Estado
+                      {t("adminPricing.columns.state")}
                     </th>
                     <th className="px-2 py-2 font-medium text-right w-[80px]"></th>
                   </tr>
@@ -517,9 +456,6 @@ export default function AdminPricing() {
                         </td>
                         <td className="px-2 py-1.5 align-middle text-right font-mono text-muted-foreground">
                           ${entry.basePrice.toFixed(2)}
-                        </td>
-                        <td className="px-2 py-1.5 align-middle text-right font-mono text-muted-foreground">
-                          {entry.marketIndex.toFixed(2)}x
                         </td>
                         <td className="px-2 py-1.5 align-middle text-right">
                           {editingId === entry.id ? (

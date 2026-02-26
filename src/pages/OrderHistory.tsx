@@ -16,28 +16,26 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-
-const statusConfig: Record<
-  string,
-  { label: string; icon: any; className: string }
-> = {
-  delivered: {
-    label: "Entregado",
-    icon: CheckCircle,
-    className:
-      "bg-status-available/10 text-status-available border-status-available/20",
-  },
-  cancelled: {
-    label: "Cancelado",
-    icon: XCircleIcon,
-    className: "bg-muted text-muted-foreground border-muted-foreground/20",
-  },
-};
+import { useTranslation } from "react-i18next";
 
 export default function OrderHistory() {
   const { archivedOrders, isLoading } = useOrders();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const { t } = useTranslation();
+
+  const statusConfig: Record<string, { label: string; icon: any; className: string }> = {
+    delivered: {
+      label: t("status.delivered"),
+      icon: CheckCircle,
+      className: "bg-status-available/10 text-status-available border-status-available/20",
+    },
+    cancelled: {
+      label: t("status.cancelled"),
+      icon: XCircleIcon,
+      className: "bg-muted text-muted-foreground border-muted-foreground/20",
+    },
+  };
 
   const filteredOrders = archivedOrders.filter((order) => {
     const matchesSearch = order.id
@@ -52,14 +50,14 @@ export default function OrderHistory() {
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Histórico</h1>
+            <h1 className="text-2xl font-bold text-foreground">{t("orderHistory.title")}</h1>
             <p className="text-muted-foreground">
-              Pedidos completados y cancelados
+              {t("orderHistory.subtitle")}
             </p>
           </div>
           <Button variant="outline" className="gap-2">
             <Download className="h-4 w-4" />
-            Exportar CSV
+            {t("orderHistory.exportCSV")}
           </Button>
         </div>
 
@@ -68,7 +66,7 @@ export default function OrderHistory() {
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por nº pedido..."
+              placeholder={t("orderHistory.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -80,7 +78,7 @@ export default function OrderHistory() {
           <div className="flex gap-2">
             <Button variant="outline" size="sm" className="gap-2">
               <CalendarIcon className="h-3.5 w-3.5" />
-              Filtrar por Fecha
+              {t("orderHistory.filterByDate")}
             </Button>
           </div>
 
@@ -92,7 +90,7 @@ export default function OrderHistory() {
               size="sm"
               onClick={() => setSelectedStatus(null)}
             >
-              Todos
+              {t("orderHistory.all")}
             </Button>
             {Object.entries(statusConfig).map(([status, config]) => (
               <Button
@@ -110,7 +108,7 @@ export default function OrderHistory() {
         </div>
 
         {/* Orders List */}
-        <DataCard title="Registro Completo" bodyClassName="p-0">
+        <DataCard title={t("orderHistory.fullRegistry")} bodyClassName="p-0">
           {isLoading ? (
             <div className="p-6 space-y-4">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -122,11 +120,11 @@ export default function OrderHistory() {
               <table className="data-table">
                 <thead>
                   <tr className="bg-muted/30">
-                    <th>Nº Pedido</th>
-                    <th>Fecha</th>
-                    <th>Artículos</th>
-                    <th>Estado</th>
-                    <th className="text-right">Total</th>
+                    <th>{t("orderHistory.columns.orderNumber")}</th>
+                    <th>{t("orderHistory.columns.date")}</th>
+                    <th>{t("orderHistory.columns.items")}</th>
+                    <th>{t("orderHistory.columns.status")}</th>
+                    <th className="text-right">{t("orderHistory.columns.total")}</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -134,7 +132,7 @@ export default function OrderHistory() {
                   {filteredOrders.map((order) => {
                     const status =
                       statusConfig[order.status] ||
-                      statusConfig.pending_validation;
+                      statusConfig.delivered;
                     const StatusIcon = status.icon;
 
                     return (
@@ -145,7 +143,7 @@ export default function OrderHistory() {
                           </span>
                         </td>
                         <td className="text-muted-foreground">{order.date}</td>
-                        <td>{order.items.length} artículos</td>
+                        <td>{t("orderHistory.items", { count: order.items.length })}</td>
                         <td>
                           <Badge
                             variant="outline"
@@ -162,7 +160,7 @@ export default function OrderHistory() {
                           <Link to={`/orders/${order.id}`}>
                             <Button variant="ghost" size="sm" className="gap-1">
                               <Eye className="h-3 w-3" />
-                              Detalles
+                              {t("orderHistory.details")}
                             </Button>
                           </Link>
                         </td>
@@ -174,7 +172,7 @@ export default function OrderHistory() {
 
               {filteredOrders.length === 0 && (
                 <div className="p-8 text-center text-muted-foreground">
-                  No se encontraron pedidos con los criterios seleccionados
+                  {t("orderHistory.noOrders")}
                 </div>
               )}
             </>

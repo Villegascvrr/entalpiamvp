@@ -1,5 +1,6 @@
 import { TrendingUp, TrendingDown, Minus, RefreshCw, Newspaper, ArrowRight, ExternalLink } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, YAxis } from "recharts";
+import { useTranslation } from "react-i18next";
 
 const MOCK_PRICE = 9_847.5;
 const MOCK_CHANGE = +1.23;
@@ -53,6 +54,8 @@ function TrendIcon({ trend }: { trend: string }) {
 }
 
 export function CopperMarketSection() {
+    const { t } = useTranslation();
+
     return (
         <>
             {/* ─────────────────────────────────────────────────────────────
@@ -64,19 +67,18 @@ export function CopperMarketSection() {
                     <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-12">
                         <div>
                             <p className="text-green-700 text-xs font-semibold uppercase tracking-widest mb-2">
-                                Mercado
+                                {t("landing.market.badge")}
                             </p>
                             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900">
-                                Mercado del Cobre
+                                {t("landing.market.title")}
                             </h2>
                             <p className="text-gray-500 mt-2 max-w-xl">
-                                Referencia de precios y actividad sectorial. Los clientes SHARY
-                                acceden a precios personalizados en tiempo real.
+                                {t("landing.market.desc")}
                             </p>
                         </div>
                         <div className="flex items-center gap-2 text-xs text-gray-400 shrink-0">
                             <RefreshCw size={12} />
-                            <span>Datos orientativos (Mock) · Tiempo real solo clientes</span>
+                            <span>{t("landing.market.disclaimer")}</span>
                         </div>
                     </div>
 
@@ -87,7 +89,7 @@ export function CopperMarketSection() {
                                 <div>
                                     <div className="flex items-center gap-2 mb-1">
                                         <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                        <p className="text-gray-500 text-sm font-medium">LME Copper Cash</p>
+                                        <p className="text-gray-500 text-sm font-medium">{t("landing.market.chart.cash")}</p>
                                     </div>
                                     <div className="flex items-baseline gap-3">
                                         <span className="text-4xl font-bold tabular-nums text-gray-900">
@@ -105,8 +107,8 @@ export function CopperMarketSection() {
                                         <button
                                             key={period}
                                             className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${period === "1M"
-                                                    ? "bg-white text-green-700 shadow-sm"
-                                                    : "text-gray-500 hover:text-gray-700"
+                                                ? "bg-white text-green-700 shadow-sm"
+                                                : "text-gray-500 hover:text-gray-700"
                                                 }`}
                                         >
                                             {period}
@@ -128,7 +130,7 @@ export function CopperMarketSection() {
                                         <Tooltip
                                             contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}
                                             itemStyle={{ color: "#15803d", fontWeight: 600 }}
-                                            formatter={(value: number) => [`$${value}`, "Precio"]}
+                                            formatter={(value: number) => [`$${value}`, t("landing.market.chart.priceText")]}
                                         />
                                         <YAxis domain={["dataMin - 50", "dataMax + 50"]} hide />
                                         <Area
@@ -163,10 +165,10 @@ export function CopperMarketSection() {
                                         </p>
                                         <span
                                             className={`text-xs font-medium ${ind.trend === "up"
-                                                    ? "text-green-600"
-                                                    : ind.trend === "down"
-                                                        ? "text-red-500"
-                                                        : "text-gray-400"
+                                                ? "text-green-600"
+                                                : ind.trend === "down"
+                                                    ? "text-red-500"
+                                                    : "text-gray-400"
                                                 }`}
                                         >
                                             {ind.change}
@@ -189,15 +191,15 @@ export function CopperMarketSection() {
                             <div className="flex items-center gap-2 mb-3">
                                 <Newspaper className="text-green-300" size={20} />
                                 <span className="text-green-300 text-xs font-bold uppercase tracking-widest">
-                                    Actualidad
+                                    {t("landing.market.badge")}
                                 </span>
                             </div>
                             <h3 className="text-3xl font-bold text-white">
-                                Noticias del Sector
+                                {t("landing.market.newsTitle")}
                             </h3>
                         </div>
                         <a href="#" className="text-sm font-medium text-green-200 hover:text-white flex items-center gap-1 transition-colors">
-                            Ver todas las noticias <ArrowRight size={14} />
+                            {t("landing.market.viewAllNews")} <ArrowRight size={14} />
                         </a>
                     </div>
 

@@ -1,11 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { useActor } from "@/contexts/ActorContext";
 import { supabase } from "@/lib/supabaseClient";
 import { cn } from "@/lib/utils";
 import { AlertCircle, CheckCircle2, Loader2, Lock, LogIn } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 // ─────────────────────────────────────────────────────────────
@@ -45,6 +47,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const { login, isLoading } = useActor();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   // DEV: Data Mode State
@@ -74,9 +77,9 @@ export default function Login() {
 
     try {
       await login(email, password);
-      // No need to navigate manually, AuthGate handles it by unmounting Login
+      // No need to navigate manually, LoginGate handles it
     } catch (err: any) {
-      setError(err.message || "Error al iniciar sesión");
+      setError(err.message || t("auth.errorInvalidCredentials"));
     }
   };
 
@@ -105,13 +108,16 @@ export default function Login() {
         <div className="lg:col-span-7 p-6 lg:p-10 bg-white flex flex-col justify-center h-full overflow-hidden">
           {/* Header */}
           <div className="mb-6 flex-shrink-0">
-            <div className="flex items-center gap-3 mb-1">
-              <div className="h-8 w-8 bg-green-700 rounded flex items-center justify-center shadow-sm">
-                <span className="font-bold text-white text-lg">E</span>
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 bg-green-700 rounded flex items-center justify-center shadow-sm">
+                  <span className="font-bold text-white text-lg">E</span>
+                </div>
+                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+                  ENTALPIA
+                </h1>
               </div>
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-                ENTALPIA
-              </h1>
+              <LanguageToggle />
             </div>
             <p className="text-slate-500 text-sm">
               Plataforma de gestión industrial
@@ -120,10 +126,10 @@ export default function Login() {
 
           <div className="mb-5 flex-shrink-0">
             <h2 className="text-lg font-semibold text-slate-900 mb-0.5">
-              Bienvenido de nuevo
+              {t("auth.welcomeBack")}
             </h2>
             <p className="text-xs text-slate-500">
-              Accede a la plataforma según tu rol operativo.
+              {t("auth.welcomeSubtitle")}
             </p>
           </div>
 
@@ -137,14 +143,14 @@ export default function Login() {
                 htmlFor="email"
                 className="text-slate-500 text-[10px] uppercase font-semibold tracking-wider"
               >
-                Email Corporativo
+                {t("auth.email")}
               </Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="usuario@entalpia.com"
+                placeholder={t("auth.emailPlaceholder")}
                 required
                 className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-green-600 focus:ring-1 focus:ring-green-600 h-9 rounded-md transition-all shadow-sm text-sm"
               />
@@ -156,7 +162,7 @@ export default function Login() {
                   htmlFor="password"
                   className="text-slate-500 text-[10px] uppercase font-semibold tracking-wider"
                 >
-                  Contraseña
+                  {t("auth.password")}
                 </Label>
               </div>
               <Input
@@ -188,7 +194,7 @@ export default function Login() {
                 ) : (
                   <LogIn className="h-3.5 w-3.5 mr-2" />
                 )}
-                Iniciar Sesión
+                {isLoading ? t("auth.signingIn") : t("auth.signInButton")}
               </Button>
               <p className="text-center text-slate-500 text-[10px] mt-2">
                 Usa una cuenta demo del panel derecho o introduce credenciales.
@@ -203,7 +209,7 @@ export default function Login() {
                 DEV ONLY
               </span>
               <h3 className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                Modo de datos
+                {t("auth.dataMode")}
               </h3>
             </div>
 
@@ -211,9 +217,7 @@ export default function Login() {
             <div className="mb-3 flex items-start gap-2 bg-green-50 border border-green-200 rounded-md px-3 py-2">
               <span className="text-green-600 text-[10px] mt-0.5">💡</span>
               <p className="text-[10px] text-green-700 leading-snug">
-                <strong>Recomendado:</strong> Para ver el prototipo/demo
-                completo, usa siempre <strong>Demo UI</strong>. Los otros modos
-                requieren conexión al backend.
+                {t("auth.dataModeRecommended")}
               </p>
             </div>
 
@@ -221,18 +225,18 @@ export default function Login() {
               {[
                 {
                   id: "mock",
-                  label: "Demo UI (datos fake)",
-                  desc: "Para diseño visual y pruebas rápidas sin backend.",
+                  label: t("auth.dataModes.mock"),
+                  desc: t("auth.dataModes.mockDesc"),
                 },
                 {
                   id: "supabase-demo",
-                  label: "Sandbox Demo",
-                  desc: "Flujo completo usando backend real con datos de prueba.",
+                  label: t("auth.dataModes.sandbox"),
+                  desc: t("auth.dataModes.sandboxDesc"),
                 },
                 {
                   id: "supabase-real-dev",
-                  label: "Sandbox Antonio",
-                  desc: "Entorno aislado para datos reales de Entalpia.\nActualmente puede aparecer vacío si aún no se han cargado datos.",
+                  label: t("auth.dataModes.real"),
+                  desc: t("auth.dataModes.realDesc"),
                 },
               ].map((mode) => (
                 <label
@@ -281,12 +285,10 @@ export default function Login() {
         <div className="lg:col-span-5 p-6 lg:p-8 bg-slate-50 border-t lg:border-t-0 lg:border-l border-slate-200 flex flex-col justify-center h-full overflow-hidden">
           <div className="mb-4 flex-shrink-0">
             <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Cuentas Demo Disponibles
+              {t("auth.demoAccounts")}
             </h3>
             <p className="text-[10px] text-slate-500 leading-relaxed">
-              Selecciona un perfil operativo para simular la experiencia de
-              usuario. Los roles desactivados estarán disponibles en futuras
-              versiones.
+              {t("auth.demoSubtitle")}
             </p>
           </div>
 
@@ -318,12 +320,12 @@ export default function Login() {
                     </span>
                     {account.active && (
                       <span className="text-[9px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-1 py-0.5 rounded ml-1.5 font-medium">
-                        Disponible
+                        {t("auth.demoOnlyAdmin")}
                       </span>
                     )}
                     {!account.active && (
                       <span className="text-[9px] text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded ml-1.5 font-medium">
-                        Próximamente
+                        {t("auth.demoComingSoon")}
                       </span>
                     )}
                   </div>
@@ -345,11 +347,11 @@ export default function Login() {
 
           <div className="mt-6 p-3 bg-white border border-slate-200 rounded text-[10px] text-slate-600 leading-relaxed shadow-sm flex-shrink-0">
             <strong className="text-slate-800 block mb-0.5">
-              Estado del Sistema
+              {t("auth.systemStatus")}
             </strong>
             <div className="flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>Operativo — v0.5.0-beta</span>
+              <span>{t("auth.systemOperational")}</span>
             </div>
           </div>
         </div>

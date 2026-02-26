@@ -32,10 +32,10 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 // Helper to generate consistent visual status from ID
 const getCustomerStatus = (id: string): "active" | "inactive" | "risk" => {
-  // Simple hash to get consistent results for mock data
   const charCode = id.charCodeAt(id.length - 1) || 0;
   const statuses: ("active" | "inactive" | "risk")[] = [
     "active",
@@ -47,11 +47,13 @@ const getCustomerStatus = (id: string): "active" | "inactive" | "risk" => {
   return statuses[charCode % statuses.length];
 };
 
-const StatusBadge = ({
+function StatusBadge({
   status,
 }: {
   status: "active" | "inactive" | "risk";
-}) => {
+}) {
+  const { t } = useTranslation();
+
   switch (status) {
     case "active":
       return (
@@ -59,7 +61,7 @@ const StatusBadge = ({
           variant="outline"
           className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] h-5"
         >
-          Activo
+          {t("customers.statusActive")}
         </Badge>
       );
     case "inactive":
@@ -68,7 +70,7 @@ const StatusBadge = ({
           variant="outline"
           className="bg-slate-500/10 text-slate-500 border-slate-500/20 text-[10px] h-5"
         >
-          Inactivo
+          {t("customers.statusInactive")}
         </Badge>
       );
     case "risk":
@@ -77,19 +79,19 @@ const StatusBadge = ({
           variant="outline"
           className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px] h-5"
         >
-          Riesgo
+          {t("customers.statusRisk")}
         </Badge>
       );
   }
-};
+}
 
 export default function Customers() {
   const { customers, isLoading } = useCustomers();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [provinceFilter, setProvinceFilter] = useState("all");
+  const { t } = useTranslation();
 
-  // Extract unique provinces for filter
   const provinces = Array.from(
     new Set(customers.map((c) => c.province).filter(Boolean)),
   ).sort();
@@ -122,17 +124,17 @@ export default function Customers() {
             <div className="flex items-center gap-3">
               <h1 className="text-xl font-bold flex items-center gap-2">
                 <Users className="h-5 w-5 text-sky-600" />
-                Clientes
+                {t("customers.title")}
               </h1>
               <Badge
                 variant="secondary"
                 className="text-[10px] px-1.5 h-5 font-normal bg-sky-500/10 text-sky-700 border-sky-200"
               >
-                {activeCount} activos
+                {activeCount} {t("customers.statusActive").toLowerCase()}
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Resumen de cartera comercial
+              {t("customers.subtitle")}
             </p>
           </div>
           <Button
@@ -141,7 +143,7 @@ export default function Customers() {
             className="gap-2 shadow-sm"
           >
             <Plus className="h-4 w-4" />
-            Nuevo Cliente
+            {t("customers.newCustomer")}
           </Button>
         </div>
 
@@ -151,7 +153,7 @@ export default function Customers() {
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por empresa, CIF o persona de contacto..."
+                placeholder={t("customers.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-8 h-9 text-sm"
@@ -163,7 +165,7 @@ export default function Customers() {
               value={provinceFilter}
               onChange={(e) => setProvinceFilter(e.target.value)}
             >
-              <option value="all">Todas las Provincias</option>
+              <option value="all">{t("customers.allProvinces")}</option>
               {provinces.map((p) => (
                 <option key={p} value={p as string}>
                   {p}
@@ -179,13 +181,13 @@ export default function Customers() {
             <Table>
               <TableHeader className="bg-muted/40">
                 <TableRow>
-                  <TableHead className="w-[300px]">Empresa</TableHead>
-                  <TableHead>Tier</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Provincia</TableHead>
-                  <TableHead>CIF/NIF</TableHead>
-                  <TableHead>Contacto</TableHead>
-                  <TableHead>Datos</TableHead>
+                  <TableHead className="w-[300px]">{t("customers.columns.company")}</TableHead>
+                  <TableHead>{t("customers.columns.tier")}</TableHead>
+                  <TableHead>{t("customers.columns.status")}</TableHead>
+                  <TableHead>{t("customers.columns.province")}</TableHead>
+                  <TableHead>{t("customers.columns.cif")}</TableHead>
+                  <TableHead>{t("customers.columns.contact")}</TableHead>
+                  <TableHead>{t("customers.columns.data")}</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -195,7 +197,7 @@ export default function Customers() {
                     <TableCell colSpan={7} className="h-32 text-center">
                       <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                         <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                        <span className="text-xs">Cargando clientes...</span>
+                        <span className="text-xs">{t("common.loading")}</span>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -207,18 +209,16 @@ export default function Customers() {
                           <Briefcase className="h-6 w-6 text-muted-foreground" />
                         </div>
                         <h3 className="text-lg font-semibold text-foreground">
-                          No hay clientes todavía
+                          {t("customers.noCustomers")}
                         </h3>
-                        <p className="text-sm text-muted-foreground mt-1 mb-6 text-center">
-                          Comienza añadiendo el primer cliente a tu cartera para
-                          gestionar pedidos y ofertas.
-                        </p>
                         <Button
-                          onClick={() => navigate("/commercial/customers/new")}
-                          className="gap-2"
+                          onClick={() =>
+                            navigate("/commercial/customers/new")
+                          }
+                          className="gap-2 mt-6"
                         >
                           <UserPlus className="h-4 w-4" />
-                          Crear primer cliente
+                          {t("customers.newCustomer")}
                         </Button>
                       </div>
                     </TableCell>
@@ -253,7 +253,7 @@ export default function Customers() {
                                 {customer.name}
                               </span>
                               <span className="text-[11px] text-muted-foreground">
-                                {customer.sales_points} puntos de venta
+                                {t("customers.salePoints", { count: customer.sales_points })}
                               </span>
                             </div>
                           </div>
@@ -332,7 +332,7 @@ export default function Customers() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                              <DropdownMenuLabel>{t("common.actions")}</DropdownMenuLabel>
                               <DropdownMenuItem
                                 onClick={() =>
                                   navigate(
@@ -340,14 +340,14 @@ export default function Customers() {
                                   )
                                 }
                               >
-                                Ver Detalles
+                                {t("customerDetail.backToCustomers").replace("Volver a ", "Ver ")}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() =>
                                   navigate(`/order/new?customer=${customer.id}`)
                                 }
                               >
-                                Crear Pedido
+                                {t("sidebar.customer.createOrder")}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

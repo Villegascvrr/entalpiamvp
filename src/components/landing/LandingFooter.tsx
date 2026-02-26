@@ -1,12 +1,16 @@
 import { Link } from "react-router-dom";
-
-const footerLinks = [
-    { label: "Aviso Legal", href: "#" },
-    { label: "Política de Privacidad", href: "#" },
-    { label: "Cookies", href: "#" },
-];
+import { useTranslation } from "react-i18next";
 
 export function LandingFooter() {
+    const { t, i18n } = useTranslation();
+    const isEs = i18n.language === "es";
+
+    const footerLinks = [
+        { label: t("landing.footer.legal"), href: "#" },
+        { label: t("landing.footer.privacy"), href: "#" },
+        { label: t("landing.footer.cookies"), href: "#" },
+    ];
+
     return (
         <footer className="bg-zinc-950 border-t border-zinc-900 py-10">
             <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -20,7 +24,9 @@ export function LandingFooter() {
                             </span>
                         </div>
                         <p className="text-xs text-zinc-500 max-w-xs">
-                            Plataforma profesional B2B para la gestión de comercio de cobre industrial.
+                            {isEs
+                                ? "Plataforma profesional B2B para la gestión de comercio de cobre industrial."
+                                : "Professional B2B platform for industrial copper trade management."}
                         </p>
                     </div>
 
@@ -42,17 +48,19 @@ export function LandingFooter() {
                         to="/login"
                         className="inline-flex items-center px-5 py-2 rounded-md text-xs font-bold bg-green-700 text-white hover:bg-green-600 transition-colors shrink-0"
                     >
-                        Acceso Clientes
+                        {t("landing.nav.clientAccess")}
                     </Link>
                 </div>
 
                 {/* Divider + copyright */}
                 <div className="mt-8 pt-6 border-t border-zinc-900 flex flex-col sm:flex-row sm:justify-between gap-2">
                     <p className="text-xs text-zinc-600">
-                        © {new Date().getFullYear()} Entalpia Europe. Todos los derechos reservados.
+                        © {new Date().getFullYear()} Entalpia Europe. {t("landing.footer.rights")}
                     </p>
                     <p className="text-xs text-zinc-700">
-                        SHARY · Plataforma de gestión B2B del cobre
+                        {isEs
+                            ? "SHARY · Plataforma de gestión B2B del cobre"
+                            : "SHARY · B2B Copper Management Platform"}
                     </p>
                 </div>
             </div>

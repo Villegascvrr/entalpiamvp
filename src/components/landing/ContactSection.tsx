@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { MapPin, Phone, Mail, Send, CheckCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export function ContactSection() {
+    const { t, i18n } = useTranslation();
+    const isEs = i18n.language === "es";
+
     const [sent, setSent] = useState(false);
     const [form, setForm] = useState({
         name: "",
@@ -22,14 +26,13 @@ export function ContactSection() {
                 {/* Header */}
                 <div className="text-center mb-14">
                     <p className="text-green-700 text-xs font-semibold uppercase tracking-widest mb-3">
-                        Contacto
+                        {t("landing.contact.badge")}
                     </p>
                     <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-                        ¿Hablamos?
+                        {t("landing.contact.title")}
                     </h2>
                     <p className="text-gray-500 max-w-xl mx-auto">
-                        Si quieres más información sobre SHARY o sobre nuestros servicios de
-                        distribución, contacta con nuestro equipo comercial.
+                        {t("landing.contact.desc")}
                     </p>
                 </div>
 
@@ -40,11 +43,12 @@ export function ContactSection() {
                             <div className="flex flex-col items-center justify-center h-full min-h-[280px] text-center gap-4">
                                 <CheckCircle size={52} className="text-green-600" />
                                 <h3 className="text-xl font-bold text-gray-900">
-                                    Mensaje enviado
+                                    {isEs ? "Mensaje enviado" : "Message sent"}
                                 </h3>
                                 <p className="text-gray-500 max-w-xs">
-                                    Nos pondremos en contacto contigo en un plazo de 24–48 horas
-                                    hábiles.
+                                    {isEs
+                                        ? "Nos pondremos en contacto contigo en un plazo de 24–48 horas hábiles."
+                                        : "We will contact you within 24-48 business hours."}
                                 </p>
                                 <button
                                     onClick={() => {
@@ -53,7 +57,7 @@ export function ContactSection() {
                                     }}
                                     className="text-sm text-green-700 font-semibold hover:underline mt-2"
                                 >
-                                    Enviar otro mensaje
+                                    {isEs ? "Enviar otro mensaje" : "Send another message"}
                                 </button>
                             </div>
                         ) : (
@@ -61,12 +65,12 @@ export function ContactSection() {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                     <div>
                                         <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">
-                                            Nombre
+                                            {t("landing.contact.form.name")}
                                         </label>
                                         <input
                                             type="text"
                                             required
-                                            placeholder="Tu nombre"
+                                            placeholder={isEs ? "Tu nombre" : "Your name"}
                                             value={form.name}
                                             onChange={(e) => setForm({ ...form, name: e.target.value })}
                                             className="w-full px-4 py-2.5 rounded-md border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent transition"
@@ -74,12 +78,12 @@ export function ContactSection() {
                                     </div>
                                     <div>
                                         <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">
-                                            Empresa
+                                            {t("landing.contact.form.company")}
                                         </label>
                                         <input
                                             type="text"
                                             required
-                                            placeholder="Nombre de tu empresa"
+                                            placeholder={isEs ? "Nombre de tu empresa" : "Your company name"}
                                             value={form.company}
                                             onChange={(e) => setForm({ ...form, company: e.target.value })}
                                             className="w-full px-4 py-2.5 rounded-md border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent transition"
@@ -94,7 +98,7 @@ export function ContactSection() {
                                     <input
                                         type="email"
                                         required
-                                        placeholder="correo@empresa.com"
+                                        placeholder={isEs ? "correo@empresa.com" : "email@company.com"}
                                         value={form.email}
                                         onChange={(e) => setForm({ ...form, email: e.target.value })}
                                         className="w-full px-4 py-2.5 rounded-md border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent transition"
@@ -103,12 +107,12 @@ export function ContactSection() {
 
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">
-                                        Mensaje
+                                        {t("landing.contact.form.message")}
                                     </label>
                                     <textarea
                                         required
                                         rows={5}
-                                        placeholder="¿En qué podemos ayudarte?"
+                                        placeholder={isEs ? "¿En qué podemos ayudarte?" : "How can we help you?"}
                                         value={form.message}
                                         onChange={(e) => setForm({ ...form, message: e.target.value })}
                                         className="w-full px-4 py-2.5 rounded-md border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent transition resize-none"
@@ -120,7 +124,7 @@ export function ContactSection() {
                                     className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-md bg-green-700 text-white text-sm font-bold hover:bg-green-800 transition-colors shadow-sm"
                                 >
                                     <Send size={15} />
-                                    Enviar mensaje
+                                    {t("landing.contact.form.send")}
                                 </button>
                             </form>
                         )}
@@ -133,9 +137,9 @@ export function ContactSection() {
                                 Entalpia Europe
                             </h3>
                             <p className="text-gray-500 text-sm leading-relaxed max-w-sm">
-                                Distribuidor industrial de cobre con presencia en toda Europa.
-                                Nuestro equipo comercial está disponible para atender consultas de
-                                grandes volúmenes, condiciones especiales y altas de nuevos clientes.
+                                {isEs
+                                    ? "Distribuidor industrial de cobre con presencia en toda Europa. Nuestro equipo comercial está disponible para atender consultas de grandes volúmenes, condiciones especiales y altas de nuevos clientes."
+                                    : "Industrial copper supplier with presence throughout Europe. Our commercial team is available to answer inquiries about large volumes, special conditions, and new client registrations."}
                             </p>
                         </div>
 
@@ -143,12 +147,12 @@ export function ContactSection() {
                             {[
                                 {
                                     icon: MapPin,
-                                    label: "Dirección",
+                                    label: isEs ? "Dirección" : "Address",
                                     value: "Polígono Industrial Can Rosés\nBarcelona, España",
                                 },
                                 {
                                     icon: Phone,
-                                    label: "Teléfono",
+                                    label: isEs ? "Teléfono" : "Phone",
                                     value: "+34 93 XXX XX XX",
                                 },
                                 {
@@ -176,9 +180,9 @@ export function ContactSection() {
 
                         <div className="pt-4 border-t border-gray-200">
                             <p className="text-xs text-gray-400 leading-relaxed">
-                                Horario de atención comercial:{" "}
+                                {isEs ? "Horario de atención comercial:" : "Business hours:"}{" "}
                                 <span className="text-gray-700 font-medium">
-                                    Lunes a Viernes, 8:00–18:00 h (CET)
+                                    {isEs ? "Lunes a Viernes, 8:00–18:00 h (CET)" : "Monday to Friday, 8:00–18:00 (CET)"}
                                 </span>
                             </p>
                         </div>

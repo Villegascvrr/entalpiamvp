@@ -9,39 +9,37 @@ import { cn } from "@/lib/utils";
 import { CheckCircle, Clock, Eye, Package, Search, Truck } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-
-const statusConfig: Record<
-  string,
-  { label: string; icon: any; className: string }
-> = {
-  pending_validation: {
-    label: "Pend. Validación",
-    icon: Clock,
-    className: "bg-status-low/10 text-status-low border-status-low/20",
-  },
-  confirmed: {
-    label: "Confirmado",
-    icon: CheckCircle,
-    className: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-  },
-  preparing: {
-    label: "En Preparación",
-    icon: Package,
-    className: "bg-primary/10 text-primary border-primary/20",
-  },
-  shipped: {
-    label: "Enviado",
-    icon: Truck,
-    className: "bg-primary/10 text-primary border-primary/20",
-  },
-};
+import { useTranslation } from "react-i18next";
 
 export default function MyOrders() {
   const { activeOrders, isLoading } = useOrders();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const { t } = useTranslation();
 
-  // Show recent subset (or all active) - let's show all active for now as it's the main view
+  const statusConfig: Record<string, { label: string; icon: any; className: string }> = {
+    pending_validation: {
+      label: t("status.pending_validation"),
+      icon: Clock,
+      className: "bg-status-low/10 text-status-low border-status-low/20",
+    },
+    confirmed: {
+      label: t("status.confirmed"),
+      icon: CheckCircle,
+      className: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+    },
+    preparing: {
+      label: t("status.preparing"),
+      icon: Package,
+      className: "bg-primary/10 text-primary border-primary/20",
+    },
+    shipped: {
+      label: t("status.shipped"),
+      icon: Truck,
+      className: "bg-primary/10 text-primary border-primary/20",
+    },
+  };
+
   const orders = activeOrders;
 
   const filteredOrders = orders.filter((order) => {
@@ -56,9 +54,9 @@ export default function MyOrders() {
     <AppLayout>
       <div className="max-w-5xl mx-auto space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Mis Pedidos</h1>
+          <h1 className="text-2xl font-bold text-foreground">{t("myOrders.title")}</h1>
           <p className="text-muted-foreground">
-            Pedidos en curso y gestión operativa
+            {t("myOrders.subtitle")}
           </p>
         </div>
 
@@ -67,7 +65,7 @@ export default function MyOrders() {
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por número de pedido..."
+              placeholder={t("myOrders.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -79,7 +77,7 @@ export default function MyOrders() {
               size="sm"
               onClick={() => setSelectedStatus(null)}
             >
-              Todos
+              {t("myOrders.all")}
             </Button>
             {Object.entries(statusConfig).map(([status, config]) => (
               <Button
@@ -97,7 +95,7 @@ export default function MyOrders() {
         </div>
 
         {/* Orders List */}
-        <DataCard title="Pedidos Activos" bodyClassName="p-0">
+        <DataCard title={t("myOrders.activeOrders")} bodyClassName="p-0">
           {isLoading ? (
             <div className="p-6 space-y-4">
               {Array.from({ length: 4 }).map((_, i) => (
@@ -109,11 +107,11 @@ export default function MyOrders() {
               <table className="data-table">
                 <thead>
                   <tr className="bg-muted/30">
-                    <th>Nº Pedido</th>
-                    <th>Fecha</th>
-                    <th>Artículos</th>
-                    <th>Estado</th>
-                    <th className="text-right">Total</th>
+                    <th>{t("myOrders.columns.orderNumber")}</th>
+                    <th>{t("myOrders.columns.date")}</th>
+                    <th>{t("myOrders.columns.items")}</th>
+                    <th>{t("myOrders.columns.status")}</th>
+                    <th className="text-right">{t("myOrders.columns.total")}</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -132,7 +130,7 @@ export default function MyOrders() {
                           </span>
                         </td>
                         <td className="text-muted-foreground">{order.date}</td>
-                        <td>{order.items.length} artículos</td>
+                        <td>{t("myOrders.items", { count: order.items.length })}</td>
                         <td>
                           <Badge
                             variant="outline"
@@ -149,7 +147,7 @@ export default function MyOrders() {
                           <Link to={`/orders/${order.id}`}>
                             <Button variant="ghost" size="sm" className="gap-1">
                               <Eye className="h-3 w-3" />
-                              Ver
+                              {t("myOrders.view")}
                             </Button>
                           </Link>
                         </td>
@@ -161,7 +159,7 @@ export default function MyOrders() {
 
               {filteredOrders.length === 0 && (
                 <div className="p-8 text-center text-muted-foreground">
-                  No se encontraron pedidos con los criterios seleccionados
+                  {t("myOrders.noOrders")}
                 </div>
               )}
             </>

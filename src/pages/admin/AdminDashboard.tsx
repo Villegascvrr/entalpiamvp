@@ -13,10 +13,7 @@ import {
   Truck,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-
-// Datos simulados - Resumen operativo
-// Datos simulados - Resumen operativo
-// const pendingOrders = []; // Moved to Repository
+import { useTranslation } from "react-i18next";
 
 const stockAlerts = [
   {
@@ -49,17 +46,14 @@ const lmeHistory = [
 
 import { useOrders } from "@/hooks/useOrders";
 
-// ... imports remain same
-
 export default function AdminDashboard() {
   const { recentOrders: pendingOrders, isLoading } = useOrders();
+  const { t } = useTranslation();
 
-  // Use mock data for critical stock since we haven't created a ProductRepository yet
   const criticalStock = stockAlerts.filter(
     (s) => s.status === "out" || s.status === "critical",
   ).length;
 
-  // Calculate volume from orders if loaded, otherwise 0
   const todayVolume =
     pendingOrders.reduce((sum, o) => sum + o.total, 0) + 12450.0;
 
@@ -67,19 +61,13 @@ export default function AdminDashboard() {
 
   return (
     <AppLayout>
-      {/* 
-        Changes for One-Page View:
-        1. h-full to fill the AppLayout's main container.
-        2. overflow-hidden to prevent the main scrollbar.
-        3. flex-col to organize Header and Main Content.
-      */}
       <div className="flex flex-col h-full bg-background overflow-hidden rounded-md border border-border/40 shadow-sm">
-        {/* 1. TOP ALERT BAR (Industrial Strip) - Fixed Height */}
+        {/* 1. TOP ALERT BAR */}
         <div className="flex-none flex items-center justify-between px-6 py-3 bg-muted/30 border-b border-border/60">
           <div className="flex items-center gap-6">
             <h1 className="text-lg font-bold font-mono tracking-tight text-foreground/90 uppercase flex items-center gap-2">
               <Activity className="h-5 w-5 text-primary" />
-              Control Panel
+              {t("adminDashboard.title")}
             </h1>
 
             {/* Status Indicators */}
@@ -93,7 +81,7 @@ export default function AdminDashboard() {
                 )}
               >
                 <Clock className="h-3.5 w-3.5" />
-                <span>{pendingOrders.length} Pendientes</span>
+                <span>{pendingOrders.length} {t("adminDashboard.pendingBadge")}</span>
               </div>
 
               <div
@@ -105,12 +93,12 @@ export default function AdminDashboard() {
                 )}
               >
                 <AlertTriangle className="h-3.5 w-3.5" />
-                <span>{criticalStock} Stock Crítico</span>
+                <span>{criticalStock} {t("adminDashboard.criticalStock")}</span>
               </div>
 
               <div className="flex items-center gap-2 px-3 py-1 rounded-sm border bg-blue-500/5 border-blue-500/10 text-blue-700 text-xs font-medium">
                 <Truck className="h-3.5 w-3.5" />
-                <span>12 En Ruta</span>
+                <span>12 {t("adminDashboard.inTransit")}</span>
               </div>
             </div>
           </div>
@@ -119,7 +107,7 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-4">
             <div className="text-right hidden sm:block">
               <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
-                Volumen Hoy
+                {t("adminDashboard.volumeToday")}
               </p>
               <p className="font-mono text-sm font-bold">
                 €
@@ -131,7 +119,7 @@ export default function AdminDashboard() {
             <div className="h-8 w-px bg-border/60 hidden sm:block" />
             <div className="flex items-center gap-3">
               <span className="text-xs font-medium text-muted-foreground hidden sm:inline">
-                LME COBRE
+                {t("adminDashboard.lmeCopper")}
               </span>
               <div className="flex items-baseline gap-2">
                 <span className="font-mono font-bold text-sm min-w-[80px] text-right">
@@ -151,14 +139,14 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* 2. MAIN GRID (70/30 SPLIT) - Flex-1 to take remaining height */}
+        {/* 2. MAIN GRID (70/30 SPLIT) */}
         <div className="flex-1 p-4 overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 h-full">
-            {/* LEFT COLUMN (70%) - Operational Queue - h-full for scrolling internal */}
+            {/* LEFT COLUMN (70%) - Operational Queue */}
             <div className="col-span-1 md:col-span-8 flex flex-col gap-3 h-full overflow-hidden">
               <div className="flex-none flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                  Cola de Operaciones
+                  {t("adminDashboard.operationQueue")}
                 </h2>
                 <Link to="/admin/orders">
                   <Button
@@ -166,7 +154,7 @@ export default function AdminDashboard() {
                     size="sm"
                     className="h-6 text-xs gap-1 hover:bg-muted/50"
                   >
-                    Ver todo <ArrowRight className="h-3 w-3" />
+                    {t("adminDashboard.viewAll")} <ArrowRight className="h-3 w-3" />
                   </Button>
                 </Link>
               </div>
@@ -174,10 +162,10 @@ export default function AdminDashboard() {
               <div className="flex-1 bg-card border border-border/60 rounded-sm overflow-hidden flex flex-col">
                 {/* Table Header */}
                 <div className="flex-none grid grid-cols-12 gap-4 px-4 py-2 bg-muted/40 border-b border-border/60 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                  <div className="col-span-4">Referencia / Cliente</div>
-                  <div className="col-span-3">Estado</div>
-                  <div className="col-span-3 text-right">Total</div>
-                  <div className="col-span-2 text-right">Acción</div>
+                  <div className="col-span-4">{t("adminDashboard.columns.refClient")}</div>
+                  <div className="col-span-3">{t("adminDashboard.columns.status")}</div>
+                  <div className="col-span-3 text-right">{t("adminDashboard.columns.total")}</div>
+                  <div className="col-span-2 text-right">{t("adminDashboard.columns.action")}</div>
                 </div>
 
                 {/* Table List - Scrollable */}
@@ -212,7 +200,7 @@ export default function AdminDashboard() {
                             variant="outline"
                             className="h-5 text-[10px] px-1.5 bg-amber-500/5 text-amber-700 border-amber-500/20 rounded-sm"
                           >
-                            Pendiente
+                            {t("adminDashboard.pending")}
                           </Badge>
                           <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">
                             {order.time}
@@ -246,20 +234,19 @@ export default function AdminDashboard() {
                   ) : (
                     <div className="h-full flex flex-col items-center justify-center text-muted-foreground opacity-50">
                       <Package className="h-8 w-8 mb-2" />
-                      <span className="text-xs">No hay pedidos pendientes</span>
+                      <span className="text-xs">{t("adminDashboard.noPendingOrders")}</span>
                     </div>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* RIGHT COLUMN (30%) - Alerts & Stats - h-full for Layout */}
+            {/* RIGHT COLUMN (30%) - Alerts & Stats */}
             <div className="col-span-1 md:col-span-4 flex flex-col gap-4 h-full overflow-hidden">
-              {/* Critical Stock (Take more space if needed) */}
+              {/* Critical Stock */}
               <div className="flex-1 flex flex-col gap-2 min-h-0">
                 <h2 className="flex-none text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-red-500" /> Stock
-                  Crítico
+                  <AlertTriangle className="h-4 w-4 text-red-500" /> {t("adminDashboard.criticalStock")}
                 </h2>
                 <div className="flex-1 bg-card border border-red-200/60 dark:border-red-900/40 rounded-sm flex flex-col overflow-hidden">
                   <div className="flex-1 overflow-y-auto scrollbar-thin">
@@ -267,44 +254,34 @@ export default function AdminDashboard() {
                       <thead className="bg-muted/40 sticky top-0 z-10">
                         <tr className="border-b border-border/60 text-[10px] text-muted-foreground uppercase tracking-wider text-left">
                           <th className="px-3 py-1 font-medium select-none">
-                            Producto
+                            {t("adminStock.columns.product")}
                           </th>
                           <th className="px-2 py-1 font-medium text-right select-none">
-                            Stock
+                            {t("adminStock.columns.currentStock")}
                           </th>
                           <th className="px-2 py-1 font-medium text-right select-none">
-                            Est.
+                            {t("common.status")}
                           </th>
                         </tr>
                       </thead>
                       <tbody>
                         {stockAlerts.map((item) => {
-                          // Determine row styles based on status
                           let rowClass = "hover:bg-muted/30";
-                          let badgeClass =
-                            "text-muted-foreground border-border";
-                          let label = "Normal";
+                          let badgeClass = "text-muted-foreground border-border";
+                          let label = t("adminDashboard.stockStatus.normal");
 
                           if (item.status === "out") {
-                            rowClass =
-                              "bg-red-50/60 dark:bg-red-900/10 hover:bg-red-100/60 dark:hover:bg-red-900/20";
-                            badgeClass =
-                              "bg-red-100 text-red-700 border-red-200";
-                            label = "Agotado";
+                            rowClass = "bg-red-50/60 dark:bg-red-900/10 hover:bg-red-100/60 dark:hover:bg-red-900/20";
+                            badgeClass = "bg-red-100 text-red-700 border-red-200";
+                            label = t("adminDashboard.stockStatus.out");
                           } else if (item.status === "critical") {
-                            // Critical -> Red as requested
-                            rowClass =
-                              "bg-red-50/30 dark:bg-red-900/5 hover:bg-red-100/40 dark:hover:bg-red-900/15";
-                            badgeClass =
-                              "bg-red-50 text-red-600 border-red-100";
-                            label = "Crítico";
+                            rowClass = "bg-red-50/30 dark:bg-red-900/5 hover:bg-red-100/40 dark:hover:bg-red-900/15";
+                            badgeClass = "bg-red-50 text-red-600 border-red-100";
+                            label = t("adminDashboard.stockStatus.critical");
                           } else if (item.status === "low") {
-                            // Low -> Warning -> Amber
-                            rowClass =
-                              "bg-amber-50/50 dark:bg-amber-900/10 hover:bg-amber-100/50 dark:hover:bg-amber-900/20";
-                            badgeClass =
-                              "bg-amber-100 text-amber-800 border-amber-200";
-                            label = "Bajo";
+                            rowClass = "bg-amber-50/50 dark:bg-amber-900/10 hover:bg-amber-100/50 dark:hover:bg-amber-900/20";
+                            badgeClass = "bg-amber-100 text-amber-800 border-amber-200";
+                            label = t("adminDashboard.stockStatus.low");
                           }
 
                           return (
@@ -330,8 +307,7 @@ export default function AdminDashboard() {
                                 <span
                                   className={cn(
                                     "font-mono font-bold text-sm",
-                                    item.status === "out" ||
-                                      item.status === "critical"
+                                    item.status === "out" || item.status === "critical"
                                       ? "text-red-600"
                                       : item.status === "low"
                                         ? "text-amber-600"
@@ -361,17 +337,17 @@ export default function AdminDashboard() {
                   <Link to="/admin/stock">
                     <div className="flex-none p-2 text-center border-t border-border/40 bg-muted/10 hover:bg-muted/20 cursor-pointer transition-colors">
                       <span className="text-[10px] font-medium text-red-600">
-                        Gestión de Inventario →
+                        {t("adminDashboard.inventoryManagement")}
                       </span>
                     </div>
                   </Link>
                 </div>
               </div>
 
-              {/* Quick Actions (Fixed height at bottom) */}
+              {/* Quick Actions */}
               <div className="flex-none space-y-3">
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                  Accesos Rápidos
+                  {t("adminDashboard.quickAccess")}
                 </h2>
                 <div className="grid grid-cols-2 gap-2">
                   <Button
@@ -382,7 +358,7 @@ export default function AdminDashboard() {
                     <Link to="/admin/reports">
                       <FileText className="h-4 w-4 mr-2 text-muted-foreground group-hover:text-primary transition-colors" />
                       <span className="text-xs font-medium truncate">
-                        Reportes
+                        {t("adminDashboard.reports")}
                       </span>
                     </Link>
                   </Button>
@@ -394,20 +370,20 @@ export default function AdminDashboard() {
                     <Link to="/admin/products">
                       <Package className="h-4 w-4 mr-2 text-muted-foreground group-hover:text-blue-500 transition-colors" />
                       <span className="text-xs font-medium truncate">
-                        Catálogo
+                        {t("adminDashboard.catalog")}
                       </span>
                     </Link>
                   </Button>
                 </div>
               </div>
 
-              {/* Mini Stat (Fixed height) */}
+              {/* Mini Stat */}
               <div className="flex-none bg-muted/20 border border-border/60 rounded-sm p-3">
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
                     <Activity className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Eficiencia
+                      {t("adminDashboard.efficiency")}
                     </span>
                   </div>
                   <span className="text-[10px] text-green-600 font-medium bg-green-500/10 px-1.5 rounded-full">
@@ -418,7 +394,7 @@ export default function AdminDashboard() {
                   <span className="text-xl font-bold font-mono">94.2%</span>
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">
-                  Entregas a tiempo (Semana)
+                  {t("adminDashboard.efficiencyDesc")}
                 </p>
               </div>
             </div>

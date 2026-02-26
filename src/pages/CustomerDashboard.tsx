@@ -18,10 +18,12 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export default function CustomerDashboard() {
   const { recentOrders, isLoading: isLoadingOrders } = useOrders();
   const { categories, isLoading: isLoadingProducts } = useProducts();
+  const { t } = useTranslation();
 
   // Max 3 items for strict layout compliance
   const compactOrders = recentOrders.slice(0, 3);
@@ -29,14 +31,14 @@ export default function CustomerDashboard() {
   return (
     <AppLayout>
       <div className="h-full bg-background p-4 lg:p-8 overflow-hidden">
-        {/* Header Section - minimal */}
+        {/* Header Section */}
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Catálogo de Productos
+              {t("customerDashboard.title")}
             </h1>
             <p className="text-muted-foreground">
-              Seleccione una categoría para comenzar su pedido
+              {t("customerDashboard.subtitle")}
             </p>
           </div>
         </div>
@@ -58,11 +60,11 @@ export default function CustomerDashboard() {
 
           {/* RIGHT COLUMN: Sidebar (Tools & Status) */}
           <div className="lg:col-span-4 flex flex-col gap-6 h-full min-h-0 overflow-y-auto pb-10 pr-1">
-            {/* 1. LME Price Card (Compact & High Visibility) */}
+            {/* 1. LME Price Card */}
             <div className="flex-none bg-gradient-to-br from-muted/50 to-muted/20 border border-border/60 rounded-xl p-5 shadow-sm relative overflow-hidden group">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                  LME Cobre
+                  {t("customerDashboard.lmeCopper")}
                 </p>
                 <Badge
                   variant="outline"
@@ -95,7 +97,7 @@ export default function CustomerDashboard() {
               <Link to="/order/new" className="w-full group">
                 <Button className="w-full h-14 text-lg font-semibold shadow-md bg-primary text-primary-foreground hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
                   <Plus className="h-5 w-5" />
-                  Crear Pedido Rápido
+                  {t("customerDashboard.createOrder")}
                 </Button>
               </Link>
 
@@ -105,23 +107,23 @@ export default function CustomerDashboard() {
                   className="w-full h-12 border-dashed border-2 hover:border-primary/50 hover:bg-primary/5 transition-all text-muted-foreground hover:text-primary"
                 >
                   <Headset className="h-4 w-4 mr-2" />
-                  Atención Personalizada
+                  {t("customerDashboard.personalAssistance")}
                 </Button>
               </AssistedContactDialog>
             </div>
 
-            {/* 3. Recent Orders (Compact List) */}
+            {/* 3. Recent Orders */}
             <div className="flex-1 bg-card border border-border/40 rounded-xl flex flex-col min-h-0 shadow-sm overflow-hidden">
               <div className="p-4 border-b border-border/40 flex items-center justify-between bg-muted/20">
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <Package className="h-4 w-4 text-muted-foreground" />
-                  Últimos Pedidos
+                  {t("customerDashboard.recentOrders")}
                 </h3>
                 <Link
                   to="/orders"
                   className="text-[10px] uppercase font-bold text-primary hover:underline"
                 >
-                  Ver Todo
+                  {t("customerDashboard.viewAll")}
                 </Link>
               </div>
 
@@ -133,7 +135,7 @@ export default function CustomerDashboard() {
                   </div>
                 ) : compactOrders.length === 0 ? (
                   <div className="p-8 text-center text-muted-foreground text-sm">
-                    Sin pedidos recientes
+                    {t("customerDashboard.noRecentOrders")}
                   </div>
                 ) : (
                   <div className="divide-y divide-border/30">
@@ -150,19 +152,19 @@ export default function CustomerDashboard() {
                             {statusStyles[
                               order.status as keyof typeof statusStyles
                             ] && (
-                              <div
-                                className={cn(
-                                  "w-1.5 h-1.5 rounded-full",
-                                  statusStyles[
-                                    order.status as keyof typeof statusStyles
-                                  ]
-                                    .replace("bg-", "bg-")
-                                    .replace("text-", "")
-                                    .split(" ")[0]
-                                    .replace("/10", ""),
-                                )}
-                              />
-                            )}
+                                <div
+                                  className={cn(
+                                    "w-1.5 h-1.5 rounded-full",
+                                    statusStyles[
+                                      order.status as keyof typeof statusStyles
+                                    ]
+                                      .replace("bg-", "bg-")
+                                      .replace("text-", "")
+                                      .split(" ")[0]
+                                      .replace("/10", ""),
+                                  )}
+                                />
+                              )}
                           </div>
                           <span className="text-[10px] text-muted-foreground">
                             {order.date}

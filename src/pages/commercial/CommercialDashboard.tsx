@@ -11,36 +11,38 @@ import {
   Users,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-
-const quickLinks = [
-  {
-    title: "Pedidos Pendientes",
-    description: "Revisa y valida pedidos de clientes",
-    icon: FileText,
-    href: "/commercial/orders",
-    color: "text-amber-600",
-    bg: "bg-amber-500/10",
-  },
-  {
-    title: "Clientes",
-    description: "Gestión de cartera de clientes",
-    icon: Users,
-    href: "/commercial/customers",
-    color: "text-sky-600",
-    bg: "bg-sky-500/10",
-  },
-  {
-    title: "Gestión de Precios",
-    description: "Tarifas y márgenes comerciales",
-    icon: TrendingUp,
-    href: "/admin/pricing",
-    color: "text-emerald-600",
-    bg: "bg-emerald-500/10",
-  },
-];
+import { useTranslation } from "react-i18next";
 
 export default function CommercialDashboard() {
   const { session, signOut } = useActor();
+  const { t } = useTranslation();
+
+  const quickLinks = [
+    {
+      title: t("adminOrders.title"),
+      description: t("sidebar.commercial.orders"),
+      icon: FileText,
+      href: "/commercial/orders",
+      color: "text-amber-600",
+      bg: "bg-amber-500/10",
+    },
+    {
+      title: t("customers.title"),
+      description: t("customers.subtitle"),
+      icon: Users,
+      href: "/commercial/customers",
+      color: "text-sky-600",
+      bg: "bg-sky-500/10",
+    },
+    {
+      title: t("adminPricing.title"),
+      description: t("sidebar.commercial.pricing"),
+      icon: TrendingUp,
+      href: "/admin/pricing",
+      color: "text-emerald-600",
+      bg: "bg-emerald-500/10",
+    },
+  ];
 
   return (
     <AppLayout>
@@ -49,10 +51,10 @@ export default function CommercialDashboard() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">
-              Dashboard Comercial
+              {t("commercialDashboard.title")}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Bienvenido, {session?.name ?? "Comercial"}
+              {session?.name ?? "Comercial"}
             </p>
           </div>
           <Button
@@ -62,7 +64,7 @@ export default function CommercialDashboard() {
             className="gap-2 text-muted-foreground hover:text-red-500 hover:border-red-200"
           >
             <LogOut className="h-4 w-4" />
-            Cambiar Perfil
+            {t("auth.signOut")}
           </Button>
         </div>
 
@@ -76,17 +78,12 @@ export default function CommercialDashboard() {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-800">
-                Módulo en Desarrollo
+                {t("auth.demoComingSoon")}
               </h2>
-              <p className="text-sm text-slate-500 mt-1 leading-relaxed">
-                El dashboard comercial está en construcción. Próximamente
-                tendrás métricas de ventas, seguimiento de clientes y gestión de
-                oportunidades.
-              </p>
               <div className="flex items-center gap-2 mt-3">
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100/80 text-amber-700 text-xs font-medium">
                   <Construction className="h-3 w-3" />
-                  En construcción
+                  {t("auth.demoComingSoon")}
                 </div>
               </div>
             </div>
@@ -96,7 +93,7 @@ export default function CommercialDashboard() {
         {/* Quick Access Cards */}
         <div>
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-            Accesos Rápidos
+            {t("adminDashboard.quickAccess")}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {quickLinks.map((link) => (

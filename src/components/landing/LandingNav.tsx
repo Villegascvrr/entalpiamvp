@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { LanguageToggle } from "@/components/ui/LanguageToggle";
 
 export function LandingNav() {
     const [scrolled, setScrolled] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
+    const { t } = useTranslation();
 
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -13,10 +16,10 @@ export function LandingNav() {
     }, []);
 
     const navLinks = [
-        { label: "Mercado", href: "#mercado" },
-        { label: "Catálogo", href: "#catalogo" },
-        { label: "Cómo funciona", href: "#como-funciona" },
-        { label: "Entalpia Europe", href: "#entalpia" },
+        { label: t("landing.nav.market"), href: "#mercado" },
+        { label: t("landing.nav.catalog"), href: "#catalogo" },
+        { label: t("landing.nav.howItWorks"), href: "#como-funciona" },
+        { label: t("landing.nav.about"), href: "#entalpia" },
     ];
 
     return (
@@ -60,6 +63,9 @@ export function LandingNav() {
 
                     {/* CTA */}
                     <div className="flex items-center gap-3">
+                        {/* Language toggle */}
+                        <LanguageToggle />
+
                         {/* Contact Button */}
                         <a
                             href="#contacto"
@@ -68,14 +74,14 @@ export function LandingNav() {
                                 : "text-white hover:bg-white/10"
                                 }`}
                         >
-                            Contacto
+                            {t("landing.nav.contact")}
                         </a>
 
                         <Link
                             to="/login"
                             className="hidden sm:inline-flex items-center px-5 py-2 rounded-md text-sm font-semibold bg-green-700 text-white hover:bg-green-800 transition-colors shadow-sm"
                         >
-                            Acceso Clientes
+                            {t("landing.nav.clientAccess")}
                         </Link>
 
                         {/* Mobile menu toggle */}
@@ -112,7 +118,7 @@ export function LandingNav() {
                             onClick={() => setMenuOpen(false)}
                             className="block py-2 text-sm font-medium text-gray-700 hover:text-green-700 transition-colors"
                         >
-                            Contacto
+                            {t("landing.nav.contact")}
                         </a>
                         <div className="pt-3 border-t border-gray-100 mt-2">
                             <Link
@@ -120,7 +126,7 @@ export function LandingNav() {
                                 onClick={() => setMenuOpen(false)}
                                 className="block w-full text-center px-5 py-2.5 rounded-md text-sm font-semibold bg-green-700 text-white hover:bg-green-800 transition-colors"
                             >
-                                Acceso Clientes
+                                {t("landing.nav.clientAccess")}
                             </Link>
                         </div>
                     </div>

@@ -22,7 +22,7 @@ import PlaceholderPage from "./pages/PlaceholderPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminPricing from "./pages/admin/AdminPricing";
-// import AdminStock from "./pages/admin/AdminStock";
+import AdminStock from "./pages/admin/AdminStock";
 import CreateOrder from "./pages/admin/CreateOrder";
 import CustomerDetail from "./pages/commercial/CustomerDetail";
 import Customers from "./pages/commercial/Customers";
@@ -53,6 +53,22 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// ── Login Gate: redirects to /dashboard if already authenticated ──
+function LoginGate() {
+  const { isAuthenticated, isLoading } = useActor();
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <Login />;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -66,6 +82,8 @@ const App = () => (
                 <Routes>
                   {/* ── Public routes: no authentication required ── */}
                   <Route path="/shary" element={<SharyLanding />} />
+                  {/* /login: shows Login or redirects to dashboard if already authenticated */}
+                  <Route path="/login" element={<LoginGate />} />
 
                   {/* ── Protected app: everything else goes through AuthGate ── */}
                   <Route
@@ -187,14 +205,14 @@ const App = () => (
                               </RoleGate>
                             }
                           />
-                          {/* <Route
+                          <Route
                             path="/admin/stock"
                             element={
                               <RoleGate roles={["admin", "logistics"]}>
                                 <AdminStock />
                               </RoleGate>
                             }
-                          /> */}
+                          />
                           <Route
                             path="/admin/orders"
                             element={

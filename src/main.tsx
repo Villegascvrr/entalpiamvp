@@ -1,5 +1,6 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
+import "./i18n"; // Initialize i18n BEFORE App renders
 import App from "./App.tsx";
 import "./index.css";
 

@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import {
   Popover,
   PopoverContent,
@@ -14,50 +15,46 @@ import {
   Calendar,
   Info,
   Menu,
-  RefreshCw,
   TrendingDown,
   TrendingUp,
   Truck,
   X,
 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AppSidebar } from "./AppSidebar";
 
-// Mock Notifications
-const initialNotifications = [
-  {
-    id: 1,
-    title: "Pedido Enviado",
-    message: "Tu pedido #PED-2024-0150 ha salido del almacén.",
-    time: "Hace 2 min",
-    read: false,
-    type: "order",
-  },
-  {
-    id: 2,
-    title: "Alerta de Stock",
-    message: "Tubo Cobre 15mm está por debajo del mínimo.",
-    time: "Hace 1 hora",
-    read: false,
-    type: "alert",
-  },
-  {
-    id: 3,
-    title: "Actualización de Precios",
-    message: "Nuevas tarifas LME aplicadas correctamente.",
-    time: "Ayer, 08:30",
-    read: true,
-    type: "info",
-  },
-];
-
 export function AppHeader() {
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const { t, i18n } = useTranslation();
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      title: t("notifications.orderShipped"),
+      message: t("notifications.orderShippedMsg"),
+      time: t("notifications.timeAgo2min"),
+      read: false,
+      type: "order",
+    },
+    {
+      id: 2,
+      title: t("notifications.stockAlert"),
+      message: t("notifications.stockAlertMsg"),
+      time: t("notifications.timeAgo1h"),
+      read: false,
+      type: "alert",
+    },
+    {
+      id: 3,
+      title: t("notifications.priceUpdate"),
+      message: t("notifications.priceUpdateMsg"),
+      time: t("notifications.timeAgoYesterday"),
+      read: true,
+      type: "info",
+    },
+  ]);
   const [isOpen, setIsOpen] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
 
-  // Simulated LME copper price state
   const [lmeData, setLmeData] = useState({
     price: 8432.5,
     change: 2.3,
@@ -74,40 +71,6 @@ export function AppHeader() {
     setNotifications(notifications.filter((n) => n.id !== id));
   };
 
-  const handleUpdatePrices = () => {
-    setIsUpdating(true);
-    toast.info("Actualizando precios de mercado...", {
-      description: "Conectando con LME (London Metal Exchange)...",
-    });
-
-    setTimeout(() => {
-      // Simulate new price
-      const randomChange = (Math.random() * 2 - 1).toFixed(2); // Random between -1 and 1
-      const newPrice = lmeData.price + (Math.random() * 100 - 50);
-
-      setLmeData({
-        price: newPrice,
-        change: parseFloat(randomChange),
-      });
-
-      setIsUpdating(false);
-      toast.success("Precios actualizados correctamente", {
-        description: `LME Cobre: $${newPrice.toLocaleString("es-ES", { maximumFractionDigits: 2 })} USD/t`,
-      });
-
-      // Add a notification about the update
-      const newNotification = {
-        id: Date.now(),
-        title: "Precios Actualizados",
-        message: `LME Cobre actualizado a $${newPrice.toLocaleString("es-ES", { maximumFractionDigits: 2 })}.`,
-        time: "Ahora mismo",
-        read: false,
-        type: "info",
-      };
-      setNotifications([newNotification, ...notifications]);
-    }, 2000);
-  };
-
   const getIcon = (type: string) => {
     switch (type) {
       case "order":
@@ -121,7 +84,8 @@ export function AppHeader() {
     }
   };
 
-  const today = new Date().toLocaleDateString("es-ES", {
+  const locale = i18n.language === "es" ? "es-ES" : "en-US";
+  const today = new Date().toLocaleDateString(locale, {
     weekday: "long",
     year: "numeric",
     month: "long",
@@ -148,7 +112,6 @@ export function AppHeader() {
                 className="border-0 w-full"
                 onNavigate={() => document.body.click()}
               />
-              {/* Note: In a real app we'd control open state, but click-to-close via outside click or simple callback works for MVP */}
             </SheetContent>
           </Sheet>
         </div>
@@ -160,7 +123,7 @@ export function AppHeader() {
         <div className="hidden md:block h-4 w-px bg-border" />
         <div className="flex items-center gap-2 md:gap-3">
           <span className="text-xs text-muted-foreground uppercase tracking-wider hidden sm:inline">
-            LME Cobre:
+            {t("header.lmeCopper")}
           </span>
           <div className="flex items-center gap-2">
             <span className="font-mono font-semibold text-foreground text-sm md:text-base">
@@ -193,18 +156,7 @@ export function AppHeader() {
 
       {/* Right side - Actions */}
       <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="gap-2 text-muted-foreground hover:text-foreground"
-          onClick={handleUpdatePrices}
-          disabled={isUpdating}
-        >
-          <RefreshCw className={cn("h-4 w-4", isUpdating && "animate-spin")} />
-          <span className="hidden md:inline text-xs">
-            {isUpdating ? "Actualizando..." : "Actualizar Precios"}
-          </span>
-        </Button>
+        <LanguageToggle />
         <div className="h-4 w-px bg-border" />
 
         <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -218,7 +170,7 @@ export function AppHeader() {
           </PopoverTrigger>
           <PopoverContent align="end" className="w-80 p-0">
             <div className="p-3 bg-muted/30 border-b flex items-center justify-between">
-              <h4 className="font-semibold text-sm">Notificaciones</h4>
+              <h4 className="font-semibold text-sm">{t("header.notifications")}</h4>
               {unreadCount > 0 && (
                 <Button
                   variant="ghost"
@@ -226,7 +178,7 @@ export function AppHeader() {
                   className="h-auto px-2 py-0.5 text-xs text-muted-foreground hover:text-primary"
                   onClick={markAllAsRead}
                 >
-                  Marcar leídas
+                  {t("header.markAllRead")}
                 </Button>
               )}
             </div>
@@ -234,7 +186,7 @@ export function AppHeader() {
               {notifications.length === 0 ? (
                 <div className="p-8 text-center text-muted-foreground">
                   <Bell className="h-8 w-8 mx-auto mb-2 opacity-20" />
-                  <p className="text-sm">No tienes notificaciones</p>
+                  <p className="text-sm">{t("header.noNotifications")}</p>
                 </div>
               ) : (
                 <div className="divide-y divide-border/50">
@@ -287,7 +239,7 @@ export function AppHeader() {
                 size="sm"
                 className="w-full text-xs text-muted-foreground h-8"
               >
-                Ver historial completo
+                {t("header.viewFullHistory")}
               </Button>
             </div>
           </PopoverContent>
