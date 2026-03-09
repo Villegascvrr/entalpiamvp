@@ -102,6 +102,8 @@ function createOrderRepository(): OrderRepository {
   return new MockOrderRepository();
 }
 
+import type { AssistanceRequestRepository } from "./AssistanceRequestRepository";
+import { MockAssistanceRequestRepository } from "./AssistanceRequestRepository";
 import type { CustomerRepository } from "./CustomerRepository";
 import type { FXRateRepository } from "./FXRateRepository";
 import type { LMERepository } from "./LMERepository";
@@ -204,9 +206,54 @@ function createFXRateRepository(): FXRateRepository {
   return new MockFXRateRepository();
 }
 
+function createAssistanceRequestRepository(): AssistanceRequestRepository {
+  try {
+    if (appConfig.mode !== "demo") {
+      let impl: AssistanceRequestRepository | null = null;
+      const ready = import("./SupabaseAssistanceRequestRepository")
+        .then((m) => {
+          impl = new m.SupabaseAssistanceRequestRepository();
+        })
+        .catch((err) => {
+          console.error(
+            "[RepoFactory] Failed to load SupabaseAssistanceRequestRepository, falling back to mock:",
+            err,
+          );
+          impl = new MockAssistanceRequestRepository();
+        });
+
+      return {
+        createAssistanceRequest: async (s, d) => {
+          await ready;
+          if (!impl) throw new Error("Repo not loaded");
+          return impl.createAssistanceRequest(s, d);
+        },
+        getAssistanceRequestsByTenant: async (s) => {
+          await ready;
+          return impl ? impl.getAssistanceRequestsByTenant(s) : [];
+        },
+        updateAssistanceRequestStatus: async (s, id, st) => {
+          await ready;
+          if (!impl) throw new Error("Repo not loaded");
+          return impl.updateAssistanceRequestStatus(s, id, st);
+        },
+      };
+    }
+    return new MockAssistanceRequestRepository();
+  } catch (error) {
+    console.error(
+      "CRITICAL: Failed to initialize AssistanceRequestRepository:",
+      error,
+    );
+    return new MockAssistanceRequestRepository();
+  }
+}
+
 export const productRepository: ProductRepository = createProductRepository();
 export const orderRepository: OrderRepository = createOrderRepository();
 export const customerRepository: CustomerRepository =
   createCustomerRepository();
 export const lmeRepository: LMERepository = createLMERepository();
 export const fxRateRepository: FXRateRepository = createFXRateRepository();
+export const assistanceRequestRepository: AssistanceRequestRepository =
+  createAssistanceRequestRepository();

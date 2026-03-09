@@ -201,3 +201,21 @@ export interface FXRate {
   updated_at: string;
   updated_by: string;
 }
+
+/** Status lifecycle for commercial assistance requests */
+export type AssistanceRequestStatus = "NEW" | "IN_PROGRESS" | "CLOSED";
+
+/** A commercial assistance request submitted by a customer */
+export interface AssistanceRequest {
+  id: string;
+  tenant_id: string;
+  actor_id?: string;
+  customer_id?: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  message: string;
+  status: AssistanceRequestStatus;
+  created_at: string;
+  updated_at?: string;
+}

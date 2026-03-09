@@ -8,6 +8,7 @@ import {
   ChevronRight,
   ClipboardList,
   FileText,
+  Headphones,
   History,
   LayoutDashboard,
   LogOut,
@@ -65,6 +66,7 @@ const NAV_CONFIG: Record<ActorRole, NavGroup[]> = {
       items: [
         { titleKey: "sidebar.commercial.orders", icon: FileText, href: "/commercial/orders" },
         { titleKey: "sidebar.commercial.customers", icon: Users, href: "/commercial/customers" },
+        { titleKey: "sidebar.commercial.assistance", icon: Headphones, href: "/admin/assistance" },
       ],
     },
   ],
@@ -98,6 +100,7 @@ const NAV_CONFIG: Record<ActorRole, NavGroup[]> = {
       items: [
         { titleKey: "sidebar.admin.orders", icon: FileText, href: "/admin/orders" },
         { titleKey: "sidebar.admin.customers", icon: Users, href: "/commercial/customers" },
+        { titleKey: "sidebar.admin.assistance", icon: Headphones, href: "/admin/assistance" },
       ],
     },
   ],

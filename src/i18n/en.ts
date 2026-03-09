@@ -86,6 +86,7 @@ const en = {
             pricing: "Pricing",
             orders: "Orders",
             customers: "Customers",
+            assistance: "Requests",
         },
         logistics: {
             dashboard: "Logistics Panel",
@@ -99,6 +100,7 @@ const en = {
             stock: "Stock",
             orders: "Orders",
             customers: "Customers",
+            assistance: "Requests",
         },
         roles: {
             admin: "Administration",

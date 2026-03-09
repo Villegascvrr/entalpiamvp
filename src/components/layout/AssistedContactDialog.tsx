@@ -11,6 +11,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useActor } from "@/contexts/ActorContext";
+import { assistanceRequestRepository } from "@/data/repositories";
 import { Headset, Mail, Phone, Send, User } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -25,21 +27,49 @@ export function AssistedContactDialog({
 }: AssistedContactDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { session } = useActor();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      name: formData.get("name") as string,
+      phone: formData.get("phone") as string,
+      email: formData.get("email") as string,
+      message: formData.get("message") as string,
+    };
+
+    if (!data.name || !data.message) {
+      toast.error("Faltan datos requeridos");
       setLoading(false);
+      return;
+    }
+
+    try {
+      if (!session) {
+        throw new Error("No session found");
+      }
+      await assistanceRequestRepository.createAssistanceRequest(session, data);
+
+      // Reset form to clear stale state
+      e.currentTarget.reset();
+
       setOpen(false);
       toast.success("Solicitud enviada", {
         description:
-          "Un gestor comercial te contactará en menos de 30 minutos.",
+          "Un gestor comercial te contactará lo antes posible.",
         duration: 5000,
       });
-    }, 1000);
+    } catch (err: any) {
+      console.error("Error creating assistance request:", err);
+      toast.error("Error al enviar la solicitud", {
+        description: err.message || "Por favor, inténtelo de nuevo más tarde.",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -69,7 +99,7 @@ export function AssistedContactDialog({
               <User className="h-4 w-4 text-muted-foreground" />
               Nombre
             </Label>
-            <Input id="name" placeholder="Tu nombre" required />
+            <Input id="name" name="name" placeholder="Tu nombre" required />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -78,7 +108,7 @@ export function AssistedContactDialog({
                 <Phone className="h-4 w-4 text-muted-foreground" />
                 Teléfono
               </Label>
-              <Input id="phone" placeholder="+34 600..." required type="tel" />
+              <Input id="phone" name="phone" placeholder="+34 600..." required type="tel" />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="email" className="flex items-center gap-2">
@@ -87,6 +117,7 @@ export function AssistedContactDialog({
               </Label>
               <Input
                 id="email"
+                name="email"
                 placeholder="tu@email.com"
                 required
                 type="email"
@@ -95,11 +126,13 @@ export function AssistedContactDialog({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="message">¿En qué podemos ayudarte?</Label>
+            <Label htmlFor="message" className="flex items-center gap-2">¿En qué podemos ayudarte?</Label>
             <Textarea
               id="message"
+              name="message"
               placeholder="Ej: Necesito confirmar stock de R32 o consultar descuento por volumen..."
               className="h-24 resize-none"
+              required
             />
           </div>
 
