@@ -24,7 +24,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  ExternalLink,
   Eye,
+  FileText,
   Info,
   Layers,
   Minus,
@@ -65,6 +67,7 @@ export function ProductSelector({
     initialCategory || null,
   );
   const [infoCategory, setInfoCategory] = useState<string | null>(null);
+  const [detailProduct, setDetailProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Build category map from hook data
@@ -401,7 +404,7 @@ export function ProductSelector({
                             className="h-7 text-[10px] font-bold uppercase tracking-wider bg-background/90 backdrop-blur-sm border shadow-sm flex items-center gap-1.5"
                             onClick={(e) => {
                               e.stopPropagation();
-                              // Detail logic would go here if needed
+                              setDetailProduct(product);
                             }}
                           >
                             <Eye className="h-3 w-3 text-primary" />
@@ -578,6 +581,96 @@ export function ProductSelector({
           </ScrollArea>
         </>
       )}
+
+      {/* ── Product Details Modal ───────────────────────────────────── */}
+      <Dialog open={!!detailProduct} onOpenChange={(open) => !open && setDetailProduct(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+          {detailProduct && (
+            <>
+              <DialogHeader className="p-6 pb-4 shrink-0 border-b border-border/50">
+                <div className="flex items-start gap-4">
+                  {/* Thumbnail */}
+                  <div className="w-20 h-20 shrink-0 rounded-lg overflow-hidden bg-white border border-border flex items-center justify-center shadow-sm">
+                    {detailProduct.image ? (
+                      <img src={detailProduct.image} alt={detailProduct.name} className="w-full h-full object-contain p-1" />
+                    ) : (
+                      <Package className="h-8 w-8 text-muted-foreground/30" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <DialogTitle className="text-lg font-bold leading-tight">{detailProduct.name}</DialogTitle>
+                    <DialogDescription className="text-[10px] font-mono uppercase tracking-widest text-primary/70 mt-1">
+                      {detailProduct.id}
+                    </DialogDescription>
+                  </div>
+                </div>
+              </DialogHeader>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {/* Description */}
+                {(detailProduct.description || detailProduct.specs) && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Descripción</p>
+                    <p className="text-sm text-foreground leading-relaxed">
+                      {detailProduct.description || detailProduct.specs}
+                    </p>
+                  </div>
+                )}
+
+                {/* Features Table */}
+                {detailProduct.features && Object.keys(detailProduct.features).length > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Especificaciones Técnicas</p>
+                    <div className="rounded-lg border border-border overflow-hidden">
+                      <table className="w-full text-sm">
+                        <tbody className="divide-y divide-border/50">
+                          {Object.entries(detailProduct.features).map(([key, value]) => (
+                            <tr key={key} className="even:bg-muted/30">
+                              <td className="px-4 py-2.5 font-medium text-muted-foreground w-2/5 text-xs">{key}</td>
+                              <td className="px-4 py-2.5 font-mono text-foreground text-xs">{String(value)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Technical Sheet Link */}
+                {detailProduct.safetySheetUrl && (
+                  <div className="pt-2 border-t border-border/50">
+                    <a
+                      href={detailProduct.safetySheetUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 transition-colors text-sm font-semibold"
+                    >
+                      <FileText className="h-4 w-4" />
+                      Ver ficha técnica
+                      <ExternalLink className="h-3.5 w-3.5 ml-1 opacity-70" />
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3 p-6 pt-3 border-t bg-card shrink-0">
+                <Button variant="outline" onClick={() => setDetailProduct(null)}>Cerrar</Button>
+                <Button
+                  onClick={() => {
+                    onSelectProduct(detailProduct);
+                    setDetailProduct(null);
+                  }}
+                  disabled={!!selectedItems.find(i => i.id === detailProduct.id)}
+                  className="gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  {selectedItems.find(i => i.id === detailProduct.id) ? "Ya añadido" : "Añadir al pedido"}
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Category Detail Modal */}
       <Dialog

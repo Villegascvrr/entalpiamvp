@@ -26,6 +26,8 @@ import AdminStock from "./pages/admin/AdminStock";
 import AdminAssistance from "./pages/admin/AdminAssistance";
 import CreateOrder from "./pages/admin/CreateOrder";
 import AdminProducts from "./pages/admin/AdminProducts";
+import AdminLayout from "./components/layout/AdminLayout";
+import AdminProductDetail from "./pages/admin/AdminProductDetail";
 import CustomerDetail from "./pages/commercial/CustomerDetail";
 import Customers from "./pages/commercial/Customers";
 
@@ -239,14 +241,33 @@ const App = () => (
                               </RoleGate>
                             }
                           />
-                          <Route
-                            path="/admin/products"
-                            element={
-                              <RoleGate roles={["admin"]}>
-                                <AdminProducts />
-                              </RoleGate>
-                            }
-                          />
+                          <Route path="/admin" element={<AdminLayout />}>
+                            <Route
+                              path="products"
+                              element={
+                                <RoleGate roles={["admin"]}>
+                                  <AdminProducts />
+                                </RoleGate>
+                              }
+                            />
+                            <Route
+                              path="products/new"
+                              element={
+                                <RoleGate roles={["admin"]}>
+                                  <AdminProductDetail />
+                                </RoleGate>
+                              }
+                            />
+                            <Route
+                              path="products/:code/edit"
+                              element={
+                                <RoleGate roles={["admin"]}>
+                                  <AdminProductDetail />
+                                </RoleGate>
+                              }
+                            />
+                          </Route>
+
 
                           {/* Redirects */}
                           <Route

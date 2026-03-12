@@ -40,6 +40,10 @@ function createProductRepository(): ProductRepository {
         await ready;
         return impl!.getProductsByCategory(s, c);
       },
+      getAdminProducts: async () => {
+        await ready;
+        return impl!.getAdminProducts();
+      },
     };
   }
   return new MockProductRepository();

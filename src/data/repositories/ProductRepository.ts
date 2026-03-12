@@ -1,6 +1,6 @@
 import type { ActorSession } from "@/contexts/ActorContext";
 import { categories, mockProducts } from "@/data/mock-products";
-import type { Category, Product } from "@/data/types";
+import type { AdminProductRow, Category, Product } from "@/data/types";
 
 // ─────────────────────────────────────────────────────────────
 // Product Repository Interface
@@ -15,6 +15,8 @@ export interface ProductRepository {
     session: ActorSession,
     categoryId: string,
   ): Promise<Product[]>;
+  /** Admin-only: returns ALL products (active + inactive) with no discount logic. */
+  getAdminProducts(): Promise<AdminProductRow[]>;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -71,6 +73,20 @@ export class MockProductRepository implements ProductRepository {
         discountPercentage: isAdmin ? simulatedDiscount : undefined,
       };
     });
+  }
+
+  async getAdminProducts(): Promise<AdminProductRow[]> {
+    await this._delay(200);
+    // Mock: all mock products treated as active rows
+    return mockProducts.map((p) => ({
+      id: p.id,
+      code: p.name,       // in mock, name === code
+      price: p.price,
+      unit: p.unit,
+      categoryId: p.category,
+      imageUrl: p.image,
+      isActive: true,
+    }));
   }
 
   private _delay(ms: number): Promise<void> {

@@ -1,8 +1,9 @@
 import type { ActorSession } from "@/contexts/ActorContext";
-import type { Category, Product } from "@/data/types";
+import type { AdminProductRow, Category, Product } from "@/data/types";
 import { supabase } from "@/lib/supabaseClient";
 import i18n from "@/i18n";
 import type { ProductRepository } from "./ProductRepository";
+
 
 // ─────────────────────────────────────────────────────────────
 // Supabase Product Repository — READ ONLY
@@ -20,6 +21,7 @@ import type { ProductRepository } from "./ProductRepository";
 export class SupabaseProductRepository implements ProductRepository {
   async getProducts(session: ActorSession): Promise<Product[]> {
     const discountPercentage = await this._resolveDiscount(session);
+    const lang = this._currentLang();
 
     const { data, error } = await supabase
       .from("products")
@@ -41,6 +43,7 @@ export class SupabaseProductRepository implements ProductRepository {
         )
       `)
       .eq("is_active", true)
+      .eq("product_details.language", lang)
       .order("category_id")
       .order("code");
 
@@ -87,6 +90,7 @@ export class SupabaseProductRepository implements ProductRepository {
     categoryId: string,
   ): Promise<Product[]> {
     const discountPercentage = await this._resolveDiscount(session);
+    const lang = this._currentLang();
 
     const { data, error } = await supabase
       .from("products")
@@ -109,6 +113,7 @@ export class SupabaseProductRepository implements ProductRepository {
       `)
       .eq("category_id", categoryId)
       .eq("is_active", true)
+      .eq("product_details.language", lang)
       .order("code");
 
     if (error) {
@@ -122,13 +127,50 @@ export class SupabaseProductRepository implements ProductRepository {
     return this._mapProducts(data, session, discountPercentage);
   }
 
+  /** Admin-only: returns ALL products (active + inactive) with a lean shape. */
+  async getAdminProducts(): Promise<AdminProductRow[]> {
+    const { data, error } = await supabase
+      .from("products")
+      .select("id, code, price, unit, image_url, category_id, is_active")
+      .order("category_id")
+      .order("code");
+
+    if (error) {
+      console.error(
+        "[SupabaseProductRepo] Error fetching admin products:",
+        error.message,
+      );
+      return [];
+    }
+
+    return (data ?? []).map((row) => ({
+      id: row.id,
+      code: row.code,
+      price: Number(row.price),
+      unit: row.unit,
+      categoryId: row.category_id,
+      imageUrl: row.image_url ?? undefined,
+      isActive: row.is_active,
+    }));
+  }
+
   // ─────────────────────────────────────────────────────────────
   // Private Helpers
   // ─────────────────────────────────────────────────────────────
 
+
+  /**
+   * Returns the current UI language code in lowercase (e.g. "es", "en").
+   * Matches the format used in the DB product_details.language column.
+   */
+  private _currentLang(): string {
+    return (i18n.language?.split("-")[0] ?? "es").toLowerCase();
+  }
+
   /**
    * Picks the best product_details row for the current UI language.
    * Falls back to the first available record if no language matches.
+   * With server-side language filtering this will normally receive 0 or 1 rows.
    */
   private _resolveDetails(
     details: Array<{
@@ -140,10 +182,11 @@ export class SupabaseProductRepository implements ProductRepository {
     }> | null,
   ) {
     if (!details || details.length === 0) return null;
-
-    const lang = i18n.language?.split("-")[0] ?? "es"; // e.g. "es", "en", "cs"
+    // Server-side filter already narrowed to the right language.
+    // Keep fallback to details[0] for robustness.
+    const lang = this._currentLang();
     return (
-      details.find((d) => d.language === lang) ??
+      details.find((d) => d.language.toLowerCase() === lang) ??
       details[0]
     );
   }

@@ -1,66 +1,154 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { productRepository, adminProductRepository } from "@/data/repositories";
 import { useProducts } from "@/hooks/useProducts";
+import { useActor } from "@/contexts/ActorContext";
+import type { AdminProductRow } from "@/data/types";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PackageSearch, Plus, Search, Edit2, Archive, ArchiveRestore, Info } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  PackageSearch,
+  Plus,
+  Search,
+  Edit2,
+  Trash2,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+
+// ─────────────────────────────────────────────────────────────
+// AdminProducts — /admin/products
+// Lists ALL products (active + inactive) via productRepository.getAdminProducts()
+// UI → productRepository → SupabaseProductRepository → Supabase
+// ─────────────────────────────────────────────────────────────
 
 export default function AdminProducts() {
-  const { products, isLoading } = useProducts();
-  const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
+  const { session } = useActor();
 
-  const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
-      const term = searchTerm.toLowerCase();
-      return (
-        p.code?.toLowerCase().includes(term) ||
-        p.name.toLowerCase().includes(term)
-      );
-    });
-  }, [products, searchTerm]);
+  // Admin product rows — full list (no is_active filter)
+  const [rows, setRows] = useState<AdminProductRow[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
+
+  // Categories — for resolving categoryId → human label
+  const { categories } = useProducts();
+
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // ── Data fetch ──────────────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetch = async () => {
+      setIsLoading(true);
+      try {
+        const data = await productRepository.getAdminProducts();
+        if (!cancelled) setRows(data);
+      } catch (err) {
+        console.error("[AdminProducts] Failed to fetch products:", err);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    fetch();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // ── Category label resolver ──────────────────────────────────
+  const categoryLabel = (categoryId: string): string => {
+    return categories.find((c) => c.id === categoryId)?.label ?? categoryId;
+  };
+
+  // ── Client-side filtering ─────────────────────────────────────
+  const filteredRows = useMemo(() => {
+    const term = searchTerm.toLowerCase().trim();
+    if (!term) return rows;
+    return rows.filter(
+      (p) =>
+        p.code.toLowerCase().includes(term) ||
+        categoryLabel(p.categoryId).toLowerCase().includes(term),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, searchTerm, categories]);
+
+  // ── Price formatter ──────────────────────────────────────────
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(price);
+
+  // ── Delete Handler ───────────────────────────────────────────
+  const handleDelete = async (productId: string, code: string) => {
+    if (!session) return;
+    setIsDeletingId(productId);
+    try {
+      await adminProductRepository.deleteProduct(session, productId);
+      toast.success(`Producto ${code} eliminado con éxito`);
+      setRows((prev) => prev.filter((r) => r.id !== productId));
+    } catch (err: any) {
+      console.error("[AdminProducts] Delete failed:", err);
+      toast.error(err.message || "Error al eliminar el producto");
+    } finally {
+      setIsDeletingId(null);
+    }
+  };
 
   return (
     <div className="flex-1 space-y-6 animate-in fade-in duration-300 max-w-7xl mx-auto w-full">
-      {/* Header */}
+
+      {/* ── Header ─────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
             <PackageSearch className="w-8 h-8 text-primary" />
-            Catálogo de Productos
+            Productos
           </h1>
           <p className="text-muted-foreground mt-1">
-            Gestiona los productos, traducciones y fichas técnicas.
+            Gestiona el catálogo de productos, traducciones y fichas técnicas.
           </p>
         </div>
-        <Button onClick={() => navigate("/admin/products/new")} className="shadow-sm">
+        <Button
+          id="btn-create-product"
+          onClick={() => navigate("/admin/products/new")}
+          className="shadow-sm"
+        >
           <Plus className="w-4 h-4 mr-2" />
-          Nuevo Producto
+          Create Product
         </Button>
       </div>
 
-      {/* Toolbar */}
-      <div className="flex items-center justify-between gap-4 p-4 border border-border/50 bg-card rounded-xl shadow-sm">
+      {/* ── Toolbar ────────────────────────────────────────── */}
+      <div className="flex items-center gap-4 p-4 border border-border/50 bg-card rounded-xl shadow-sm">
         <div className="relative w-full max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por código..."
+            id="input-product-search"
+            placeholder="Buscar por código o categoría..."
             className="pl-9 bg-background/50 border-border/50 h-9"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        <span className="text-xs text-muted-foreground whitespace-nowrap ml-auto">
+          {filteredRows.length} producto{filteredRows.length !== 1 ? "s" : ""}
+        </span>
       </div>
 
-      {/* Main Table */}
+      {/* ── Table ──────────────────────────────────────────── */}
       <div className="rounded-xl border border-border/50 bg-card overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
@@ -68,105 +156,156 @@ export default function AdminProducts() {
               <tr>
                 <th className="px-5 py-3.5 w-16">IMG</th>
                 <th className="px-5 py-3.5">Código</th>
-                <th className="px-5 py-3.5">Precio / Unidad</th>
-                <th className="px-5 py-3.5">Lotes</th>
+                <th className="px-5 py-3.5">Precio</th>
+                <th className="px-5 py-3.5">Unidad</th>
+                <th className="px-5 py-3.5">Categoría</th>
                 <th className="px-5 py-3.5">Estado</th>
                 <th className="px-5 py-3.5 w-[100px] text-center">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="hover:bg-muted/20">
+
+              {/* Loading skeletons */}
+              {isLoading &&
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i}>
                     <td className="px-5 py-3"><Skeleton className="h-10 w-10 rounded-md" /></td>
-                    <td className="px-5 py-3"><Skeleton className="h-4 w-24" /></td>
+                    <td className="px-5 py-3"><Skeleton className="h-4 w-28" /></td>
                     <td className="px-5 py-3"><Skeleton className="h-4 w-20" /></td>
-                    <td className="px-5 py-3"><Skeleton className="h-4 w-16" /></td>
+                    <td className="px-5 py-3"><Skeleton className="h-4 w-12" /></td>
+                    <td className="px-5 py-3"><Skeleton className="h-5 w-20 rounded-full" /></td>
                     <td className="px-5 py-3"><Skeleton className="h-5 w-16 rounded-full" /></td>
                     <td className="px-5 py-3"><Skeleton className="h-8 w-16 mx-auto" /></td>
                   </tr>
-                ))
-              ) : filteredProducts.length === 0 ? (
+                ))}
+
+              {/* Empty state */}
+              {!isLoading && filteredRows.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center text-muted-foreground">
-                    No se encontraron productos en el catálogo.
+                  <td colSpan={7} className="px-5 py-12 text-center text-muted-foreground">
+                    No se encontraron productos.
                   </td>
                 </tr>
-              ) : (
-                filteredProducts.map((product) => (
-                  <tr key={product.id} className="hover:bg-muted/20 transition-colors group">
+              )}
+
+              {/* Data rows */}
+              {!isLoading &&
+                filteredRows.map((product) => (
+                  <tr
+                    key={product.id}
+                    className="hover:bg-muted/20 transition-colors group"
+                  >
+                    {/* Image */}
                     <td className="px-5 py-3">
-                      <div className="w-10 h-10 rounded-md overflow-hidden bg-muted border border-border/50">
-                        {product.image ? (
+                      <div className="w-10 h-10 rounded-md overflow-hidden bg-muted border border-border/50 flex-shrink-0">
+                        {product.imageUrl ? (
                           <img
-                            src={product.image}
-                            alt={product.code || product.name}
+                            src={product.imageUrl}
+                            alt={product.code}
                             className="w-full h-full object-cover"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
-                            <PackageSearch size={20} />
+                            <PackageSearch size={18} />
                           </div>
                         )}
                       </div>
                     </td>
-                    <td className="px-5 py-3 font-medium text-foreground">
-                      <div className="flex items-center gap-2">
-                        {product.code || product.name}
-                        {product.description && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Info className="w-3.5 h-3.5 text-muted-foreground hover:text-primary transition-colors cursor-help" />
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-[200px] text-xs">
-                                {product.description}
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-                      </div>
+
+                    {/* Code */}
+                    <td className="px-5 py-3 font-semibold text-foreground tracking-wide">
+                      {product.code}
                     </td>
-                    <td className="px-5 py-3 font-mono text-xs">
-                      <div className="flex flex-col">
-                        <span>
-                          {product.basePrice !== undefined 
-                            ? new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(product.basePrice)
-                            : new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(product.price)}
-                        </span>
-                        <span className="text-muted-foreground text-[10px]">
-                          / {product.unit}
-                        </span>
-                      </div>
+
+                    {/* Price */}
+                    <td className="px-5 py-3 font-mono text-xs tabular-nums">
+                      {formatPrice(product.price)}
                     </td>
-                    <td className="px-5 py-3 font-mono text-xs">
-                      {product.minLots && product.minLots > 1 ? (
-                        <div className="flex flex-col">
-                          <span>Mín: {product.minLots}</span>
-                          <span className="text-muted-foreground text-[10px]">Caja de {product.lotSize}</span>
-                        </div>
-                      ) : "-"}
+
+                    {/* Unit */}
+                    <td className="px-5 py-3 text-muted-foreground text-xs">
+                      {product.unit}
                     </td>
+
+                    {/* Category */}
                     <td className="px-5 py-3">
-                      {product.code ? (
-                        <Badge variant="default" className="bg-green-500/10 text-green-600 hover:bg-green-500/20 border-green-500/20 text-[10px] font-semibold h-5 px-1.5">Activo</Badge>
+                      <Badge
+                        variant="secondary"
+                        className="text-[10px] font-medium px-2 h-5"
+                      >
+                        {categoryLabel(product.categoryId)}
+                      </Badge>
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-5 py-3">
+                      {product.isActive ? (
+                        <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20 border border-green-500/20 text-[10px] font-semibold h-5 px-1.5">
+                          Activo
+                        </Badge>
                       ) : (
-                        <Badge variant="secondary" className="text-[10px] h-5 px-1.5">Legacy</Badge>
+                        <Badge
+                          variant="secondary"
+                          className="text-[10px] h-5 px-1.5 opacity-60"
+                        >
+                          Inactivo
+                        </Badge>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-center">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5"
-                        onClick={() => navigate(`/admin/products/${product.id}`)}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
+
+                    {/* Actions */}
+                    <td className="px-5 py-3">
+                      <div className="flex items-center justify-center gap-1">
+                        {/* Edit */}
+                        <Button
+                          id={`btn-edit-${product.code}`}
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5"
+                          onClick={() =>
+                            navigate(`/admin/products/${product.code}/edit`)
+                          }
+                          title="Editar producto"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+
+                        {/* Delete */}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              id={`btn-delete-${product.code}`}
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/5"
+                              title="Eliminar producto"
+                              disabled={isDeletingId === product.id}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Delete product {product.code}? This will permanently remove the product, all translations, and technical sheets.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDelete(product.id, product.code)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                {isDeletingId === product.id ? "Eliminando..." : "Eliminar"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </td>
                   </tr>
-                ))
-              )}
+                ))}
             </tbody>
           </table>
         </div>

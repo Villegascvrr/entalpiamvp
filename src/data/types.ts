@@ -70,6 +70,20 @@ export interface UpdateProductInput {
   imageFile?: File; // If provided, replaces the existing image
 }
 
+/**
+ * Lightweight product row used exclusively by the Admin Product List.
+ * Contains all products (active AND inactive) — no discount logic applied.
+ */
+export interface AdminProductRow {
+  id: string;
+  code: string;
+  price: number;
+  unit: string;
+  categoryId: string;
+  imageUrl?: string;
+  isActive: boolean;
+}
+
 /** Language-specific product details – used for both insert and upsert */
 export interface ProductDetailsInput {
   language: string;
