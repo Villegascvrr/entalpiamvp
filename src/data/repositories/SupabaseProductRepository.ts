@@ -1,12 +1,20 @@
 import type { ActorSession } from "@/contexts/ActorContext";
 import type { Category, Product } from "@/data/types";
 import { supabase } from "@/lib/supabaseClient";
+import i18n from "@/i18n";
 import type { ProductRepository } from "./ProductRepository";
 
 // ─────────────────────────────────────────────────────────────
 // Supabase Product Repository — READ ONLY
 // Products and categories are global (no RLS).
 // Queries use the anon key — safe for public catalog reads.
+//
+// Migration note (2026-03-12):
+//   The DB split `name` and `specs` out of `products` into
+//   the new `product_details` table (multi-language, 1-N).
+//   This repository joins the two tables and maps the result
+//   to the legacy Product interface so UI components need zero
+//   changes.
 // ─────────────────────────────────────────────────────────────
 
 export class SupabaseProductRepository implements ProductRepository {
@@ -15,10 +23,26 @@ export class SupabaseProductRepository implements ProductRepository {
 
     const { data, error } = await supabase
       .from("products")
-      .select("id, name, category_id, price, unit, specs, image_url")
+      .select(`
+        id,
+        code,
+        price,
+        unit,
+        image_url,
+        category_id,
+        lot_size,
+        min_lots,
+        product_details (
+          language,
+          description,
+          features,
+          safety_sheet_url,
+          source_url
+        )
+      `)
       .eq("is_active", true)
       .order("category_id")
-      .order("name");
+      .order("code");
 
     if (error) {
       console.error(
@@ -66,10 +90,26 @@ export class SupabaseProductRepository implements ProductRepository {
 
     const { data, error } = await supabase
       .from("products")
-      .select("id, name, category_id, price, unit, specs, image_url")
+      .select(`
+        id,
+        code,
+        price,
+        unit,
+        image_url,
+        category_id,
+        lot_size,
+        min_lots,
+        product_details (
+          language,
+          description,
+          features,
+          safety_sheet_url,
+          source_url
+        )
+      `)
       .eq("category_id", categoryId)
       .eq("is_active", true)
-      .order("name");
+      .order("code");
 
     if (error) {
       console.error(
@@ -85,6 +125,28 @@ export class SupabaseProductRepository implements ProductRepository {
   // ─────────────────────────────────────────────────────────────
   // Private Helpers
   // ─────────────────────────────────────────────────────────────
+
+  /**
+   * Picks the best product_details row for the current UI language.
+   * Falls back to the first available record if no language matches.
+   */
+  private _resolveDetails(
+    details: Array<{
+      language: string;
+      description: string;
+      features: Record<string, string>;
+      safety_sheet_url: string;
+      source_url: string;
+    }> | null,
+  ) {
+    if (!details || details.length === 0) return null;
+
+    const lang = i18n.language?.split("-")[0] ?? "es"; // e.g. "es", "en", "cs"
+    return (
+      details.find((d) => d.language === lang) ??
+      details[0]
+    );
+  }
 
   private async _resolveDiscount(session: ActorSession): Promise<number> {
     if (
@@ -131,16 +193,34 @@ export class SupabaseProductRepository implements ProductRepository {
       const basePrice = Number(row.price);
       const finalPrice = basePrice * (1 - discountPercentage);
 
+      // Resolve best-language product_details record
+      const detail = this._resolveDetails(row.product_details ?? null);
+
+      // Compatibility mapping:
+      //   name  → code (keeps all UI title rendering working)
+      //   specs → description (keeps specs tooltip working)
+      const name = row.code ?? "";
+      const specs = detail?.description ?? "";
+
       return {
+        // ── Legacy fields (UI compatibility) ──
         id: row.id,
-        name: row.name,
+        name,
         category: row.category_id,
         price: finalPrice,
         unit: row.unit,
-        specs: row.specs,
+        specs,
         image: row.image_url ?? undefined,
         basePrice: isAdmin ? basePrice : undefined,
         discountPercentage: isAdmin ? discountPercentage : undefined,
+
+        // ── New fields (available for future UI enhancements) ──
+        code: row.code,
+        description: detail?.description ?? undefined,
+        features: detail?.features ?? undefined,
+        safetySheetUrl: detail?.safety_sheet_url ?? undefined,
+        lotSize: row.lot_size,
+        minLots: row.min_lots,
       };
     });
   }

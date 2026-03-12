@@ -98,6 +98,7 @@ const en = {
             globalSummary: "Global Overview",
             pricing: "Pricing",
             stock: "Stock",
+            products: "Products",
             orders: "Orders",
             customers: "Customers",
             assistance: "Requests",

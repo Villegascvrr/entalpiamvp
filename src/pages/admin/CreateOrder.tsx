@@ -351,7 +351,63 @@ export default function CreateOrder() {
                 </div>
 
                 <div className="p-6 grid gap-8">
-                  {/* Section 1: Address & Location */}
+                  {/* Section 1: Notes & Notifications */}
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-500/60"></span>
+                      Notas & Avisos
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-2">
+                        <Label className="text-xs">
+                          Instrucciones de Entrega
+                        </Label>
+                        <textarea
+                          className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-ref"
+                          placeholder="Ej: Dejar en recepción, llamar al timbre..."
+                          value={shippingDetails.delivery.instructions}
+                          onChange={(e) =>
+                            updateShipping({ instructions: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Notificaciones</Label>
+                        <div className="flex flex-col gap-2 p-3 bg-muted/5 rounded-md border border-border">
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id="c1"
+                              checked={copyClient}
+                              onCheckedChange={(c) => setCopyClient(!!c)}
+                            />
+                            <Label
+                              htmlFor="c1"
+                              className="text-xs font-normal cursor-pointer"
+                            >
+                              Enviar copia al cliente
+                            </Label>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id="c2"
+                              checked={copyInternal}
+                              onCheckedChange={(c) => setCopyInternal(!!c)}
+                            />
+                            <Label
+                              htmlFor="c2"
+                              className="text-xs font-normal cursor-pointer"
+                            >
+                              Enviar copia a almacén
+                            </Label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Section 2: Address & Location */}
                   <div className="space-y-4">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-primary/60"></span>
@@ -447,21 +503,6 @@ export default function CreateOrder() {
                           />
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 pt-2">
-                        <Checkbox
-                          id="call-before"
-                          checked={shippingDetails.delivery.requiresCallBefore}
-                          onCheckedChange={(c) =>
-                            updateShipping({ requiresCallBefore: !!c })
-                          }
-                        />
-                        <Label
-                          htmlFor="call-before"
-                          className="text-xs font-normal cursor-pointer"
-                        >
-                          Llamar antes de entregar
-                        </Label>
-                      </div>
                     </div>
 
                     {/* Logistics */}
@@ -470,16 +511,48 @@ export default function CreateOrder() {
                         <span className="w-1.5 h-1.5 rounded-full bg-orange-500/60"></span>
                         Logística
                       </h3>
-                      <div className="space-y-2">
-                        <Label className="text-xs">Fecha Solicitada</Label>
-                        <Input
-                          type="date"
-                          value={shippingDetails.date}
-                          onChange={(e) =>
-                            updateShipping({ date: e.target.value })
-                          }
-                          className="h-9"
-                        />
+                      <div className="space-y-4">
+                        <Label className="text-xs">Fecha de Entrega</Label>
+                        <div className="flex flex-col gap-3">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="datePreference"
+                              checked={shippingDetails.date === "asap"}
+                              onChange={() => updateShipping({ date: "asap" })}
+                              className="accent-primary"
+                            />
+                            <span className="text-sm">Primera fecha disponible</span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="datePreference"
+                              checked={shippingDetails.date !== "asap"}
+                              onChange={() => {
+                                updateShipping({ date: new Date().toISOString().split("T")[0] });
+                              }}
+                              className="accent-primary"
+                            />
+                            <span className="text-sm">Fecha preferida de llegada</span>
+                          </label>
+                        </div>
+                        
+                        {shippingDetails.date !== "asap" && (
+                          <div className="pt-2 animate-in fade-in zoom-in-95 duration-200">
+                            <Input
+                              type="date"
+                              value={shippingDetails.date}
+                              onChange={(e) =>
+                                updateShipping({ date: e.target.value })
+                              }
+                              className="h-9 w-full sm:w-1/2"
+                            />
+                            <p className="text-[10px] text-muted-foreground mt-1.5">
+                              * La fecha de entrega está sujeta a confirmación por logística.
+                            </p>
+                          </div>
+                        )}
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -512,79 +585,6 @@ export default function CreateOrder() {
                             <option value="pickup">Recogida en Almacén</option>
                             <option value="urgent">Urgente / Directo</option>
                           </select>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 pt-2">
-                        <Checkbox
-                          id="unloading"
-                          checked={
-                            shippingDetails.delivery.hasUnloadingRequirements
-                          }
-                          onCheckedChange={(c) =>
-                            updateShipping({ hasUnloadingRequirements: !!c })
-                          }
-                        />
-                        <Label
-                          htmlFor="unloading"
-                          className="text-xs font-normal cursor-pointer"
-                        >
-                          Requiere grúa / descarga especial
-                        </Label>
-                      </div>
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  {/* Section 3: Notes & Notifications */}
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-purple-500/60"></span>
-                      Notas & Avisos
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="space-y-2">
-                        <Label className="text-xs">
-                          Instrucciones de Entrega
-                        </Label>
-                        <textarea
-                          className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-ref"
-                          placeholder="Ej: Dejar en recepción, llamar al timbre..."
-                          value={shippingDetails.delivery.instructions}
-                          onChange={(e) =>
-                            updateShipping({ instructions: e.target.value })
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs">Notificaciones</Label>
-                        <div className="flex flex-col gap-2 p-3 bg-muted/5 rounded-md border border-border">
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              id="c1"
-                              checked={copyClient}
-                              onCheckedChange={(c) => setCopyClient(!!c)}
-                            />
-                            <Label
-                              htmlFor="c1"
-                              className="text-xs font-normal cursor-pointer"
-                            >
-                              Enviar copia al cliente
-                            </Label>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              id="c2"
-                              checked={copyInternal}
-                              onCheckedChange={(c) => setCopyInternal(!!c)}
-                            />
-                            <Label
-                              htmlFor="c2"
-                              className="text-xs font-normal cursor-pointer"
-                            >
-                              Enviar copia a almacén
-                            </Label>
-                          </div>
                         </div>
                       </div>
                     </div>

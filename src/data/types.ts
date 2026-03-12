@@ -27,13 +27,56 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
 /** A product in the catalog */
 export interface Product {
   id: string;
-  name: string;
+  name: string;        // Mapped from products.code for UI compatibility
   category: string;
   price: number;
   unit: string;
-  specs: string;
+  specs: string;       // Mapped from product_details.description for UI compatibility
   image?: string;
   discountPercentage?: number; // Applied discount (0-1)
+  basePrice?: number;
+  // New fields from the product_details model (optional – UI components don't break if absent)
+  code?: string;
+  description?: string;
+  features?: Record<string, string>;
+  safetySheetUrl?: string;
+  lotSize?: number;
+  minLots?: number;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Admin Product Write Types
+// ─────────────────────────────────────────────────────────────
+
+/** Input to create a new product (before image upload) */
+export interface CreateProductInput {
+  code: string;
+  categoryId: string;
+  price: number;
+  unit: string;
+  lotSize: number;
+  minLots: number;
+  isActive: boolean;
+  imageFile: File; // Will be uploaded to storage/imgs/{code}.jpg
+}
+
+/** Input to update an existing product */
+export interface UpdateProductInput {
+  price?: number;
+  unit?: string;
+  lotSize?: number;
+  minLots?: number;
+  isActive?: boolean;
+  imageFile?: File; // If provided, replaces the existing image
+}
+
+/** Language-specific product details – used for both insert and upsert */
+export interface ProductDetailsInput {
+  language: string;
+  description: string;
+  features: Record<string, string>;
+  sourceUrl: string;
+  pdfFile?: File; // If provided, will be uploaded to storage/pdfs/{language}/{code}.pdf
 }
 
 /** A category in the product catalog */

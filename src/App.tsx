@@ -25,6 +25,7 @@ import AdminPricing from "./pages/admin/AdminPricing";
 import AdminStock from "./pages/admin/AdminStock";
 import AdminAssistance from "./pages/admin/AdminAssistance";
 import CreateOrder from "./pages/admin/CreateOrder";
+import AdminProducts from "./pages/admin/AdminProducts";
 import CustomerDetail from "./pages/commercial/CustomerDetail";
 import Customers from "./pages/commercial/Customers";
 
@@ -235,6 +236,14 @@ const App = () => (
                             element={
                               <RoleGate roles={["admin", "commercial"]}>
                                 <AdminAssistance />
+                              </RoleGate>
+                            }
+                          />
+                          <Route
+                            path="/admin/products"
+                            element={
+                              <RoleGate roles={["admin"]}>
+                                <AdminProducts />
                               </RoleGate>
                             }
                           />

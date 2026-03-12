@@ -23,6 +23,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Download,
   Eye,
   Info,
   Layers,
@@ -438,14 +439,29 @@ export function ProductSelector({
                               </TooltipTrigger>
                               <TooltipContent
                                 side="top"
-                                className="text-xs max-w-[200px] bg-card border shadow-lg p-2.5"
+                                className="text-xs max-w-[260px] bg-card border shadow-lg p-3 space-y-2"
                               >
-                                <p className="font-bold mb-1.5 text-primary text-[10px] uppercase tracking-wider">
+                                <p className="font-bold text-primary text-[10px] uppercase tracking-wider">
                                   Especificaciones Técnicas
                                 </p>
-                                <p className="text-muted-foreground leading-relaxed">
-                                  {product.specs}
-                                </p>
+                                {product.description && (
+                                  <p className="text-muted-foreground leading-relaxed">
+                                    {product.description}
+                                  </p>
+                                )}
+                                {product.features && Object.keys(product.features).length > 0 && (
+                                  <dl className="grid grid-cols-2 gap-x-2 gap-y-0.5 border-t border-border pt-2">
+                                    {Object.entries(product.features).map(([key, val]) => (
+                                      <>
+                                        <dt key={`k-${key}`} className="text-muted-foreground font-medium truncate">{key}</dt>
+                                        <dd key={`v-${key}`} className="font-mono text-foreground">{String(val)}</dd>
+                                      </>
+                                    ))}
+                                  </dl>
+                                )}
+                                {!product.description && !product.features && (
+                                  <p className="text-muted-foreground leading-relaxed">{product.specs}</p>
+                                )}
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
@@ -460,6 +476,27 @@ export function ProductSelector({
                         >
                           {product.name}
                         </h3>
+
+                        {/* Lot size badge + Safety sheet link */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {product.minLots && product.minLots > 1 && (
+                            <Badge variant="secondary" className="text-[9px] font-mono h-4 px-1.5">
+                              Lote mín: {product.minLots}
+                            </Badge>
+                          )}
+                          {product.safetySheetUrl && (
+                            <a
+                              href={product.safetySheetUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center gap-1 text-[9px] text-primary/70 hover:text-primary font-semibold underline underline-offset-2 transition-colors"
+                            >
+                              <Download className="h-2.5 w-2.5" />
+                              Ficha técnica
+                            </a>
+                          )}
+                        </div>
 
                         {/* Price and Add/Controls Row */}
                         <div className="mt-auto pt-2 border-t border-border/30">

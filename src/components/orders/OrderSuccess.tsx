@@ -65,7 +65,9 @@ export function OrderSuccess({
                   Fecha de Envío Estimada
                 </span>
               </div>
-              <span className="text-sm font-medium">{shippingDate}</span>
+              <span className="text-sm font-medium">
+                {shippingDate === "asap" ? "Primera fecha disponible" : shippingDate}
+              </span>
             </div>
             <div className="space-y-2 pt-2">
               <div className="flex items-start gap-2">

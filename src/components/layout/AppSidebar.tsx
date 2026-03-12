@@ -99,6 +99,7 @@ const NAV_CONFIG: Record<ActorRole, NavGroup[]> = {
       titleKey: "sidebar.operations",
       items: [
         { titleKey: "sidebar.admin.orders", icon: FileText, href: "/admin/orders" },
+        { titleKey: "sidebar.admin.products", icon: Package, href: "/admin/products" },
         { titleKey: "sidebar.admin.customers", icon: Users, href: "/commercial/customers" },
         { titleKey: "sidebar.admin.assistance", icon: Headphones, href: "/admin/assistance" },
       ],

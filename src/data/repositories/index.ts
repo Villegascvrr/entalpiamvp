@@ -257,3 +257,8 @@ export const lmeRepository: LMERepository = createLMERepository();
 export const fxRateRepository: FXRateRepository = createFXRateRepository();
 export const assistanceRequestRepository: AssistanceRequestRepository =
   createAssistanceRequestRepository();
+
+// Admin Product Write Repository — always Supabase, no mock needed
+// Exported as a lazily-evaluated singleton so Supabase is not imported in demo mode.
+import { SupabaseAdminProductRepository } from "./SupabaseAdminProductRepository";
+export const adminProductRepository = new SupabaseAdminProductRepository();
