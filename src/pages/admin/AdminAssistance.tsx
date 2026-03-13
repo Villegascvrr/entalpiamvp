@@ -210,30 +210,6 @@ export default function AdminAssistance() {
                             <HeadphonesIcon className="h-5 w-5 text-primary" />
                             Solicitudes Comerciales
                         </h1>
-
-                        <div className="h-8 w-px bg-border/60" />
-
-                        {/* Counters */}
-                        <div className="flex items-center gap-4">
-                            <StatChip
-                                label="Nuevas"
-                                count={counts.NEW}
-                                highlight={counts.NEW > 0}
-                                highlightClass="bg-blue-500/20 text-blue-600"
-                            />
-                            <StatChip
-                                label="En Gestión"
-                                count={counts.IN_PROGRESS}
-                                highlight={counts.IN_PROGRESS > 0}
-                                highlightClass="bg-amber-500/20 text-amber-600"
-                            />
-                            <StatChip
-                                label="Cerradas"
-                                count={counts.CLOSED}
-                                highlight={false}
-                                highlightClass="bg-muted text-muted-foreground"
-                            />
-                        </div>
                     </div>
                 </div>
 
@@ -530,34 +506,3 @@ export default function AdminAssistance() {
     );
 }
 
-// ─────────────────────────────────────────────────────────────
-// StatChip sub-component
-// ─────────────────────────────────────────────────────────────
-
-function StatChip({
-    label,
-    count,
-    highlight,
-    highlightClass,
-}: {
-    label: string;
-    count: number;
-    highlight: boolean;
-    highlightClass: string;
-}) {
-    return (
-        <div className="flex items-center gap-2">
-            <div
-                className={cn(
-                    "h-8 w-8 rounded flex items-center justify-center",
-                    highlight ? highlightClass : "bg-muted text-muted-foreground",
-                )}
-            >
-                <span className="text-sm font-bold">{count}</span>
-            </div>
-            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
-                {label}
-            </p>
-        </div>
-    );
-}

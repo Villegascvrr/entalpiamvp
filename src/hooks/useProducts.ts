@@ -2,10 +2,12 @@ import { useActor } from "@/contexts/ActorContext";
 import { productRepository } from "@/data/repositories";
 import type { Category, Product } from "@/data/types";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 // ─────────────────────────────────────────────────────────────
 // useProducts — Data provider hook
 // All product reads go through ProductRepository + ActorSession.
+// Re-fetches automatically when the UI language switcher changes.
 // ─────────────────────────────────────────────────────────────
 
 interface UseProductsResult {
@@ -18,6 +20,9 @@ interface UseProductsResult {
 
 export function useProducts(): UseProductsResult {
   const { session } = useActor();
+  // Subscribe to i18n so we re-fetch when the LanguageToggle changes language.
+  // This makes the UI language switcher the single source of truth.
+  const { i18n } = useTranslation();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,7 +54,9 @@ export function useProducts(): UseProductsResult {
     };
 
     fetchData();
-  }, [session, refreshTrigger]);
+    // i18n.language is included so products re-fetch when the UI language changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, refreshTrigger, i18n.language]);
 
   return { products, categories, isLoading, error, refresh };
 }

@@ -94,7 +94,7 @@ async function resolveActor(
         role: fallbackData.role as ActorRole,
         tenantId:
           appConfig.mode === "development"
-            ? "entalpia-demo"
+            ? "a0000000-0000-0000-0000-000000000001"
             : fallbackData.tenant_id,
         name: fallbackData.name,
         email,
@@ -118,9 +118,7 @@ async function resolveActor(
   let effectiveTenantId = data.tenant_id;
 
   if (appConfig.mode === "development") {
-    effectiveTenantId = "entalpia-demo";
-  } else if (appConfig.mode === "production") {
-    effectiveTenantId = "entalpia-real-dev";
+    effectiveTenantId = "a0000000-0000-0000-0000-000000000001";
   }
 
   return {

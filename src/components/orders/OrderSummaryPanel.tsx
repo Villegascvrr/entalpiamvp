@@ -14,6 +14,7 @@ import {
 import type { OrderItem } from "@/data/types";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, ChevronRight, FileText, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface OrderSummaryPanelProps {
   items: OrderItem[];
@@ -28,6 +29,7 @@ export function OrderSummaryPanel({
   onUpdateQuantity,
   onProceed,
 }: OrderSummaryPanelProps) {
+  const { t } = useTranslation();
   const subtotal = items.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0,
@@ -42,7 +44,7 @@ export function OrderSummaryPanel({
         <div className="flex items-center gap-2">
           <FileText className="h-4 w-4 text-primary" />
           <h2 className="font-bold text-sm uppercase tracking-tight">
-            Resumen
+            {t("createOrder.summary.title")}
           </h2>
         </div>
         <Badge
@@ -62,9 +64,9 @@ export function OrderSummaryPanel({
             </div>
             <div className="space-y-1">
               <p className="text-sm font-bold uppercase tracking-wider">
-                Sin Artículos
+                {t("createOrder.summary.empty")}
               </p>
-              <p className="text-xs">Añade productos del catálogo.</p>
+              <p className="text-xs">{t("createOrder.summary.emptyHint")}</p>
             </div>
           </div>
         ) : (
@@ -135,17 +137,17 @@ export function OrderSummaryPanel({
       <div className="p-4 border-t border-border bg-muted/10 shrink-0 space-y-3">
         <div className="space-y-1.5">
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>Base Imponible</span>
+            <span>{t("createOrder.summary.taxBase")}</span>
             <span className="font-mono">€{subtotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>IVA (21%)</span>
+            <span>{t("createOrder.summary.vat")}</span>
             <span className="font-mono">€{tax.toFixed(2)}</span>
           </div>
           <Separator className="my-1.5" />
           <div className="flex justify-between items-baseline">
             <span className="text-sm font-bold uppercase tracking-tight">
-              Total Est.
+              {t("createOrder.summary.totalEst")}
             </span>
             <span className="font-mono text-lg font-black text-primary">
               €{total.toFixed(2)}
@@ -162,34 +164,31 @@ export function OrderSummaryPanel({
                 className="w-full h-6 text-[10px] text-muted-foreground hover:text-foreground"
               >
                 <AlertTriangle className="h-3 w-3 mr-1" />
-                Ver Condiciones Comerciales
+                {t("createOrder.summary.viewTerms")}
               </Button>
             </SheetTrigger>
             <SheetContent>
               <SheetHeader>
-                <SheetTitle>Condiciones de Compra</SheetTitle>
+                <SheetTitle>{t("createOrder.summary.termsTitle")}</SheetTitle>
                 <SheetDescription>
-                  Información aplicable a este pedido.
+                  {t("createOrder.summary.termsDesc")}
                 </SheetDescription>
               </SheetHeader>
               <div className="py-4 space-y-4 text-sm text-foreground/80">
                 <div className="p-3 bg-muted rounded-lg">
                   <h4 className="font-semibold mb-1 text-foreground">
-                    Plazos de Entrega
+                    {t("createOrder.summary.deliveryTermsTitle")}
                   </h4>
                   <p>
-                    Pedidos confirmados antes de las 13:00 se envían el mismo
-                    día. Entregas estándar en 24-48h.
+                    {t("createOrder.summary.deliveryTermsText")}
                   </p>
                 </div>
                 <div className="p-3 bg-muted rounded-lg">
                   <h4 className="font-semibold mb-1 text-foreground">
-                    Política de Devoluciones
+                    {t("createOrder.summary.returnsTitle")}
                   </h4>
                   <p>
-                    Se aceptan devoluciones de material no utilizado en su
-                    embalaje original hasta 30 días después de la entrega.
-                    Sujeto a cargo de gestión del 10%.
+                    {t("createOrder.summary.returnsText")}
                   </p>
                 </div>
               </div>
@@ -206,7 +205,7 @@ export function OrderSummaryPanel({
             disabled={items.length === 0}
             onClick={onProceed}
           >
-            Revisar Pedido
+            {t("createOrder.summary.reviewOrder")}
             <ChevronRight className="h-4 w-4 ml-0.5" />
           </Button>
         </div>

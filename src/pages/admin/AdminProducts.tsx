@@ -4,6 +4,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { useActor } from "@/contexts/ActorContext";
 import type { AdminProductRow } from "@/data/types";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +38,7 @@ import { useNavigate } from "react-router-dom";
 export default function AdminProducts() {
   const navigate = useNavigate();
   const { session } = useActor();
+  const { t, i18n } = useTranslation();
 
   // Admin product rows — full list (no is_active filter)
   const [rows, setRows] = useState<AdminProductRow[]>([]);
@@ -88,8 +90,11 @@ export default function AdminProducts() {
   }, [rows, searchTerm, categories]);
 
   // ── Price formatter ──────────────────────────────────────────
-  const formatPrice = (price: number) =>
-    new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(price);
+  // Use i18n.language so decimal/thousands separators match the UI language
+  const formatPrice = (price: number) => {
+    const locale = i18n.language === "es" ? "es-ES" : "en-GB";
+    return new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" }).format(price);
+  };
 
   // ── Delete Handler ───────────────────────────────────────────
   const handleDelete = async (productId: string, code: string) => {
@@ -97,11 +102,11 @@ export default function AdminProducts() {
     setIsDeletingId(productId);
     try {
       await adminProductRepository.deleteProduct(session, productId);
-      toast.success(`Producto ${code} eliminado con éxito`);
+      toast.success(t("adminProducts.toasts.deleted", { code }));
       setRows((prev) => prev.filter((r) => r.id !== productId));
     } catch (err: any) {
       console.error("[AdminProducts] Delete failed:", err);
-      toast.error(err.message || "Error al eliminar el producto");
+      toast.error(err.message || t("common.error"));
     } finally {
       setIsDeletingId(null);
     }
@@ -115,10 +120,10 @@ export default function AdminProducts() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
             <PackageSearch className="w-8 h-8 text-primary" />
-            Productos
+            {t("adminProducts.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Gestiona el catálogo de productos, traducciones y fichas técnicas.
+            {t("adminProducts.subtitle")}
           </p>
         </div>
         <Button
@@ -127,7 +132,7 @@ export default function AdminProducts() {
           className="shadow-sm"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Create Product
+          {t("adminProducts.createProduct")}
         </Button>
       </div>
 
@@ -137,14 +142,14 @@ export default function AdminProducts() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             id="input-product-search"
-            placeholder="Buscar por código o categoría..."
+            placeholder={t("adminProducts.searchPlaceholder")}
             className="pl-9 bg-background/50 border-border/50 h-9"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <span className="text-xs text-muted-foreground whitespace-nowrap ml-auto">
-          {filteredRows.length} producto{filteredRows.length !== 1 ? "s" : ""}
+          {t("adminProducts.productCount", { count: filteredRows.length })}
         </span>
       </div>
 
@@ -154,13 +159,13 @@ export default function AdminProducts() {
           <table className="w-full text-sm text-left">
             <thead className="bg-muted/50 text-muted-foreground font-medium border-b border-border/50">
               <tr>
-                <th className="px-5 py-3.5 w-16">IMG</th>
-                <th className="px-5 py-3.5">Código</th>
-                <th className="px-5 py-3.5">Precio</th>
-                <th className="px-5 py-3.5">Unidad</th>
-                <th className="px-5 py-3.5">Categoría</th>
-                <th className="px-5 py-3.5">Estado</th>
-                <th className="px-5 py-3.5 w-[100px] text-center">Acciones</th>
+                <th className="px-5 py-3.5 w-16">{t("adminProducts.columns.img")}</th>
+                <th className="px-5 py-3.5">{t("adminProducts.columns.code")}</th>
+                <th className="px-5 py-3.5">{t("adminProducts.columns.price")}</th>
+                <th className="px-5 py-3.5">{t("adminProducts.columns.unit")}</th>
+                <th className="px-5 py-3.5">{t("adminProducts.columns.category")}</th>
+                <th className="px-5 py-3.5">{t("adminProducts.columns.status")}</th>
+                <th className="px-5 py-3.5 w-[100px] text-center">{t("adminProducts.columns.actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
@@ -183,7 +188,7 @@ export default function AdminProducts() {
               {!isLoading && filteredRows.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-5 py-12 text-center text-muted-foreground">
-                    No se encontraron productos.
+                    {t("adminProducts.noProducts")}
                   </td>
                 </tr>
               )}
@@ -241,14 +246,14 @@ export default function AdminProducts() {
                     <td className="px-5 py-3">
                       {product.isActive ? (
                         <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20 border border-green-500/20 text-[10px] font-semibold h-5 px-1.5">
-                          Activo
+                          {t("adminProducts.status.active")}
                         </Badge>
                       ) : (
                         <Badge
                           variant="secondary"
                           className="text-[10px] h-5 px-1.5 opacity-60"
                         >
-                          Inactivo
+                          {t("adminProducts.status.inactive")}
                         </Badge>
                       )}
                     </td>
@@ -286,18 +291,20 @@ export default function AdminProducts() {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
+                              <AlertDialogTitle>{t("adminProducts.deleteDialog.title")}</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Delete product {product.code}? This will permanently remove the product, all translations, and technical sheets.
+                                {t("adminProducts.deleteDialog.description", { code: product.code })}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogCancel>{t("adminProducts.deleteDialog.cancel")}</AlertDialogCancel>
                               <AlertDialogAction 
                                 onClick={() => handleDelete(product.id, product.code)}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               >
-                                {isDeletingId === product.id ? "Eliminando..." : "Eliminar"}
+                                {isDeletingId === product.id
+                                  ? t("adminProducts.deleteDialog.deleting")
+                                  : t("adminProducts.deleteDialog.confirm")}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>

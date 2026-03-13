@@ -43,7 +43,6 @@ export class SupabaseProductRepository implements ProductRepository {
         )
       `)
       .eq("is_active", true)
-      .eq("product_details.language", lang)
       .order("category_id")
       .order("code");
 
@@ -55,7 +54,7 @@ export class SupabaseProductRepository implements ProductRepository {
       return [];
     }
 
-    return this._mapProducts(data, session, discountPercentage);
+    return this._mapProducts(data, session, discountPercentage, lang);
   }
 
   async getCategories(_session: ActorSession): Promise<Category[]> {
@@ -113,7 +112,6 @@ export class SupabaseProductRepository implements ProductRepository {
       `)
       .eq("category_id", categoryId)
       .eq("is_active", true)
-      .eq("product_details.language", lang)
       .order("code");
 
     if (error) {
@@ -124,7 +122,7 @@ export class SupabaseProductRepository implements ProductRepository {
       return [];
     }
 
-    return this._mapProducts(data, session, discountPercentage);
+    return this._mapProducts(data, session, discountPercentage, lang);
   }
 
   /** Admin-only: returns ALL products (active + inactive) with a lean shape. */
@@ -160,17 +158,21 @@ export class SupabaseProductRepository implements ProductRepository {
 
 
   /**
-   * Returns the current UI language code in lowercase (e.g. "es", "en").
-   * Matches the format used in the DB product_details.language column.
+   * Returns the current UI language in UPPERCASE (e.g. "ES", "EN").
+   * Driven exclusively by the i18n language switcher (LanguageToggle).
+   * This NEVER reads navigator.language or the browser locale.
    */
   private _currentLang(): string {
-    return (i18n.language?.split("-")[0] ?? "es").toLowerCase();
+    return (i18n.language?.split("-")[0] ?? "en").toUpperCase();
   }
 
   /**
-   * Picks the best product_details row for the current UI language.
-   * Falls back to the first available record if no language matches.
-   * With server-side language filtering this will normally receive 0 or 1 rows.
+   * Universal fallback chain for product_details:
+   *   1. Try the selectedLang (UI switcher)
+   *   2. Fallback to EN
+   *   3. Fallback to first available language
+   * 
+   * This ensures product details are NEVER empty due to language mismatch.
    */
   private _resolveDetails(
     details: Array<{
@@ -180,15 +182,22 @@ export class SupabaseProductRepository implements ProductRepository {
       safety_sheet_url: string;
       source_url: string;
     }> | null,
+    selectedLang: string,
   ) {
     if (!details || details.length === 0) return null;
-    // Server-side filter already narrowed to the right language.
-    // Keep fallback to details[0] for robustness.
-    const lang = this._currentLang();
-    return (
-      details.find((d) => d.language.toLowerCase() === lang) ??
-      details[0]
-    );
+
+    const upperLang = selectedLang.toUpperCase();
+
+    // Step 1 — exact match for the UI-selected language
+    const exact = details.find((d) => d.language.toUpperCase() === upperLang);
+    if (exact) return exact;
+
+    // Step 2 — fallback to EN
+    const english = details.find((d) => d.language.toUpperCase() === "EN");
+    if (english) return english;
+
+    // Step 3 — fallback to first available
+    return details[0];
   }
 
   private async _resolveDiscount(session: ActorSession): Promise<number> {
@@ -230,14 +239,16 @@ export class SupabaseProductRepository implements ProductRepository {
     data: any[],
     session: ActorSession,
     discountPercentage: number,
+    lang?: string,
   ): Product[] {
     const isAdmin = session.role === "admin";
+    const selectedLang = lang ?? this._currentLang();
     return (data ?? []).map((row) => {
       const basePrice = Number(row.price);
       const finalPrice = basePrice * (1 - discountPercentage);
 
-      // Resolve best-language product_details record
-      const detail = this._resolveDetails(row.product_details ?? null);
+      // Resolve best-language product_details record using full fallback chain
+      const detail = this._resolveDetails(row.product_details ?? null, selectedLang);
 
       // Compatibility mapping:
       //   name  → code (keeps all UI title rendering working)

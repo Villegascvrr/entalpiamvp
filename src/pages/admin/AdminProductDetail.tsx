@@ -1,5 +1,5 @@
 import { useState, useEffect, FormEvent } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useMatch, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,8 +34,12 @@ type LanguageDetailsState = {
 };
 
 export default function AdminProductDetail() {
-  const { code } = useParams();
-  const isNew = code === "new";
+  // Detect create mode by matching the exact "/admin/products/new" route.
+  // The edit route "/admin/*/products/:code/edit" exposes :code via useParams().
+  // We cannot rely on code === "new" because /admin/products/new has NO :code param.
+  const isNewRoute = useMatch("/admin/products/new");
+  const isNew = Boolean(isNewRoute);
+  const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   
   const { categories } = useProducts();
@@ -161,14 +165,18 @@ export default function AdminProductDetail() {
     e.preventDefault();
     if (!session) return;
     
-    if (!formData.code.trim()) {
+    const codeStr = formData.code.trim();
+    if (!codeStr) {
       toast.error("Product code is required");
       return;
     }
-    if (formData.code !== formData.code.toUpperCase()) {
-      toast.error("Code must be uppercase");
+    
+    if (!/^[A-Za-z0-9-]+$/.test(codeStr)) {
+      toast.error("Code can only contain letters, numbers and hyphens.");
       return;
     }
+
+    const normalizedCode = codeStr.toLowerCase();
     if (formData.price <= 0) {
       toast.error("Price must be greater than 0");
       return;
@@ -186,7 +194,7 @@ export default function AdminProductDetail() {
     try {
       if (isNew) {
         await adminProductRepository.createProduct(session, {
-          code: formData.code,
+          code: normalizedCode,
           categoryId: formData.categoryId,
           price: formData.price,
           unit: formData.unit,
@@ -197,11 +205,11 @@ export default function AdminProductDetail() {
         });
         toast.success("Producto creado con éxito");
         // Redirect to edit mode to allow entering language tabs
-        navigate(`/admin/products/${formData.code}/edit`);
+        navigate(`/admin/products/${normalizedCode}/edit`);
       } else {
         if (!productId) throw new Error("Producto sin ID");
         await adminProductRepository.updateProduct(session, productId, {
-          code: formData.code,
+          code: normalizedCode,
           price: Number(formData.price),
           unit: formData.unit,
           lotSize: Number(formData.lotSize),

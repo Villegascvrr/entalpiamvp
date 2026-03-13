@@ -40,6 +40,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface ProductSelectorProps {
   onSelectProduct: (product: Product) => void;
@@ -62,6 +63,7 @@ export function ProductSelector({
   initialCategory,
 }: ProductSelectorProps) {
   const { products, categories: hookCategories } = useProducts();
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<string | null>(
     initialCategory || null,
@@ -241,7 +243,7 @@ export function ProductSelector({
               >
                 <ChevronLeft className="h-4 w-4" />
                 <span className="text-xs font-bold uppercase tracking-wider">
-                  Volver
+                  {t("productSelector.back")}
                 </span>
               </Button>
               <div className="flex items-center gap-2">
@@ -265,7 +267,7 @@ export function ProductSelector({
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={`Buscar en ${activeCategory}...`}
+                placeholder={t("productSelector.searchPlaceholder")}
                 className="pl-9 bg-muted/30 border-muted-foreground/20 h-10 text-sm"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -307,13 +309,13 @@ export function ProductSelector({
                 </div>
                 <h3 className="text-lg font-bold text-foreground">
                   {searchQuery
-                    ? "No se encontraron resultados"
-                    : "No hay productos disponibles"}
+                    ? t("productSelector.noResults")
+                    : t("productSelector.noProducts")}
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-xs mx-auto mt-2">
                   {searchQuery
-                    ? `No hay coincidencias para "${searchQuery}" en esta categoría.`
-                    : "Esta categoría no tiene referencias activas en este momento."}
+                    ? t("productSelector.noResultsHint", { query: searchQuery })
+                    : t("productSelector.noProductsHint")}
                 </p>
                 {searchQuery && (
                   <Button
@@ -323,7 +325,7 @@ export function ProductSelector({
                     className="mt-4 gap-2"
                   >
                     <RotateCcw className="h-3 w-3" />
-                    Limpiar búsqueda
+                    {t("productSelector.clearSearch")}
                   </Button>
                 )}
               </div>
@@ -415,18 +417,7 @@ export function ProductSelector({
 
                       <div className="p-4 flex flex-col flex-1 gap-3">
                         {/* Reference Code & Specs Popover */}
-                        <div className="flex justify-between items-center h-5">
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              "text-[9px] font-mono px-1.5 py-0 h-4 border-none uppercase tracking-tighter",
-                              isSelected
-                                ? "text-primary/90 bg-primary/10"
-                                : "text-muted-foreground bg-muted",
-                            )}
-                          >
-                            {product.id}
-                          </Badge>
+                        <div className="flex justify-end items-center h-5">
 
                           <TooltipProvider>
                             <Tooltip>
@@ -484,7 +475,7 @@ export function ProductSelector({
                         <div className="flex items-center gap-2 flex-wrap">
                           {product.minLots && product.minLots > 1 && (
                             <Badge variant="secondary" className="text-[9px] font-mono h-4 px-1.5">
-                              Lote mín: {product.minLots}
+                              {t("productSelector.minLot", { n: product.minLots })}
                             </Badge>
                           )}
                           {product.safetySheetUrl && (
@@ -496,7 +487,7 @@ export function ProductSelector({
                               className="inline-flex items-center gap-1 text-[9px] text-primary/70 hover:text-primary font-semibold underline underline-offset-2 transition-colors"
                             >
                               <Download className="h-2.5 w-2.5" />
-                              Ficha técnica
+                              {t("productSelector.safetySheet")}
                             </a>
                           )}
                         </div>
@@ -567,7 +558,7 @@ export function ProductSelector({
                                 className="h-8 px-3 gap-1.5 rounded-md shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all font-semibold opacity-90 hover:opacity-100 group/add"
                               >
                                 <Plus className="h-3.5 w-3.5 group-hover/add:rotate-90 transition-transform" />
-                                <span className="text-xs">AÑADIR</span>
+                                <span className="text-xs">{t("productSelector.addButton")}</span>
                               </Button>
                             )}
                           </div>
@@ -597,11 +588,9 @@ export function ProductSelector({
                       <Package className="h-8 w-8 text-muted-foreground/30" />
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 flex flex-col justify-center">
                     <DialogTitle className="text-lg font-bold leading-tight">{detailProduct.name}</DialogTitle>
-                    <DialogDescription className="text-[10px] font-mono uppercase tracking-widest text-primary/70 mt-1">
-                      {detailProduct.id}
-                    </DialogDescription>
+                    <DialogDescription className="sr-only">{detailProduct.name}</DialogDescription>
                   </div>
                 </div>
               </DialogHeader>
@@ -610,7 +599,7 @@ export function ProductSelector({
                 {/* Description */}
                 {(detailProduct.description || detailProduct.specs) && (
                   <div className="space-y-2">
-                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Descripción</p>
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t("productSelector.descriptionLabel")}</p>
                     <p className="text-sm text-foreground leading-relaxed">
                       {detailProduct.description || detailProduct.specs}
                     </p>
@@ -620,7 +609,7 @@ export function ProductSelector({
                 {/* Features Table */}
                 {detailProduct.features && Object.keys(detailProduct.features).length > 0 && (
                   <div className="space-y-3">
-                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Especificaciones Técnicas</p>
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t("productSelector.specsLabel")}</p>
                     <div className="rounded-lg border border-border overflow-hidden">
                       <table className="w-full text-sm">
                         <tbody className="divide-y divide-border/50">
@@ -646,7 +635,7 @@ export function ProductSelector({
                       className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 transition-colors text-sm font-semibold"
                     >
                       <FileText className="h-4 w-4" />
-                      Ver ficha técnica
+                      {t("productSelector.viewSheet")}
                       <ExternalLink className="h-3.5 w-3.5 ml-1 opacity-70" />
                     </a>
                   </div>
@@ -654,7 +643,7 @@ export function ProductSelector({
               </div>
 
               <div className="flex justify-end gap-3 p-6 pt-3 border-t bg-card shrink-0">
-                <Button variant="outline" onClick={() => setDetailProduct(null)}>Cerrar</Button>
+                <Button variant="outline" onClick={() => setDetailProduct(null)}>{t("productSelector.close")}</Button>
                 <Button
                   onClick={() => {
                     onSelectProduct(detailProduct);
@@ -664,7 +653,7 @@ export function ProductSelector({
                   className="gap-2"
                 >
                   <Plus className="h-4 w-4" />
-                  {selectedItems.find(i => i.id === detailProduct.id) ? "Ya añadido" : "Añadir al pedido"}
+                  {selectedItems.find(i => i.id === detailProduct.id) ? t("productSelector.alreadyAdded") : t("productSelector.addToOrder")}
                 </Button>
               </div>
             </>
@@ -708,9 +697,7 @@ export function ProductSelector({
               <div className="bg-muted/50 p-4 rounded-lg border border-border flex items-center gap-3">
                 <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
                 <p className="text-[10px] text-muted-foreground font-medium">
-                  Todos los productos en esta categoría cumplen con los
-                  estándares de seguridad industrial y normativas europeas
-                  vigentes.
+                  {t("productSelector.qualityNote")}
                 </p>
               </div>
             </div>
@@ -726,7 +713,7 @@ export function ProductSelector({
               className="gap-2"
             >
               <Search className="h-4 w-4" />
-              Ver Productos
+              {t("productSelector.viewProducts")}
             </Button>
           </div>
         </DialogContent>

@@ -25,12 +25,14 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export default function CreateOrder() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialCategory = searchParams.get("category");
   const { session, hasRole } = useActor();
+  const { t } = useTranslation();
   const isInterno = hasRole("admin");
   const {
     items,
@@ -97,51 +99,35 @@ export default function CreateOrder() {
   // COMPACT STEPPER
   // ─────────────────────────────────────────────────────────────
   const steps = [
-    { id: 1, label: "Selección", icon: ShoppingCart },
-    { id: 2, label: "Revisar", icon: FileSearch },
-    { id: 3, label: "Datos", icon: Truck },
-    { id: 4, label: "Fin", icon: Send },
+    { id: 1, label: t("createOrder.steps.selection"), icon: ShoppingCart },
+    { id: 2, label: t("createOrder.steps.review"), icon: FileSearch },
+    { id: 3, label: t("createOrder.steps.data"), icon: Truck },
+    { id: 4, label: t("createOrder.steps.end"), icon: Send },
   ];
-
-  const Stepper = () => (
-    <div className="flex items-center justify-center gap-1 bg-background border-b border-border/60 h-8 shrink-0 select-none">
-      {steps.map((s, i) => (
-        <div key={s.id} className="flex items-center">
-          <div
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-0.5 rounded-full transition-all duration-300",
-              currentStep === s.id
-                ? "bg-primary/10 text-primary"
-                : currentStep > s.id
-                  ? "text-muted-foreground/80"
-                  : "text-muted-foreground/40",
-            )}
-          >
-            <div
-              className={cn(
-                "flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold ring-1 ring-current",
-                currentStep >= s.id ? "bg-background" : "bg-transparent",
-              )}
-            >
-              {currentStep > s.id ? <Check className="h-2.5 w-2.5" /> : s.id}
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-wider">
-              {s.label}
-            </span>
-          </div>
-          {i < steps.length - 1 && (
-            <div className="w-4 h-px bg-border/50 mx-1" />
-          )}
-        </div>
-      ))}
-    </div>
-  );
 
   if (isSuccess) {
     return (
       <AppLayout>
         <div className="flex flex-col h-screen overflow-hidden">
-          <Stepper />
+        <div className="flex items-center justify-center gap-1 bg-background border-b border-border/60 h-8 shrink-0 select-none">
+          {steps.map((s, i) => (
+            <div key={s.id} className="flex items-center">
+              <div
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-0.5 rounded-full transition-all duration-300",
+                  currentStep === s.id ? "bg-primary/10 text-primary"
+                    : currentStep > s.id ? "text-muted-foreground/80" : "text-muted-foreground/40",
+                )}
+              >
+                <div className={cn("flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold ring-1 ring-current", currentStep >= s.id ? "bg-background" : "bg-transparent")}>
+                  {currentStep > s.id ? <Check className="h-2.5 w-2.5" /> : s.id}
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider">{s.label}</span>
+              </div>
+              {i < steps.length - 1 && <div className="w-4 h-px bg-border/50 mx-1" />}
+            </div>
+          ))}
+        </div>
           <OrderSuccess
             onReset={() => {
               clearOrder();
@@ -183,10 +169,7 @@ export default function CreateOrder() {
             </Button>
             <div className="flex items-baseline gap-2">
               <span className="text-sm font-bold tracking-tight">
-                Nuevo Pedido
-              </span>
-              <span className="text-[10px] font-mono text-muted-foreground">
-                REF-{new Date().getFullYear()}-001
+                {t("createOrder.title")}
               </span>
             </div>
           </div>
@@ -199,14 +182,32 @@ export default function CreateOrder() {
                 className="h-7 text-[10px] gap-1.5 hidden md:flex"
               >
                 <Headset className="h-3.5 w-3.5" />
-                Soporte
+                {t("createOrder.support")}
               </Button>
             </AssistedContactDialog>
           </div>
         </div>
 
         {/* 2. STEPPER STRIP */}
-        <Stepper />
+        <div className="flex items-center justify-center gap-1 bg-background border-b border-border/60 h-8 shrink-0 select-none">
+          {steps.map((s, i) => (
+            <div key={s.id} className="flex items-center">
+              <div
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-0.5 rounded-full transition-all duration-300",
+                  currentStep === s.id ? "bg-primary/10 text-primary"
+                    : currentStep > s.id ? "text-muted-foreground/80" : "text-muted-foreground/40",
+                )}
+              >
+                <div className={cn("flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold ring-1 ring-current", currentStep >= s.id ? "bg-background" : "bg-transparent")}>
+                  {currentStep > s.id ? <Check className="h-2.5 w-2.5" /> : s.id}
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider">{s.label}</span>
+              </div>
+              {i < steps.length - 1 && <div className="w-4 h-px bg-border/50 mx-1" />}
+            </div>
+          ))}
+        </div>
 
         {/* 3. MAIN CONTENT GRID (No Scroll Container) */}
         <div className="flex-1 overflow-hidden relative">
@@ -244,7 +245,7 @@ export default function CreateOrder() {
                   <div className="p-4 border-b border-border bg-muted/30 flex justify-between items-center">
                     <h2 className="text-sm font-bold flex items-center gap-2">
                       <FileSearch className="h-4 w-4 text-primary" />
-                      Revisión
+                      {t("createOrder.step2.reviewTitle")}
                     </h2>
                     <Button
                       variant="ghost"
@@ -252,7 +253,7 @@ export default function CreateOrder() {
                       className="h-6 text-[10px]"
                       onClick={() => setStep(1)}
                     >
-                      Editar
+                      {t("createOrder.step2.edit")}
                     </Button>
                   </div>
                   <div className="overflow-auto max-h-[60vh]">
@@ -260,13 +261,13 @@ export default function CreateOrder() {
                       <thead className="bg-muted/20 sticky top-0">
                         <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wider text-[10px]">
                           <th className="px-4 py-2 text-left font-medium">
-                            Producto
+                            {t("createOrder.step2.columns.product")}
                           </th>
                           <th className="px-4 py-2 text-center font-medium w-20">
-                            Cant.
+                            {t("createOrder.step2.columns.qty")}
                           </th>
                           <th className="px-4 py-2 text-right font-medium w-24">
-                            Total
+                            {t("createOrder.step2.columns.total")}
                           </th>
                         </tr>
                       </thead>
@@ -303,23 +304,23 @@ export default function CreateOrder() {
                 <div className="w-full md:w-72 bg-muted/10 border-l border-border p-6 flex flex-col gap-6">
                   <div className="space-y-3">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      Totales
+                      {t("createOrder.step2.subtotal")}
                     </h3>
                     <div className="flex justify-between text-sm">
-                      <span>Subtotal</span>
+                      <span>{t("createOrder.step2.subtotal")}</span>
                       <span className="font-mono">
                         €{(total / 1.21).toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>IVA (21%)</span>
+                      <span>{t("createOrder.step2.vat")}</span>
                       <span className="font-mono">
                         €{(total - total / 1.21).toFixed(2)}
                       </span>
                     </div>
                     <Separator />
                     <div className="flex justify-between text-lg font-bold">
-                      <span>Total</span>
+                      <span>{t("createOrder.step2.total")}</span>
                       <span className="font-mono text-primary">
                         €{total.toFixed(2)}
                       </span>
@@ -331,7 +332,7 @@ export default function CreateOrder() {
                       className="w-full font-bold shadow-md"
                       onClick={() => setStep(3)}
                     >
-                      Continuar <ChevronRight className="h-4 w-4 ml-1" />
+                      {t("createOrder.step2.continue")} <ChevronRight className="h-4 w-4 ml-1" />
                     </Button>
                   </div>
                 </div>
@@ -346,7 +347,7 @@ export default function CreateOrder() {
                 <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
                   <h2 className="text-sm font-bold flex items-center gap-2">
                     <Truck className="h-4 w-4 text-primary" />
-                    Datos de Entrega
+                    {t("createOrder.step3.deliveryTitle")}
                   </h2>
                 </div>
 
@@ -355,16 +356,16 @@ export default function CreateOrder() {
                   <div className="space-y-4">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-purple-500/60"></span>
-                      Notas & Avisos
+                      {t("createOrder.step3.notesSection")}
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="space-y-2">
                         <Label className="text-xs">
-                          Instrucciones de Entrega
+                          {t("createOrder.step3.deliveryInstructions")}
                         </Label>
                         <textarea
                           className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-ref"
-                          placeholder="Ej: Dejar en recepción, llamar al timbre..."
+                          placeholder={t("createOrder.step3.deliveryInstructionsPlaceholder")}
                           value={shippingDetails.delivery.instructions}
                           onChange={(e) =>
                             updateShipping({ instructions: e.target.value })
@@ -372,7 +373,7 @@ export default function CreateOrder() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-xs">Notificaciones</Label>
+                        <Label className="text-xs">{t("createOrder.step3.notifications")}</Label>
                         <div className="flex flex-col gap-2 p-3 bg-muted/5 rounded-md border border-border">
                           <div className="flex items-center gap-2">
                             <Checkbox
@@ -384,7 +385,7 @@ export default function CreateOrder() {
                               htmlFor="c1"
                               className="text-xs font-normal cursor-pointer"
                             >
-                              Enviar copia al cliente
+                              {t("createOrder.step3.copyClient")}
                             </Label>
                           </div>
                           <div className="flex items-center gap-2">
@@ -397,7 +398,7 @@ export default function CreateOrder() {
                               htmlFor="c2"
                               className="text-xs font-normal cursor-pointer"
                             >
-                              Enviar copia a almacén
+                              {t("createOrder.step3.copyInternal")}
                             </Label>
                           </div>
                         </div>
@@ -411,22 +412,22 @@ export default function CreateOrder() {
                   <div className="space-y-4">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-primary/60"></span>
-                      Ubicación
+                      {t("createOrder.step3.locationSection")}
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2 md:col-span-2">
-                        <Label className="text-xs">Dirección de Entrega</Label>
+                        <Label className="text-xs">{t("createOrder.step3.deliveryAddress")}</Label>
                         <Input
                           value={shippingDetails.delivery.address}
                           onChange={(e) =>
                             updateShipping({ address: e.target.value })
                           }
-                          placeholder="Calle, número, piso..."
+                          placeholder={t("createOrder.step3.addressPlaceholder")}
                           className="h-9"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-xs">Ciudad / Población</Label>
+                        <Label className="text-xs">{t("createOrder.step3.cityLabel")}</Label>
                         <Input
                           value={shippingDetails.delivery.city}
                           onChange={(e) =>
@@ -437,7 +438,7 @@ export default function CreateOrder() {
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label className="text-xs">Código Postal</Label>
+                          <Label className="text-xs">{t("createOrder.step3.postalCode")}</Label>
                           <Input
                             value={shippingDetails.delivery.postalCode}
                             onChange={(e) =>
@@ -447,7 +448,7 @@ export default function CreateOrder() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-xs">Provincia</Label>
+                          <Label className="text-xs">{t("createOrder.step3.province")}</Label>
                           <Input
                             value={shippingDetails.delivery.province}
                             onChange={(e) =>
@@ -468,22 +469,22 @@ export default function CreateOrder() {
                     <div className="space-y-4">
                       <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-blue-500/60"></span>
-                        Contacto en destino
+                        {t("createOrder.step3.contactSection")}
                       </h3>
                       <div className="space-y-2">
-                        <Label className="text-xs">Nombre de contacto</Label>
+                        <Label className="text-xs">{t("createOrder.step3.contactName")}</Label>
                         <Input
                           value={shippingDetails.delivery.contactName}
                           onChange={(e) =>
                             updateShipping({ contactName: e.target.value })
                           }
-                          placeholder="Persona que recibe"
+                          placeholder={t("createOrder.step3.contactNamePlaceholder")}
                           className="h-9"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label className="text-xs">Teléfono</Label>
+                          <Label className="text-xs">{t("createOrder.step3.phone")}</Label>
                           <Input
                             value={shippingDetails.delivery.contactPhone}
                             onChange={(e) =>
@@ -493,7 +494,7 @@ export default function CreateOrder() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-xs">Email (Opcional)</Label>
+                          <Label className="text-xs">{t("createOrder.step3.emailOptional")}</Label>
                           <Input
                             value={shippingDetails.delivery.contactEmail}
                             onChange={(e) =>
@@ -509,10 +510,10 @@ export default function CreateOrder() {
                     <div className="space-y-4">
                       <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-orange-500/60"></span>
-                        Logística
+                        {t("createOrder.step3.logisticsSection")}
                       </h3>
                       <div className="space-y-4">
-                        <Label className="text-xs">Fecha de Entrega</Label>
+                        <Label className="text-xs">{t("createOrder.step3.deliveryDate")}</Label>
                         <div className="flex flex-col gap-3">
                           <label className="flex items-center gap-2 cursor-pointer">
                             <input
@@ -522,7 +523,7 @@ export default function CreateOrder() {
                               onChange={() => updateShipping({ date: "asap" })}
                               className="accent-primary"
                             />
-                            <span className="text-sm">Primera fecha disponible</span>
+                            <span className="text-sm">{t("createOrder.step3.asap")}</span>
                           </label>
                           <label className="flex items-center gap-2 cursor-pointer">
                             <input
@@ -534,7 +535,7 @@ export default function CreateOrder() {
                               }}
                               className="accent-primary"
                             />
-                            <span className="text-sm">Fecha preferida de llegada</span>
+                            <span className="text-sm">{t("createOrder.step3.preferredDate")}</span>
                           </label>
                         </div>
                         
@@ -549,14 +550,14 @@ export default function CreateOrder() {
                               className="h-9 w-full sm:w-1/2"
                             />
                             <p className="text-[10px] text-muted-foreground mt-1.5">
-                              * La fecha de entrega está sujeta a confirmación por logística.
+                              {t("createOrder.step3.dateDisclaimer")}
                             </p>
                           </div>
                         )}
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label className="text-xs">Franja Horaria</Label>
+                          <Label className="text-xs">{t("createOrder.step3.timeSlot")}</Label>
                           <select
                             className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                             value={shippingDetails.delivery.timeSlot}
@@ -566,14 +567,14 @@ export default function CreateOrder() {
                               })
                             }
                           >
-                            <option value="all_day">Todo el día (9-19h)</option>
-                            <option value="morning">Mañana (9-14h)</option>
-                            <option value="afternoon">Tarde (15-19h)</option>
-                            <option value="custom">A concretar</option>
+                            <option value="all_day">{t("createOrder.step3.allDay")}</option>
+                            <option value="morning">{t("createOrder.step3.morning")}</option>
+                            <option value="afternoon">{t("createOrder.step3.afternoon")}</option>
+                            <option value="custom">{t("createOrder.step3.custom")}</option>
                           </select>
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-xs">Tipo Entrega</Label>
+                          <Label className="text-xs">{t("createOrder.step3.deliveryType")}</Label>
                           <select
                             className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                             value={shippingDetails.delivery.type}
@@ -581,9 +582,9 @@ export default function CreateOrder() {
                               updateShipping({ type: e.target.value as any })
                             }
                           >
-                            <option value="standard">Estándar (Camión)</option>
-                            <option value="pickup">Recogida en Almacén</option>
-                            <option value="urgent">Urgente / Directo</option>
+                            <option value="standard">{t("createOrder.step3.standard")}</option>
+                            <option value="pickup">{t("createOrder.step3.pickup")}</option>
+                            <option value="urgent">{t("createOrder.step3.urgent")}</option>
                           </select>
                         </div>
                       </div>
@@ -592,14 +593,14 @@ export default function CreateOrder() {
 
                   <div className="pt-6 flex justify-between items-center border-t border-border mt-2">
                     <Button variant="ghost" onClick={() => setStep(2)}>
-                      Volver
+                      {t("createOrder.step3.back")}
                     </Button>
                     <Button
                       size="lg"
                       className="px-8 font-bold shadow-lg"
                       onClick={() => setShowConfirmation(true)}
                     >
-                      Finalizar Pedido <Send className="h-4 w-4 ml-2" />
+                      {t("createOrder.step3.finalize")} <Send className="h-4 w-4 ml-2" />
                     </Button>
                   </div>
                 </div>
