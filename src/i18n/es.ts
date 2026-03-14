@@ -579,10 +579,15 @@ const es = {
         },
         statusActive: "Activo",
         statusInactive: "Inactivo",
-        statusInvited: "Invitado",
+        statusDraft: "Borrador",
+        statusPendingInvite: "Invitado",
         statusDisabled: "Desactivado",
+        statusDeleted: "Eliminado",
         statusActiveDesc: "El usuario puede acceder a la plataforma.",
         statusDisabledDesc: "El usuario no puede iniciar sesión.",
+        dangerZone: "Zona de peligro",
+        dangerZoneDesc: "La eliminación permanente del usuario retirará su acceso al sistema de forma irreversible.",
+        deleteNotice: "El usuario será eliminado de la base de datos permanentemente. Esta acción no se puede deshacer.",
         userCount_one: "{{count}} usuario",
         userCount_other: "{{count}} usuarios",
         noUsers: "No se encontraron usuarios",
@@ -592,21 +597,22 @@ const es = {
         userNotFound: "Usuario no encontrado.",
         actions: {
             edit: "Editar usuario",
-            disable: "Desactivar",
-            enable: "Activar",
+            disable: "Desactivar usuario",
+            enable: "Activar usuario",
+            delete: "Eliminar usuario",
+            sendInvite: "Enviar invitación",
             resendInvite: "Reenviar invitación",
             resetPassword: "Restablecer contraseña",
         },
+        buttons: {
+            saveUser: "Guardar usuario",
+            createInvite: "Crear y enviar invitación",
+            cancel: "Cancelar"
+        },
         filters: {
-            roles: {
-                all: "Todos los roles",
-            },
-            status: {
-                all: "Todos los estados",
-            },
-            companies: {
-                all: "Todas las empresas",
-            }
+            allRoles: "Todos los roles",
+            allStatus: "Todos los estados",
+            allCompanies: "Todas las empresas"
         },
         form: {
             userInfo: "Información del Usuario",
@@ -631,8 +637,12 @@ const es = {
             inviteNotice: "Se enviará un correo de invitación al usuario para que establezca su contraseña.",
         },
         toasts: {
+            saved: "Usuario guardado correctamente",
+            updated: "Usuario actualizado correctamente",
+            deleted: "Usuario eliminado",
+            disabled: "Usuario desactivado",
             created: "Usuario creado e invitado",
-            error: "Hubo un error al crear el usuario",
+            error: "Hubo un error al guardar el usuario",
             missingCompany: "Por favor selecciona una empresa para el cliente"
         }
     },

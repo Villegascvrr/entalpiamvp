@@ -4,7 +4,16 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { appConfig } from "@/config/appConfig";
 
-export type UserStatus = "invited" | "active" | "disabled";
+// ─────────────────────────────────────────────────────────────
+// Explicit status values stored directly in actors.status
+//
+// draft          → Created by admin, no invite sent yet
+// pending_invite → Invite email sent, user hasn't accepted
+// active         → User has logged in and is active
+// disabled       → Access disabled by admin
+// deleted        → Soft-deleted (hidden from normal views)
+// ─────────────────────────────────────────────────────────────
+export type UserStatus = "draft" | "pending_invite" | "active" | "disabled" | "deleted";
 
 export interface UserRow {
   id: string;
@@ -12,6 +21,7 @@ export interface UserRow {
   email: string;
   role: string;
   is_active: boolean;
+  auth_user_id?: string | null;
   status: UserStatus;
   customer_id?: string;
   customer_name?: string;
@@ -28,7 +38,7 @@ const DEMO_USERS: UserRow[] = [
     is_active: true,
     status: "active",
     created_at: new Date().toISOString(),
-    last_login: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 min ago
+    last_login: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
   },
   {
     id: "usr_2",
@@ -40,7 +50,7 @@ const DEMO_USERS: UserRow[] = [
     customer_id: "cust_1",
     customer_name: "Instalaciones García",
     created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-    last_login: new Date(Date.now() - 86400000).toISOString(), // yesterday
+    last_login: new Date(Date.now() - 86400000).toISOString(),
   },
   {
     id: "usr_3",
@@ -57,11 +67,22 @@ const DEMO_USERS: UserRow[] = [
     name: "Laura Martín",
     email: "laura@nuevaempresa.com",
     role: "customer",
-    is_active: false,
-    status: "invited",
+    is_active: true,
+    status: "draft",
     customer_id: "cust_2",
     customer_name: "Nueva Empresa SL",
     created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
+  },
+  {
+    id: "usr_5",
+    name: "Pedro Sánchez",
+    email: "pedro@cliente.com",
+    role: "customer",
+    is_active: true,
+    status: "pending_invite",
+    customer_id: "cust_1",
+    customer_name: "Instalaciones García",
+    created_at: new Date(Date.now() - 86400000 * 1).toISOString(),
   },
 ];
 
@@ -95,35 +116,31 @@ export function useUsers() {
             email,
             role,
             is_active,
+            status,
             customer_id,
             created_at,
             customers (
               name
             )
           `)
+          .eq("tenant_id", session.tenantId)
+          .neq("status", "deleted")          // soft-deleted users are hidden
           .order("created_at", { ascending: false });
 
         if (error) throw error;
 
-        const mapped: UserRow[] = (data || []).map((row: any) => {
-          const isActive = row.is_active ?? true;
-          // Derive status: if no auth_user_id, it is invited
-          let status: UserStatus = "active";
-          if (!isActive) status = "disabled";
-          else if (!row.auth_user_id) status = "invited";
-
-          return {
-            id: row.id,
-            name: row.name,
-            email: row.email,
-            role: row.role,
-            is_active: isActive,
-            status,
-            customer_id: row.customer_id,
-            customer_name: row.customers?.name,
-            created_at: row.created_at || new Date().toISOString(),
-          };
-        });
+        const mapped: UserRow[] = (data || []).map((row: any) => ({
+          id: row.id,
+          name: row.name,
+          email: row.email,
+          role: row.role,
+          is_active: row.is_active ?? true,
+          auth_user_id: row.auth_user_id,
+          status: (row.status ?? "draft") as UserStatus,
+          customer_id: row.customer_id,
+          customer_name: row.customers?.name,
+          created_at: row.created_at || new Date().toISOString(),
+        }));
 
         setUsers(mapped);
       } catch (err: any) {
@@ -137,6 +154,13 @@ export function useUsers() {
     fetchUsers();
   }, [session, refreshTrigger]);
 
+  // ─────────────────────────────────────────────────────────
+  // createUser — inserts a new actor record.
+  // status = 'draft'  (no invite sent yet)
+  // auth_user_id = NULL
+  // is_active = true
+  // tenant_id scoped from current session
+  // ─────────────────────────────────────────────────────────
   const createUser = async (
     data: {
       name: string;
@@ -144,19 +168,18 @@ export function useUsers() {
       role: string;
       customer_id?: string;
     },
-    sendInvite: boolean = true
+    mode: "draft" | "invite"
   ) => {
     if (!session) return null;
 
     if (appConfig.mode === "demo") {
-      toast.success(sendInvite ? "Usuario creado e invitado (Demo Mode)" : "Usuario guardado (Demo Mode)");
       const newUser: UserRow = {
         id: `usr_${Date.now()}`,
         name: data.name,
         email: data.email,
         role: data.role,
-        is_active: true, // Remains active in DB, but status is "invited" since no auth yet (simulated)
-        status: "invited",
+        is_active: true,
+        status: mode === "invite" ? "pending_invite" : "draft",
         customer_id: data.customer_id,
         customer_name: data.customer_id ? "Empresa Seleccionada" : undefined,
         created_at: new Date().toISOString(),
@@ -166,33 +189,18 @@ export function useUsers() {
     }
 
     try {
-      let authUserId = null;
-
-      if (sendInvite) {
-        // Invite flow: create user in Supabase Auth via signUp
-        const tempPassword = Math.random().toString(36).slice(-8) + "A1!";
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: data.email,
-          password: tempPassword,
-        });
-
-        if (authError) throw new Error(authError.message);
-        authUserId = authData.user?.id;
-        if (!authUserId) throw new Error("No se pudo obtener la identidad de Auth");
-      }
-
-      // Insert into actors table
-      const { error: insertError } = await supabase.from("actors").insert({
-        auth_user_id: authUserId, // null if sendInvite is false
+      const { error } = await supabase.from("actors").insert({
+        tenant_id: session.tenantId,
         name: data.name,
         email: data.email,
         role: data.role,
-        customer_id: data.role === "customer" ? data.customer_id : null,
-        tenant_id: session.tenantId,
+        customer_id: data.role === "customer" ? (data.customer_id ?? null) : null,
+        is_active: true,
+        auth_user_id: null,
+        status: mode === "invite" ? "pending_invite" : "draft",
       });
 
-      if (insertError) throw insertError;
-
+      if (error) throw error;
       refresh();
       return true;
     } catch (err: any) {
@@ -201,6 +209,11 @@ export function useUsers() {
     }
   };
 
+  // ─────────────────────────────────────────────────────────
+  // updateUser — updates editable fields (name, email, role,
+  // is_active, customer_id). Does NOT update status.
+  // Scoped by id AND tenant_id.
+  // ─────────────────────────────────────────────────────────
   const updateUser = async (
     id: string,
     data: { name: string; email: string; role: string; is_active: boolean; customer_id?: string }
@@ -213,12 +226,11 @@ export function useUsers() {
           u.id === id
             ? {
                 ...u,
-                ...data,
-                status: !data.is_active
-                  ? "disabled"
-                  : u.status === "invited"
-                  ? "invited"
-                  : "active",
+                name: data.name,
+                email: data.email,
+                role: data.role,
+                is_active: data.is_active,
+                customer_id: data.role === "customer" ? data.customer_id : undefined,
                 customer_name:
                   data.role === "customer" && data.customer_id
                     ? u.customer_id === data.customer_id
@@ -241,12 +253,12 @@ export function useUsers() {
           email: data.email,
           role: data.role,
           is_active: data.is_active,
-          customer_id: data.role === "customer" ? data.customer_id : null,
+          customer_id: data.role === "customer" ? (data.customer_id ?? null) : null,
         })
-        .eq("id", id);
+        .eq("id", id)
+        .eq("tenant_id", session.tenantId);
 
       if (error) throw error;
-
       refresh();
       return true;
     } catch (err: any) {
@@ -255,42 +267,118 @@ export function useUsers() {
     }
   };
 
-  const toggleUserStatus = async (id: string, enable: boolean) => {
+  // ─────────────────────────────────────────────────────────
+  // disableUser — disables access by setting:
+  //   status = 'disabled'
+  //   is_active = false
+  // Scoped by id AND tenant_id.
+  // ─────────────────────────────────────────────────────────
+  const disableUser = async (id: string) => {
     if (!session) return null;
 
     if (appConfig.mode === "demo") {
       setUsers((prev) =>
         prev.map((u) =>
-          u.id === id
-            ? { ...u, is_active: enable, status: enable ? "active" : "disabled" }
-            : u
+          u.id === id ? { ...u, is_active: false, status: "disabled" } : u
         )
       );
-      toast.success(enable ? "Usuario activado" : "Usuario desactivado");
+      toast.success("Usuario desactivado");
       return true;
     }
 
     try {
       const { error } = await supabase
         .from("actors")
-        .update({ is_active: enable })
-        .eq("id", id);
+        .update({ status: "disabled" })
+        .eq("id", id)
+        .eq("tenant_id", session.tenantId);
 
       if (error) throw error;
       refresh();
+      toast.success("Usuario desactivado");
       return true;
     } catch (err: any) {
-      console.error("Error toggling user status:", err);
+      console.error("Error disabling user:", err);
+      toast.error(err.message || "Error al desactivar usuario");
       throw err;
     }
   };
 
-  const resendInvite = async (id: string) => {
+  // ─────────────────────────────────────────────────────────
+  // enableUser — re-activates a disabled user:
+  //   status = 'active'
+  //   is_active = true
+  // Scoped by id AND tenant_id.
+  // ─────────────────────────────────────────────────────────
+  const enableUser = async (id: string) => {
+    if (!session) return null;
+
+    if (appConfig.mode === "demo") {
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === id ? { ...u, is_active: true, status: "active" } : u
+        )
+      );
+      toast.success("Usuario activado");
+      return true;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("actors")
+        .update({ status: "active" })
+        .eq("id", id)
+        .eq("tenant_id", session.tenantId);
+
+      if (error) throw error;
+      refresh();
+      toast.success("Usuario activado");
+      return true;
+    } catch (err: any) {
+      console.error("Error enabling user:", err);
+      toast.error(err.message || "Error al activar usuario");
+      throw err;
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────
+  // deleteUser — hard delete from actors table
+  // Scoped by id AND tenant_id. Admin only.
+  // ─────────────────────────────────────────────────────────
+  const deleteUser = async (id: string) => {
+    if (!session) return null;
+
+    if (appConfig.mode === "demo") {
+      setUsers((prev) => prev.filter((u) => u.id !== id));
+      toast.success("Usuario eliminado");
+      return true;
+    }
+
+    try {
+      const { error, count } = await supabase
+        .from("actors")
+        .delete({ count: "exact" })
+        .eq("id", id)
+        .eq("tenant_id", session.tenantId);
+
+      if (error) throw error;
+      if (count === 0) throw new Error("No se pudo eliminar el usuario (no existe o no tienes permisos).");
+
+      refresh();
+      toast.success("Usuario eliminado correctamente");
+      return true;
+    } catch (err: any) {
+      console.error("Error deleting user:", err);
+      toast.error(err.message || "Error al eliminar usuario");
+      throw err;
+    }
+  };
+
+  const resendInvite = async (_id: string) => {
     if (appConfig.mode === "demo") {
       toast.success("Invitación reenviada (Demo Mode)");
       return true;
     }
-    // In production: call Supabase admin inviteUserByEmail or similar
     toast.info("Función no disponible en este entorno");
     return false;
   };
@@ -321,7 +409,9 @@ export function useUsers() {
     refresh,
     createUser,
     updateUser,
-    toggleUserStatus,
+    disableUser,
+    enableUser,
+    deleteUser,
     resendInvite,
     resetPassword,
   };

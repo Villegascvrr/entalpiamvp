@@ -40,6 +40,7 @@ import {
   Plus,
   RefreshCw,
   Search,
+  Trash2,
   User,
   UserPlus,
   Users,
@@ -49,7 +50,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 export default function AdminUsers() {
-  const { users, isLoading, toggleUserStatus, resendInvite, resetPassword } = useUsers();
+  const { users, isLoading, disableUser, enableUser, deleteUser, resendInvite, resetPassword } = useUsers();
   const { customers } = useCustomers();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -60,21 +61,13 @@ export default function AdminUsers() {
   const [companyFilter, setCompanyFilter] = useState("all");
 
   const filteredUsers = users.filter((user) => {
-    // 1. Search (name or email)
     const term = searchQuery.toLowerCase();
     const searchMatch =
       user.name.toLowerCase().includes(term) ||
       user.email.toLowerCase().includes(term);
-
-    // 2. Role
     const roleMatch = roleFilter === "all" || user.role === roleFilter;
-
-    // 3. Status
     const statusMatch = statusFilter === "all" || user.status === statusFilter;
-
-    // 4. Company
     const companyMatch = companyFilter === "all" || user.customer_id === companyFilter;
-
     return searchMatch && roleMatch && statusMatch && companyMatch;
   });
 
@@ -117,19 +110,39 @@ export default function AdminUsers() {
             {t("adminUsers.statusActive")}
           </Badge>
         );
-      case "invited":
+      case "pending_invite":
         return (
           <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] h-5 gap-1">
             <span className="h-1.5 w-1.5 rounded-full bg-amber-400 inline-block" />
-            {t("adminUsers.statusInvited")}
+            {t("adminUsers.statusPendingInvite")}
+          </Badge>
+        );
+      case "draft":
+        return (
+          <Badge variant="outline" className="bg-slate-50 text-slate-500 border-slate-200 text-[10px] h-5 gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-slate-400 inline-block" />
+            {t("adminUsers.statusDraft")}
           </Badge>
         );
       case "disabled":
+        return (
+          <Badge variant="outline" className="bg-slate-700 text-white border-slate-700 text-[10px] h-5 gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-slate-300 inline-block" />
+            {t("adminUsers.statusDisabled")}
+          </Badge>
+        );
+      case "deleted":
+        return (
+          <Badge variant="outline" className="bg-red-50 text-red-500 border-red-200 text-[10px] h-5 gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-red-400 inline-block" />
+            {t("adminUsers.statusDeleted")}
+          </Badge>
+        );
       default:
         return (
           <Badge variant="outline" className="bg-slate-100 text-slate-500 border-slate-200 text-[10px] h-5 gap-1">
             <span className="h-1.5 w-1.5 rounded-full bg-slate-400 inline-block" />
-            {t("adminUsers.statusDisabled")}
+            {status}
           </Badge>
         );
     }
@@ -142,10 +155,6 @@ export default function AdminUsers() {
         {formatDistanceToNow(new Date(dateStr), { addSuffix: true, locale: es })}
       </span>
     );
-  };
-
-  const handleToggleStatus = async (user: UserRow) => {
-    await toggleUserStatus(user.id, !user.is_active);
   };
 
   return (
@@ -197,13 +206,13 @@ export default function AdminUsers() {
                 className="pl-8 h-9 text-sm w-full"
               />
             </div>
-            
+
             <Select value={roleFilter} onValueChange={setRoleFilter}>
               <SelectTrigger className="w-full sm:w-[180px] h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t("adminUsers.filters.roles.all")}</SelectItem>
+                <SelectItem value="all">{t("adminUsers.filters.allRoles")}</SelectItem>
                 <SelectItem value="admin">{t("adminUsers.form.roleOptions.admin")}</SelectItem>
                 <SelectItem value="commercial">{t("adminUsers.form.roleOptions.commercial")}</SelectItem>
                 <SelectItem value="logistics">{t("adminUsers.form.roleOptions.logistics")}</SelectItem>
@@ -212,13 +221,14 @@ export default function AdminUsers() {
             </Select>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[150px] h-9">
+              <SelectTrigger className="w-full sm:w-[170px] h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t("adminUsers.filters.status.all")}</SelectItem>
+                <SelectItem value="all">{t("adminUsers.filters.allStatus")}</SelectItem>
                 <SelectItem value="active">{t("adminUsers.statusActive")}</SelectItem>
-                <SelectItem value="invited">{t("adminUsers.statusInvited")}</SelectItem>
+                <SelectItem value="draft">{t("adminUsers.statusDraft")}</SelectItem>
+                <SelectItem value="pending_invite">{t("adminUsers.statusPendingInvite")}</SelectItem>
                 <SelectItem value="disabled">{t("adminUsers.statusDisabled")}</SelectItem>
               </SelectContent>
             </Select>
@@ -228,7 +238,7 @@ export default function AdminUsers() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t("adminUsers.filters.companies.all")}</SelectItem>
+                <SelectItem value="all">{t("adminUsers.filters.allCompanies")}</SelectItem>
                 {customers.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name}
@@ -294,13 +304,15 @@ export default function AdminUsers() {
                     <TableRow
                       key={user.id}
                       onClick={() => navigate(`/admin/users/${user.id}/edit`)}
-                      className="group hover:bg-muted/40 transition-colors cursor-pointer"
+                      className={`group hover:bg-muted/40 transition-colors cursor-pointer ${
+                        user.status === "disabled" || user.status === "deleted" ? "opacity-60" : ""
+                      }`}
                     >
                       {/* Name */}
                       <TableCell className="py-3">
                         <span
                           className={`font-semibold text-sm ${
-                            user.status === "disabled"
+                            user.status === "disabled" || user.status === "deleted"
                               ? "text-muted-foreground"
                               : "text-foreground"
                           }`}
@@ -353,55 +365,65 @@ export default function AdminUsers() {
                               <span className="sr-only">Acciones</span>
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem
-                              onClick={() => navigate(`/admin/users/${user.id}/edit`)}
-                              className="gap-2"
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                              {t("adminUsers.actions.edit")}
-                            </DropdownMenuItem>
+                          <DropdownMenuContent align="end" className="w-52">
+                            {/* Edit (Draft, Active, Disabled) */}
+                            {["draft", "active", "disabled"].includes(user.status) && (
+                              <DropdownMenuItem onClick={() => navigate(`/admin/users/${user.id}/edit`)} className="gap-2">
+                                <Pencil className="h-3.5 w-3.5" />
+                                {t("adminUsers.actions.edit")}
+                              </DropdownMenuItem>
+                            )}
 
-                            <DropdownMenuSeparator />
+                            {/* Separator if Edit is followed by Disable/Enable */}
+                            {["active", "disabled"].includes(user.status) && <DropdownMenuSeparator />}
 
-                            <DropdownMenuItem
-                              onClick={() => handleToggleStatus(user)}
-                              className={`gap-2 ${
-                                user.is_active
-                                  ? "text-red-600 focus:text-red-600 focus:bg-red-50"
-                                  : "text-emerald-600 focus:text-emerald-600 focus:bg-emerald-50"
-                              }`}
-                            >
-                              {user.is_active ? (
-                                <>
-                                  <Ban className="h-3.5 w-3.5" />
-                                  {t("adminUsers.actions.disable")}
-                                </>
-                              ) : (
-                                <>
-                                  <CheckCircle2 className="h-3.5 w-3.5" />
-                                  {t("adminUsers.actions.enable")}
-                                </>
-                              )}
-                            </DropdownMenuItem>
+                            {/* Disable / Enable toggle */}
+                            {["pending_invite", "active"].includes(user.status) && (
+                              <DropdownMenuItem
+                                onClick={() => disableUser(user.id)}
+                                className="gap-2 text-amber-600 focus:text-amber-600 focus:bg-amber-50"
+                              >
+                                <Ban className="h-3.5 w-3.5" />
+                                {t("adminUsers.actions.disable")}
+                              </DropdownMenuItem>
+                            )}
+                            {user.status === "disabled" && (
+                              <DropdownMenuItem
+                                onClick={() => enableUser(user.id)}
+                                className="gap-2 text-emerald-600 focus:text-emerald-600 focus:bg-emerald-50"
+                              >
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                {t("adminUsers.actions.enable")}
+                              </DropdownMenuItem>
+                            )}
 
-                            <DropdownMenuSeparator />
+                            {/* Send / Resend Invitation */}
+                            {user.status === "draft" && (
+                              <DropdownMenuItem onClick={() => resendInvite(user.id)} className="gap-2">
+                                <Mail className="h-3.5 w-3.5" />
+                                {t("adminUsers.actions.sendInvite")}
+                              </DropdownMenuItem>
+                            )}
+                            {user.status === "pending_invite" && (
+                              <DropdownMenuItem onClick={() => resendInvite(user.id)} className="gap-2">
+                                <RefreshCw className="h-3.5 w-3.5" />
+                                {t("adminUsers.actions.resendInvite")}
+                              </DropdownMenuItem>
+                            )}
 
-                            <DropdownMenuItem
-                              onClick={() => resendInvite(user.id)}
-                              className="gap-2"
-                            >
-                              <RefreshCw className="h-3.5 w-3.5" />
-                              {t("adminUsers.actions.resendInvite")}
-                            </DropdownMenuItem>
+                            {/* Separator before Delete */}
+                            {["draft", "pending_invite", "disabled"].includes(user.status) && <DropdownMenuSeparator />}
 
-                            <DropdownMenuItem
-                              onClick={() => resetPassword(user.email)}
-                              className="gap-2"
-                            >
-                              <KeyRound className="h-3.5 w-3.5" />
-                              {t("adminUsers.actions.resetPassword")}
-                            </DropdownMenuItem>
+                            {/* Hard-delete (admin only, and only if no auth_user_id) */}
+                            {["draft", "pending_invite", "disabled"].includes(user.status) && !user.auth_user_id && (
+                              <DropdownMenuItem
+                                onClick={() => deleteUser(user.id)}
+                                className="gap-2 text-red-600 focus:text-red-600 focus:bg-red-50"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                {t("adminUsers.actions.delete")}
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>

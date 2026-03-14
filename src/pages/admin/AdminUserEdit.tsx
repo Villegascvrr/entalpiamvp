@@ -18,15 +18,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCustomers } from "@/hooks/useCustomers";
-import { useUsers } from "@/hooks/useUsers";
+import { useUsers, UserStatus } from "@/hooks/useUsers";
 import {
   Ban,
   Building2,
   CheckCircle2,
   ChevronLeft,
+  Clock,
   Mail,
   Save,
   ShieldCheck,
+  Trash2,
   UserRound,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -38,7 +40,7 @@ export default function AdminUserEdit() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { users, updateUser, toggleUserStatus } = useUsers();
+  const { users, updateUser, disableUser, enableUser, deleteUser } = useUsers();
   const { customers } = useCustomers();
 
   const user = users.find((u) => u.id === id);
@@ -99,6 +101,7 @@ export default function AdminUserEdit() {
         is_active: formData.is_active,
         customer_id: formData.role === "customer" ? formData.customer_id : undefined,
       });
+      toast.success(t("adminUsers.toasts.updated"));
       navigate("/admin/users");
     } catch {
       toast.error(t("adminUsers.toasts.error"));
@@ -107,17 +110,27 @@ export default function AdminUserEdit() {
     }
   };
 
-  const handleToggleStatus = async () => {
+  const handleDisable = async () => {
     if (!user) return;
-    await toggleUserStatus(user.id, !user.is_active);
-    setFormData((prev) => ({ ...prev, is_active: !prev.is_active }));
+    await disableUser(user.id);
+    setFormData((prev) => ({ ...prev, is_active: false }));
   };
 
-  const currentStatus = formData.is_active
-    ? user?.status === "invited"
-      ? "invited"
-      : "active"
-    : "disabled";
+  const handleEnable = async () => {
+    if (!user) return;
+    await enableUser(user.id);
+    setFormData((prev) => ({ ...prev, is_active: true }));
+  };
+
+  const handleDelete = async () => {
+    if (!user) return;
+    await deleteUser(user.id);
+    navigate("/admin/users");
+  };
+
+  // Derive the display status from the persisted user status
+  // (use user.status as source of truth, not formData.is_active)
+  const currentStatus: UserStatus = user?.status ?? "draft";
 
   const getStatusBadge = () => {
     switch (currentStatus) {
@@ -128,22 +141,40 @@ export default function AdminUserEdit() {
             {t("adminUsers.statusActive")}
           </Badge>
         );
-      case "invited":
+      case "pending_invite":
         return (
           <Badge className="bg-amber-50 text-amber-700 border-amber-200">
             <span className="h-1.5 w-1.5 rounded-full bg-amber-400 inline-block mr-1.5" />
-            {t("adminUsers.statusInvited")}
+            {t("adminUsers.statusPendingInvite")}
           </Badge>
         );
+      case "draft":
+        return (
+          <Badge className="bg-slate-50 text-slate-500 border-slate-200">
+            <span className="h-1.5 w-1.5 rounded-full bg-slate-400 inline-block mr-1.5" />
+            {t("adminUsers.statusDraft")}
+          </Badge>
+        );
+      case "deleted":
+        return (
+          <Badge className="bg-red-50 text-red-500 border-red-200">
+            <span className="h-1.5 w-1.5 rounded-full bg-red-400 inline-block mr-1.5" />
+            {t("adminUsers.statusDeleted")}
+          </Badge>
+        );
+      case "disabled":
       default:
         return (
-          <Badge className="bg-slate-100 text-slate-500 border-slate-200">
-            <span className="h-1.5 w-1.5 rounded-full bg-slate-400 inline-block mr-1.5" />
+          <Badge className="bg-slate-700 text-white border-slate-700">
+            <span className="h-1.5 w-1.5 rounded-full bg-slate-300 inline-block mr-1.5" />
             {t("adminUsers.statusDisabled")}
           </Badge>
         );
     }
   };
+
+  // Show status info for the status card
+  const isDisabled = currentStatus === "disabled" || currentStatus === "deleted";
 
   return (
     <AppLayout>
@@ -176,7 +207,7 @@ export default function AdminUserEdit() {
               onClick={() => navigate("/admin/users")}
               disabled={isSubmitting}
             >
-              {t("common.cancel")}
+              {t("adminUsers.buttons.cancel")}
             </Button>
             <Button
               size="sm"
@@ -185,15 +216,15 @@ export default function AdminUserEdit() {
               className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
             >
               <Save className="h-3.5 w-3.5" />
-              {isSubmitting ? t("common.loading") : t("common.save")}
+              {isSubmitting ? t("common.loading") : t("adminUsers.buttons.saveUser")}
             </Button>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="max-w-5xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <form onSubmit={handleSubmit} className="max-w-5xl mx-auto p-6 grid grid-cols-1 xl:grid-cols-12 gap-6">
 
-          {/* LEFT COLUMN (60%) */}
-          <div className="lg:col-span-3 space-y-6">
+          {/* LEFT COLUMN (main content) */}
+          <div className="xl:col-span-7 space-y-6">
             {/* User Information */}
             <Card className="shadow-sm border-border">
               <CardHeader className="border-b bg-slate-50/70 pb-3">
@@ -240,8 +271,8 @@ export default function AdminUserEdit() {
             </Card>
           </div>
 
-          {/* RIGHT COLUMN (40%) */}
-          <div className="lg:col-span-2 space-y-6">
+          {/* RIGHT COLUMN (secondary controls) */}
+          <div className="xl:col-span-5 space-y-6">
             {/* Access & Permissions */}
             <Card className="shadow-sm border-border">
               <CardHeader className="border-b bg-slate-50/70 pb-3">
@@ -279,50 +310,52 @@ export default function AdminUserEdit() {
                   </Select>
                 </div>
 
-                {/* Status toggle */}
+                {/* Status control */}
                 <div className="space-y-2">
                   <Label className="text-xs font-medium">{t("adminUsers.columns.status")}</Label>
                   <div className="flex items-center justify-between p-3 rounded-md border bg-white">
                     <div className="flex items-center gap-3">
                       <div
                         className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                          formData.is_active ? "bg-emerald-100" : "bg-slate-100"
+                          isDisabled ? "bg-slate-100" : "bg-emerald-100"
                         }`}
                       >
-                        {formData.is_active ? (
-                          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                        ) : (
+                        {isDisabled ? (
                           <Ban className="h-4 w-4 text-slate-400" />
+                        ) : (
+                          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                         )}
                       </div>
                       <div>
                         <p className="text-sm font-medium">
-                          {formData.is_active
-                            ? t("adminUsers.statusActive")
-                            : t("adminUsers.statusDisabled")}
+                          {isDisabled
+                            ? t("adminUsers.statusDisabled")
+                            : t("adminUsers.statusActive")}
                         </p>
-                        <p className="text-[10px] text-muted-foreground w-max max-w-[120px] leading-tight mt-0.5">
-                          {formData.is_active
-                            ? t("adminUsers.statusActiveDesc")
-                            : t("adminUsers.statusDisabledDesc")}
+                        <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                          {isDisabled
+                            ? t("adminUsers.statusDisabledDesc")
+                            : t("adminUsers.statusActiveDesc")}
                         </p>
                       </div>
                     </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleToggleStatus}
-                      className={`text-xs h-7 px-2 ${
-                        formData.is_active
-                          ? "text-red-600 border-red-200 hover:bg-red-50"
-                          : "text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-                      }`}
-                    >
-                      {formData.is_active
-                        ? t("adminUsers.actions.disable")
-                        : t("adminUsers.actions.enable")}
-                    </Button>
+                    {currentStatus !== "deleted" && currentStatus !== "draft" && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={isDisabled ? handleEnable : handleDisable}
+                        className={`text-xs h-7 px-2 ${
+                          isDisabled
+                            ? "text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                            : "text-amber-600 border-amber-200 hover:bg-amber-50"
+                        }`}
+                      >
+                        {isDisabled
+                          ? t("adminUsers.actions.enable")
+                          : t("adminUsers.actions.disable")}
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -365,6 +398,39 @@ export default function AdminUserEdit() {
                       </SelectContent>
                     </Select>
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Danger Zone */}
+            {currentStatus !== "deleted" && !user?.auth_user_id && (
+              <Card className="shadow-sm border-red-100">
+                <CardHeader className="border-b bg-red-50/50 pb-3">
+                  <CardTitle className="text-sm font-semibold text-red-700 flex items-center gap-2">
+                    <div className="h-6 w-6 rounded bg-red-100 flex items-center justify-center">
+                      <Trash2 className="h-3.5 w-3.5 text-red-600" />
+                    </div>
+                    {t("adminUsers.dangerZone")}
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    {t("adminUsers.dangerZoneDesc")}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDelete}
+                    className="w-full gap-2 text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    {t("adminUsers.actions.delete")}
+                  </Button>
+                  <p className="text-[10px] text-muted-foreground mt-2 text-center leading-tight flex items-center justify-center gap-1">
+                    <Clock className="h-3 w-3 inline-block" />
+                    {t("adminUsers.deleteNotice")}
+                  </p>
                 </CardContent>
               </Card>
             )}

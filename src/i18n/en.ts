@@ -579,10 +579,15 @@ const en = {
         },
         statusActive: "Active",
         statusInactive: "Inactive",
-        statusInvited: "Invited",
+        statusDraft: "Draft",
+        statusPendingInvite: "Invited",
         statusDisabled: "Disabled",
+        statusDeleted: "Deleted",
         statusActiveDesc: "The user can access the platform.",
         statusDisabledDesc: "The user cannot sign in.",
+        dangerZone: "Danger Zone",
+        dangerZoneDesc: "Deleting the user will permanently remove their access to the system.",
+        deleteNotice: "The user will be permanently deleted from the database. This action cannot be undone.",
         userCount_one: "{{count}} user",
         userCount_other: "{{count}} users",
         noUsers: "No users found",
@@ -592,21 +597,22 @@ const en = {
         userNotFound: "User not found.",
         actions: {
             edit: "Edit user",
-            disable: "Disable",
-            enable: "Enable",
+            disable: "Disable user",
+            enable: "Enable user",
+            delete: "Delete user",
+            sendInvite: "Send invitation",
             resendInvite: "Resend invitation",
             resetPassword: "Reset password",
         },
+        buttons: {
+            saveUser: "Save user",
+            createInvite: "Create and invite",
+            cancel: "Cancel"
+        },
         filters: {
-            roles: {
-                all: "All Roles",
-            },
-            status: {
-                all: "All Status",
-            },
-            companies: {
-                all: "All Companies",
-            }
+            allRoles: "All Roles",
+            allStatus: "All Status",
+            allCompanies: "All Companies"
         },
         form: {
             userInfo: "User Information",
@@ -631,8 +637,12 @@ const en = {
             inviteNotice: "An invitation email will be sent to the user so they can set their password.",
         },
         toasts: {
+            saved: "User saved successfully",
+            updated: "User updated successfully",
+            deleted: "User deleted",
+            disabled: "User disabled",
             created: "User created and invited",
-            error: "An error occurred creating the user",
+            error: "An error occurred saving the user",
             missingCompany: "Please select a company for this customer user"
         }
     },
