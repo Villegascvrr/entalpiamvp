@@ -575,19 +575,52 @@ const en = {
             company: "Company",
             status: "Status",
             createdAt: "Created",
+            lastLogin: "Last login",
         },
         statusActive: "Active",
+        statusInactive: "Inactive",
+        statusInvited: "Invited",
+        statusDisabled: "Disabled",
+        statusActiveDesc: "The user can access the platform.",
+        statusDisabledDesc: "The user cannot sign in.",
         userCount_one: "{{count}} user",
         userCount_other: "{{count}} users",
         noUsers: "No users found",
         newUserTitle: "Create User",
+        editUserTitle: "Edit User",
         backToUsers: "Back to Users",
+        userNotFound: "User not found.",
+        actions: {
+            edit: "Edit user",
+            disable: "Disable",
+            enable: "Enable",
+            resendInvite: "Resend invitation",
+            resetPassword: "Reset password",
+        },
+        filters: {
+            roles: {
+                all: "All Roles",
+            },
+            status: {
+                all: "All Status",
+            },
+            companies: {
+                all: "All Companies",
+            }
+        },
         form: {
             userInfo: "User Information",
+            userInfoDesc: "Full name and work email of the user.",
             name: "Full Name",
-            email: "Email Address",
+            email: "Work Email",
             role: "System Role",
+            roleHint: "Defines which modules and features this user can access.",
+            companySection: "Company",
+            companySectionDesc: "Required assignment for B2B customer profile.",
             companyLabel: "Company",
+            companyPlaceholder: "Select a company...",
+            accessSection: "Access & Permissions",
+            accessSectionDesc: "Define the role and access status for this user.",
             roleOptions: {
                 admin: "Administrator",
                 commercial: "Commercial",
@@ -595,6 +628,7 @@ const en = {
                 customer: "Customer"
             },
             createButton: "Create and Invite",
+            inviteNotice: "An invitation email will be sent to the user so they can set their password.",
         },
         toasts: {
             created: "User created and invited",

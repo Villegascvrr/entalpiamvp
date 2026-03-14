@@ -575,19 +575,52 @@ const es = {
             company: "Empresa",
             status: "Estado",
             createdAt: "Creado",
+            lastLogin: "Último acceso",
         },
         statusActive: "Activo",
+        statusInactive: "Inactivo",
+        statusInvited: "Invitado",
+        statusDisabled: "Desactivado",
+        statusActiveDesc: "El usuario puede acceder a la plataforma.",
+        statusDisabledDesc: "El usuario no puede iniciar sesión.",
         userCount_one: "{{count}} usuario",
         userCount_other: "{{count}} usuarios",
         noUsers: "No se encontraron usuarios",
         newUserTitle: "Crear Usuario",
+        editUserTitle: "Editar Usuario",
         backToUsers: "Volver a Usuarios",
+        userNotFound: "Usuario no encontrado.",
+        actions: {
+            edit: "Editar usuario",
+            disable: "Desactivar",
+            enable: "Activar",
+            resendInvite: "Reenviar invitación",
+            resetPassword: "Restablecer contraseña",
+        },
+        filters: {
+            roles: {
+                all: "Todos los roles",
+            },
+            status: {
+                all: "Todos los estados",
+            },
+            companies: {
+                all: "Todas las empresas",
+            }
+        },
         form: {
             userInfo: "Información del Usuario",
+            userInfoDesc: "Nombre completo y correo de trabajo del usuario.",
             name: "Nombre Completo",
-            email: "Correo Electrónico",
+            email: "Correo de Trabajo",
             role: "Rol del Sistema",
+            roleHint: "Define qué módulos y funcionalidades puede usar este usuario.",
+            companySection: "Empresa",
+            companySectionDesc: "Asignación obligatoria para el perfil de cliente B2B.",
             companyLabel: "Empresa",
+            companyPlaceholder: "Selecciona la empresa...",
+            accessSection: "Acceso y Permisos",
+            accessSectionDesc: "Define el rol y el estado de acceso de este usuario.",
             roleOptions: {
                 admin: "Administrador",
                 commercial: "Comercial",
@@ -595,10 +628,11 @@ const es = {
                 customer: "Cliente"
             },
             createButton: "Crear e Invitar",
+            inviteNotice: "Se enviará un correo de invitación al usuario para que establezca su contraseña.",
         },
         toasts: {
             created: "Usuario creado e invitado",
-            error: "Hubo un error al crer el usuario",
+            error: "Hubo un error al crear el usuario",
             missingCompany: "Por favor selecciona una empresa para el cliente"
         }
     },
