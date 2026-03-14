@@ -132,12 +132,12 @@ export function OrderProvider({ children }: { children: ReactNode }) {
           id: product.id,
           name: product.name,
           price: product.price,
-          quantity: product.minLots || product.minOrder || 1, // Start at minOrder
+          quantity: Number(product.minLots || product.minOrder) || 1,
           unit: product.unit,
           category: product.category,
           image: product.image,
-          minOrder: product.minLots || product.minOrder || 1,
-          lotSize: product.lotSize || 1,
+          minOrder: Number(product.minLots || product.minOrder) || 1,
+          lotSize: Number(product.lotSize) || 1,
           notes: "",
         },
       ];
@@ -156,9 +156,9 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     setItems((prev) =>
       prev.map((i) => {
         if (i.id === id) {
-          const min = i.minOrder || 1;
-          const lot = i.lotSize || 1;
-          let newQ = quantity;
+          const min = Number(i.minOrder) || 1;
+          const lot = Number(i.lotSize) || 1;
+          let newQ = Number(quantity);
 
           if (newQ < min) {
             newQ = min;

@@ -573,6 +573,8 @@ export default function OrderBuilder() {
                         </Button>
                         <Input
                           type="number"
+                          min={Number(item.minOrder) || 1}
+                          step={Number(item.lotSize) || 1}
                           value={item.quantity}
                           onChange={(e) =>
                             updateQuantity(
@@ -580,7 +582,7 @@ export default function OrderBuilder() {
                               parseInt(e.target.value) || 0,
                             )
                           }
-                          className="h-8 w-20 text-center font-mono"
+                          className="h-8 w-20 text-center font-mono [&::-webkit-inner-spin-button]:auto"
                         />
                         <Button
                           variant="outline"

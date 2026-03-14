@@ -1,5 +1,4 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -225,12 +224,6 @@ export default function Customers() {
                 ) : (
                   filteredCustomers.map((customer) => {
                     const status = getCustomerStatus(customer.id);
-                    const initials = customer.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .slice(0, 2)
-                      .join("")
-                      .toUpperCase();
 
                     return (
                       <TableRow
@@ -241,24 +234,17 @@ export default function Customers() {
                         }
                       >
                         <TableCell className="py-3">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-9 w-9 border border-border">
-                              <AvatarFallback className="text-xs font-medium text-slate-600 bg-slate-100">
-                                {initials}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex flex-col gap-0.5">
-                              <span className="font-semibold text-sm text-foreground">
-                                {customer.name}
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-semibold text-sm text-foreground">
+                              {customer.name}
+                            </span>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[11px] text-muted-foreground">
+                                {t("customers.salePoints", { count: customer.sales_points })}
                               </span>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[11px] text-muted-foreground">
-                                  {t("customers.salePoints", { count: customer.sales_points })}
-                                </span>
-                                {status !== "active" && (
-                                  <StatusBadge status={status} />
-                                )}
-                              </div>
+                              {status !== "active" && (
+                                <StatusBadge status={status} />
+                              )}
                             </div>
                           </div>
                         </TableCell>

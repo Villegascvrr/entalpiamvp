@@ -101,6 +101,7 @@ const es = {
             products: "Productos",
             orders: "Pedidos",
             customers: "Clientes",
+            users: "Usuarios",
             assistance: "Solicitudes",
         },
         roles: {
@@ -561,6 +562,45 @@ const es = {
         toasts: {
             deleted: "Producto {{code}} eliminado con éxito",
         },
+    },
+    adminUsers: {
+        title: "Usuarios",
+        subtitle: "Gestión de los usuarios de la plataforma y sus accesos.",
+        newUser: "Nuevo Usuario",
+        searchPlaceholder: "Buscar por nombre o correo...",
+        columns: {
+            name: "Nombre",
+            email: "Email",
+            role: "Rol",
+            company: "Empresa",
+            status: "Estado",
+            createdAt: "Creado",
+        },
+        statusActive: "Activo",
+        userCount_one: "{{count}} usuario",
+        userCount_other: "{{count}} usuarios",
+        noUsers: "No se encontraron usuarios",
+        newUserTitle: "Crear Usuario",
+        backToUsers: "Volver a Usuarios",
+        form: {
+            userInfo: "Información del Usuario",
+            name: "Nombre Completo",
+            email: "Correo Electrónico",
+            role: "Rol del Sistema",
+            companyLabel: "Empresa",
+            roleOptions: {
+                admin: "Administrador",
+                commercial: "Comercial",
+                logistics: "Logística",
+                customer: "Cliente"
+            },
+            createButton: "Crear e Invitar",
+        },
+        toasts: {
+            created: "Usuario creado e invitado",
+            error: "Hubo un error al crer el usuario",
+            missingCompany: "Por favor selecciona una empresa para el cliente"
+        }
     },
     createOrder: {
         title: "Nuevo Pedido",

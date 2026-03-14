@@ -101,6 +101,7 @@ const en = {
             products: "Products",
             orders: "Orders",
             customers: "Customers",
+            users: "Users",
             assistance: "Requests",
         },
         roles: {
@@ -561,6 +562,45 @@ const en = {
         toasts: {
             deleted: "Product {{code}} deleted successfully",
         },
+    },
+    adminUsers: {
+        title: "Users",
+        subtitle: "Management of platform users and access.",
+        newUser: "New User",
+        searchPlaceholder: "Search by name or email...",
+        columns: {
+            name: "Name",
+            email: "Email",
+            role: "Role",
+            company: "Company",
+            status: "Status",
+            createdAt: "Created",
+        },
+        statusActive: "Active",
+        userCount_one: "{{count}} user",
+        userCount_other: "{{count}} users",
+        noUsers: "No users found",
+        newUserTitle: "Create User",
+        backToUsers: "Back to Users",
+        form: {
+            userInfo: "User Information",
+            name: "Full Name",
+            email: "Email Address",
+            role: "System Role",
+            companyLabel: "Company",
+            roleOptions: {
+                admin: "Administrator",
+                commercial: "Commercial",
+                logistics: "Logistics",
+                customer: "Customer"
+            },
+            createButton: "Create and Invite",
+        },
+        toasts: {
+            created: "User created and invited",
+            error: "An error occurred creating the user",
+            missingCompany: "Please select a company for this customer user"
+        }
     },
     createOrder: {
         title: "New Order",

@@ -129,9 +129,9 @@ export function ProductSelector({
         /* ─────────────────────────────────────────────────────────────
                    CATEGORY SELECTION VIEW (Step 1 of Catalog)
                    ───────────────────────────────────────────────────────────── */
-        <ScrollArea className="flex-1 bg-muted/5 p-4">
-          <div className="max-w-7xl mx-auto space-y-6">
-            <div className="flex items-center justify-between pb-2 border-b border-border/50">
+        <div className="flex-1 bg-muted/5 p-4 flex flex-col min-h-0">
+          <div className="max-w-[880px] w-full mx-auto flex flex-col h-full gap-4">
+            <div className="flex items-center justify-between pb-2 border-b border-border/50 shrink-0">
               <div>
                 <h2 className="text-xl font-bold text-foreground uppercase tracking-tight flex items-center gap-2">
                   <Layers className="h-5 w-5 text-primary" />
@@ -143,7 +143,7 @@ export function ProductSelector({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 grid-rows-2 gap-4 flex-1 min-h-[400px]">
               {categories.map((cat) => {
                 const info = CATEGORY_MAP[cat] || {
                   label: cat,
@@ -157,10 +157,10 @@ export function ProductSelector({
                   <div
                     key={cat}
                     onClick={() => setActiveCategory(cat)}
-                    className="group relative flex flex-col border border-border rounded-xl bg-card hover:border-primary/50 hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden h-64"
+                    className="group relative flex flex-col border border-border rounded-xl bg-card hover:border-primary/50 hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden h-full"
                   >
                     {/* Large Image Area (60%) */}
-                    <div className="h-[60%] w-full bg-muted relative overflow-hidden">
+                    <div className="flex-[3] w-full bg-muted relative overflow-hidden">
                       {info.image ? (
                         <>
                           <img
@@ -195,7 +195,7 @@ export function ProductSelector({
                     </div>
 
                     {/* Bottom Content (40%) */}
-                    <div className="flex-1 p-4 bg-card flex flex-col justify-between relative group-hover:bg-muted/5 transition-colors">
+                    <div className="flex-[2] p-4 bg-card flex flex-col justify-between relative group-hover:bg-muted/5 transition-colors">
                       <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                         {info.description}
                       </p>
@@ -226,7 +226,7 @@ export function ProductSelector({
               })}
             </div>
           </div>
-        </ScrollArea>
+        </div>
       ) : (
         /* ─────────────────────────────────────────────────────────────
                    PRODUCT SELECTION VIEW (Step 2 of Catalog)
@@ -513,29 +513,18 @@ export function ProductSelector({
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className={cn(
-                                      "h-7 w-7 rounded-sm transition-colors text-muted-foreground",
-                                      selectedItem.quantity <= (product.minLots || 1)
-                                        ? "hover:bg-red-50 hover:text-red-600"
-                                        : "hover:bg-background hover:text-foreground",
-                                    )}
+                                    className="h-7 w-7 rounded-sm transition-colors text-muted-foreground hover:bg-background hover:text-foreground"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      if (selectedItem.quantity <= (product.minLots || 1)) {
-                                        onUpdateQuantity(product.id, 0);
-                                      } else {
-                                        onUpdateQuantity(
-                                          product.id,
-                                          selectedItem.quantity - (product.lotSize || 1),
-                                        );
+                                      const min = Number(product.minLots || product.minOrder) || 1;
+                                      const lot = Number(product.lotSize) || 1;
+                                      const newQ = selectedItem.quantity - lot;
+                                      if (newQ >= min) {
+                                        onUpdateQuantity(product.id, newQ);
                                       }
                                     }}
                                   >
-                                    {selectedItem.quantity <= (product.minLots || 1) ? (
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                    ) : (
-                                      <Minus className="h-3.5 w-3.5" />
-                                    )}
+                                    <Minus className="h-3.5 w-3.5" />
                                   </Button>
                                   <span className="font-mono text-sm font-bold w-7 text-center text-primary tabular-nums">
                                     {selectedItem.quantity}

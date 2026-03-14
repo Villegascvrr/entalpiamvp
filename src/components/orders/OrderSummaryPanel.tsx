@@ -106,8 +106,9 @@ export function OrderSummaryPanel({
                         <div className="flex items-center border border-border rounded-sm h-6 bg-muted/20">
                           <Input
                             type="number"
-                            min="1"
-                            className="h-full w-10 text-[10px] font-mono text-center border-none bg-transparent p-0 focus-visible:ring-0 [&::-webkit-inner-spin-button]:appearance-none"
+                            min={item.minOrder || 1}
+                            step={item.lotSize || 1}
+                            className="h-full w-10 text-[10px] font-mono text-center border-none bg-transparent p-0 focus-visible:ring-0 [&::-webkit-inner-spin-button]:auto"
                             value={item.quantity}
                             onChange={(e) =>
                               onUpdateQuantity(
