@@ -155,92 +155,83 @@ export default function AdminOrders() {
   return (
     <AppLayout>
       <div className="flex flex-col h-full bg-background overflow-hidden">
-        {/* Header - Compact */}
+        {/* ── Header ──────────────────────────────────────── */}
         <div className="flex-none flex items-center justify-between px-6 py-4 bg-muted/30 border-b border-border/60">
-          <div className="flex items-center gap-6">
-            <h1 className="text-xl font-bold font-mono tracking-tight text-foreground/90 uppercase flex items-center gap-2">
-              <Package className="h-5 w-5 text-primary" />
-              {t("adminOrders.title")}
-            </h1>
-
-            <div className="h-8 w-px bg-border/60" />
-
-            {/* Stats inline */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div
-                  className={cn(
-                    "h-8 w-8 rounded flex items-center justify-center",
-                    pendingCount > 0 ? "bg-amber-500/20" : "bg-muted",
-                  )}
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-semibold flex items-center gap-2">
+                <Package className="h-5 w-5 text-muted-foreground" />
+                {t("adminOrders.title")}
+              </h1>
+              {!isLoading && (
+                <Badge
+                  variant="secondary"
+                  className="text-[10px] px-1.5 h-5 font-normal bg-indigo-500/10 text-indigo-700 border-indigo-200"
                 >
-                  <span
-                    className={cn(
-                      "text-sm font-bold",
-                      pendingCount > 0 ? "text-amber-600" : "text-muted-foreground",
-                    )}
-                  >
-                    {pendingCount}
-                  </span>
+                  {orders.length} pedidos
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-4 mt-2">
+              <div className="flex items-center gap-1.5">
+                <div className={cn("h-4 w-4 rounded-sm flex items-center justify-center", pendingCount > 0 ? "bg-amber-500/20 text-amber-600" : "bg-muted text-muted-foreground")}>
+                  <span className="text-[10px] font-bold">{pendingCount}</span>
                 </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t("adminOrders.pending")}</p>
-                </div>
+                <span className="text-[10px] text-muted-foreground uppercase font-semibold">{t("adminOrders.pending")}</span>
               </div>
-
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded bg-blue-500/20 flex items-center justify-center">
-                  <span className="text-sm font-bold text-blue-600">
-                    {processingCount}
-                  </span>
+              <div className="flex items-center gap-1.5">
+                <div className="h-4 w-4 rounded-sm bg-blue-500/20 text-blue-600 flex items-center justify-center">
+                  <span className="text-[10px] font-bold">{processingCount}</span>
                 </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t("adminOrders.processing")}</p>
-                </div>
+                <span className="text-[10px] text-muted-foreground uppercase font-semibold">{t("adminOrders.processing")}</span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="relative w-64">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Button
+            className="gap-2 shadow-sm bg-indigo-600 hover:bg-indigo-700 text-white"
+            onClick={() => navigate("/admin/orders/new")}
+            size="sm"
+          >
+            <Plus className="h-4 w-4" />
+            {t("adminOrders.newOrder")}
+          </Button>
+        </div>
+
+        {/* ── Filter bar ──────────────────────────────────── */}
+        <div className="flex-none px-6 py-3 border-b bg-white">
+          <div className="flex flex-col sm:flex-row gap-3 items-center">
+            <div className="relative w-full sm:w-[300px]">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={t("adminOrders.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-9 text-xs bg-background"
+                className="pl-8 h-9 text-sm w-full"
               />
             </div>
-            <Button
-              className="gap-2 h-9 text-xs px-4"
-              onClick={() => navigate("/admin/orders/new")}
-            >
-              <Plus className="h-4 w-4" />
-              {t("adminOrders.newOrder")}
-            </Button>
+            
+            <div className="flex gap-2 w-full overflow-x-auto scrollbar-none items-center">
+              <Button variant={statusFilter === "all" ? "default" : "outline"} size="sm" className="h-9 text-xs px-3 rounded-full shrink-0" onClick={() => setStatusFilter("all")}>
+                {t("common.all")}
+              </Button>
+              <Button variant={statusFilter === "pending_validation" ? "default" : "outline"} size="sm" className="h-9 text-xs px-3 rounded-full shrink-0" onClick={() => setStatusFilter("pending_validation")}>
+                <Clock className="h-3.5 w-3.5 mr-1.5" />{t("status.pending_validation")}
+              </Button>
+              <Button variant={statusFilter === "confirmed" ? "default" : "outline"} size="sm" className="h-9 text-xs px-3 rounded-full shrink-0" onClick={() => setStatusFilter("confirmed")}>
+                <CheckCircle className="h-3.5 w-3.5 mr-1.5" />{t("status.confirmed")}
+              </Button>
+              <Button variant={statusFilter === "preparing" ? "default" : "outline"} size="sm" className="h-9 text-xs px-3 rounded-full shrink-0" onClick={() => setStatusFilter("preparing")}>
+                <Package className="h-3.5 w-3.5 mr-1.5" />{t("status.preparing")}
+              </Button>
+              <Button variant={statusFilter === "shipped" ? "default" : "outline"} size="sm" className="h-9 text-xs px-3 rounded-full shrink-0" onClick={() => setStatusFilter("shipped")}>
+                <Truck className="h-3.5 w-3.5 mr-1.5" />{t("status.shipped")}
+              </Button>
+              <Button variant={statusFilter === "delivered" ? "default" : "outline"} size="sm" className="h-9 text-xs px-3 rounded-full shrink-0" onClick={() => setStatusFilter("delivered")}>
+                <CheckCircle className="h-3.5 w-3.5 mr-1.5" />{t("status.delivered")}
+              </Button>
+            </div>
           </div>
-        </div>
-
-        {/* Filters Top Bar */}
-        <div className="flex-none px-6 py-3 border-b border-border/60 bg-card flex gap-2 overflow-x-auto scrollbar-none">
-          <Button variant={statusFilter === "all" ? "default" : "outline"} size="sm" className="h-7 text-xs px-3 rounded-full" onClick={() => setStatusFilter("all")}>
-            {t("common.all")}
-          </Button>
-          <Button variant={statusFilter === "pending_validation" ? "default" : "outline"} size="sm" className="h-7 text-xs px-3 rounded-full" onClick={() => setStatusFilter("pending_validation")}>
-            <Clock className="h-3.5 w-3.5 mr-1.5" />{t("status.pending_validation")}
-          </Button>
-          <Button variant={statusFilter === "confirmed" ? "default" : "outline"} size="sm" className="h-7 text-xs px-3 rounded-full" onClick={() => setStatusFilter("confirmed")}>
-            <CheckCircle className="h-3.5 w-3.5 mr-1.5" />{t("status.confirmed")}
-          </Button>
-          <Button variant={statusFilter === "preparing" ? "default" : "outline"} size="sm" className="h-7 text-xs px-3 rounded-full" onClick={() => setStatusFilter("preparing")}>
-            <Package className="h-3.5 w-3.5 mr-1.5" />{t("status.preparing")}
-          </Button>
-          <Button variant={statusFilter === "shipped" ? "default" : "outline"} size="sm" className="h-7 text-xs px-3 rounded-full" onClick={() => setStatusFilter("shipped")}>
-            <Truck className="h-3.5 w-3.5 mr-1.5" />{t("status.shipped")}
-          </Button>
-          <Button variant={statusFilter === "delivered" ? "default" : "outline"} size="sm" className="h-7 text-xs px-3 rounded-full" onClick={() => setStatusFilter("delivered")}>
-            <CheckCircle className="h-3.5 w-3.5 mr-1.5" />{t("status.delivered")}
-          </Button>
         </div>
 
         {/* Main Table Content */}

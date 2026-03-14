@@ -205,39 +205,53 @@ export default function AdminAssistance() {
 
                 {/* ── Header ──────────────────────────────────────── */}
                 <div className="flex-none flex items-center justify-between px-6 py-4 bg-muted/30 border-b border-border/60">
-                    <div className="flex items-center gap-6">
-                        <h1 className="text-xl font-bold font-mono tracking-tight text-foreground/90 uppercase flex items-center gap-2">
-                            <HeadphonesIcon className="h-5 w-5 text-primary" />
-                            Solicitudes Comerciales
-                        </h1>
+                    <div>
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-xl font-semibold flex items-center gap-2">
+                                <HeadphonesIcon className="h-5 w-5 text-muted-foreground" />
+                                Solicitudes
+                            </h1>
+                            {!isLoading && (
+                                <Badge
+                                    variant="secondary"
+                                    className="text-[10px] px-1.5 h-5 font-normal bg-indigo-500/10 text-indigo-700 border-indigo-200"
+                                >
+                                    {requests.length} solicitudes
+                                </Badge>
+                            )}
+                        </div>
                     </div>
                 </div>
 
                 {/* ── Filter bar ──────────────────────────────────── */}
-                <div className="flex-none px-6 py-3 border-b border-border/60 bg-card flex gap-2 overflow-x-auto scrollbar-none">
-                    {(
-                        [
-                            { key: "ALL", label: "Todas" },
-                            { key: "NEW", label: "Nuevas" },
-                            { key: "IN_PROGRESS", label: "En Gestión" },
-                            { key: "CLOSED", label: "Cerradas" },
-                        ] as { key: FilterType; label: string }[]
-                    ).map(({ key, label }) => (
-                        <Button
-                            key={key}
-                            variant={filter === key ? "default" : "outline"}
-                            size="sm"
-                            className="h-7 text-xs px-3 rounded-full"
-                            onClick={() => setFilter(key)}
-                        >
-                            {label}
-                            {key !== "ALL" && key in counts && (
-                                <span className="ml-1.5 text-[10px] opacity-70">
-                                    ({counts[key as AssistanceRequestStatus]})
-                                </span>
-                            )}
-                        </Button>
-                    ))}
+                <div className="flex-none px-6 py-3 border-b bg-white">
+                    <div className="flex flex-col sm:flex-row gap-3 items-center">
+                        <div className="flex gap-2 w-full overflow-x-auto scrollbar-none">
+                            {(
+                                [
+                                    { key: "ALL", label: "Todas" },
+                                    { key: "NEW", label: "Nuevas" },
+                                    { key: "IN_PROGRESS", label: "En Gestión" },
+                                    { key: "CLOSED", label: "Cerradas" },
+                                ] as { key: FilterType; label: string }[]
+                            ).map(({ key, label }) => (
+                                <Button
+                                    key={key}
+                                    variant={filter === key ? "default" : "outline"}
+                                    size="sm"
+                                    className="h-9 text-xs px-3 rounded-full"
+                                    onClick={() => setFilter(key)}
+                                >
+                                    {label}
+                                    {key !== "ALL" && key in counts && (
+                                        <span className="ml-1.5 text-[10px] opacity-70">
+                                            ({counts[key as AssistanceRequestStatus]})
+                                        </span>
+                                    )}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
                 </div>
 
                 {/* ── Table ───────────────────────────────────────── */}

@@ -319,42 +319,42 @@ export default function AdminStock() {
 
   return (
     <AppLayout>
-      <div className="flex flex-col h-full bg-background overflow-hidden p-6 gap-6">
+      <div className="flex flex-col h-full bg-background overflow-hidden">
         {/* ── Header ─────────────────────────────────────────── */}
-        <div className="flex-none flex items-start justify-between">
+        <div className="flex-none flex items-center justify-between px-6 py-4 bg-muted/30 border-b border-border/60">
           <div>
-            <h1 className="text-[24px] font-semibold font-sans text-foreground tracking-tight">
+            <h1 className="text-2xl font-semibold leading-tight text-foreground">
               Inventory
             </h1>
-            <p className="text-[14px] text-muted-foreground mt-1 font-sans">
+            <p className="text-sm text-muted-foreground mt-1 font-sans">
               Monitor product availability and stock alerts.
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-2 h-8 text-xs">
-              <Upload className="h-3.5 w-3.5" />
+            <Button variant="outline" size="sm" className="gap-2 h-9 text-xs">
+              <Upload className="h-4 w-4" />
               {t("adminStock.import")}
             </Button>
-            <Button variant="outline" size="sm" className="gap-2 h-8 text-xs">
-              <SlidersHorizontal className="h-3.5 w-3.5" />
+            <Button variant="outline" size="sm" className="gap-2 h-9 text-xs">
+              <SlidersHorizontal className="h-4 w-4" />
               {t("adminStock.bulkAdjust")}
             </Button>
             <Button
               size="sm"
-              className="gap-2 h-8 text-xs"
+              className="gap-2 h-9 text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
               onClick={() => setIsModalOpen(true)}
             >
-              <Plus className="h-3.5 w-3.5" />
+              <Plus className="h-4 w-4" />
               {t("adminStock.addStock")}
             </Button>
           </div>
         </div>
 
         {/* ── Main Content ───────────────────────────────────── */}
-        <div className="flex-1 flex flex-col gap-6 overflow-hidden">
+        <div className="flex-none p-6 pb-0 flex flex-col gap-4 mt-2">
           {/* KPI Cards */}
-          <div className="flex-none flex items-center gap-4">
-            <div className="bg-white border border-[#ECEFF3] rounded-[10px] p-[14px] flex flex-col justify-center min-w-[200px]">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white border border-[#ECEFF3] rounded-[10px] p-4 flex flex-col justify-center">
               <span className="text-[14px] text-muted-foreground mb-1">
                 {t("adminStock.kpis.totalProducts")}
               </span>
@@ -362,7 +362,7 @@ export default function AdminStock() {
                 {products.length}
               </span>
             </div>
-            <div className="bg-white border border-[#ECEFF3] rounded-[10px] p-[14px] flex flex-col justify-center min-w-[200px]">
+            <div className="bg-white border border-[#ECEFF3] rounded-[10px] p-4 flex flex-col justify-center">
               <span className="text-[14px] text-muted-foreground mb-1">
                 {t("adminStock.kpis.stockAlerts")}
               </span>
@@ -370,7 +370,7 @@ export default function AdminStock() {
                 {products.filter((p) => (p.available_stock || 0) < 50).length}
               </span>
             </div>
-            <div className="bg-white border border-[#ECEFF3] rounded-[10px] p-[14px] flex flex-col justify-center min-w-[200px]">
+            <div className="bg-white border border-[#ECEFF3] rounded-[10px] p-4 flex flex-col justify-center">
               <span className="text-[14px] text-muted-foreground mb-1">
                 {t("adminStock.kpis.totalAvailable")}
               </span>
@@ -386,14 +386,14 @@ export default function AdminStock() {
           </div>
 
           {/* Toolbar */}
-          <div className="flex-none flex items-center justify-between gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <div className="flex items-center justify-between gap-4">
+            <div className="relative w-full sm:w-[300px]">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={t("adminStock.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-8 text-xs bg-background w-full"
+                className="pl-8 h-9 text-sm bg-background w-full"
               />
             </div>
             {stockAlertCount > 0 && (
@@ -406,11 +406,13 @@ export default function AdminStock() {
               </Badge>
             )}
           </div>
+        </div>
 
-          {/* Table */}
-          <div className="flex-1 bg-white border border-[#ECEFF3] rounded-[10px] flex flex-col overflow-hidden shadow-sm">
+        {/* Table container */}
+        <div className="flex-1 p-6 overflow-hidden bg-background">
+          <div className="h-full bg-card border border-[#ECEFF3] rounded-[10px] flex flex-col overflow-hidden shadow-sm">
             <div className="flex-1 overflow-y-auto scrollbar-thin">
-              <table className="w-full text-xs">
+              <table className="w-full text-sm">
                 <thead className="bg-muted/40 sticky top-0 z-10">
                   <tr className="border-b border-border/60 text-[10px] text-muted-foreground uppercase tracking-wider">
                     <th className="text-left px-6 py-3 font-medium">
