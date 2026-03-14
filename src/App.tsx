@@ -22,6 +22,7 @@ import OrderPreview from "./pages/OrderPreview";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOrders from "./pages/admin/AdminOrders";
+import AdminOrderDetail from "./pages/admin/OrderDetail";
 import AdminPricing from "./pages/admin/AdminPricing";
 import AdminStock from "./pages/admin/AdminStock";
 import AdminAssistance from "./pages/admin/AdminAssistance";
@@ -122,6 +123,7 @@ const App = () => (
                   <Route path="/admin/pricing" element={<AuthGate><RoleGate roles={["admin", "commercial"]}><AdminPricing /></RoleGate></AuthGate>} />
                   <Route path="/admin/stock" element={<AuthGate><RoleGate roles={["admin", "logistics"]}><AdminStock /></RoleGate></AuthGate>} />
                   <Route path="/admin/orders" element={<AuthGate><RoleGate roles={["admin"]}><AdminOrders /></RoleGate></AuthGate>} />
+                  <Route path="/admin/orders/:id" element={<AuthGate><RoleGate roles={["admin"]}><AdminOrderDetail /></RoleGate></AuthGate>} />
                   <Route path="/admin/orders/new" element={<AuthGate><RoleGate roles={["admin"]}><CreateOrder /></RoleGate></AuthGate>} />
                   <Route path="/admin/assistance" element={<AuthGate><RoleGate roles={["admin", "commercial"]}><AdminAssistance /></RoleGate></AuthGate>} />
                   <Route path="/admin/users" element={<AuthGate><RoleGate roles={["admin"]}><AdminUsers /></RoleGate></AuthGate>} />

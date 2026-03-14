@@ -102,9 +102,9 @@ export class SupabaseOrderRepository implements OrderRepository {
         id: row.reference as string,
         customer: {
           id: (row.actor_id as string) ?? "",
-          name: actors?.name ?? "",
+          name: actors?.name ?? "Unknown",
         },
-        company: actors?.customers?.name ?? "",
+        company: actors?.customers?.name ?? "Unknown",
         date: new Date(row.created_at as string).toLocaleDateString("es-ES", {
           day: "2-digit",
           month: "2-digit",
@@ -144,9 +144,42 @@ export class SupabaseOrderRepository implements OrderRepository {
 
   async getOrderTimeline(
     _session: ActorSession,
-    _orderId: string,
+    orderId: string,
   ): Promise<OrderTimelineEvent[]> {
-    return []; // Optional timeline implementation for later
+    const { data: orderData } = await supabase
+      .from("orders")
+      .select("id")
+      .eq("reference", orderId)
+      .single();
+
+    if (!orderData) return [];
+
+    const { data, error } = await supabase
+      .from("order_state_history")
+      .select(`
+        *,
+        actors ( name )
+      `)
+      .eq("order_id", orderData.id)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+       console.error("[SupabaseOrderRepo] Error fetching order timeline:", error.message);
+       return [];
+    }
+
+    return (data || []).map((row) => {
+      const actorName = row.actors?.name || row.changed_by;
+      
+      return {
+        to_status: row.to_status as OrderStatus,
+        changed_by: actorName,
+        notes: row.notes || undefined,
+        created_at: new Date(row.created_at).toLocaleString("es-ES", {
+          day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
+        }),
+      };
+    });
   }
 
   async getRecentOrders(session: ActorSession): Promise<RecentOrder[]> {
@@ -365,6 +398,14 @@ export class SupabaseOrderRepository implements OrderRepository {
       }
     }
 
+    // Insert first event into order_state_history
+    await supabase.from("order_state_history").insert({
+      order_id: orderRow.id,
+      from_status: null,
+      to_status: "pending_validation",
+      changed_by: session.actorId,
+    });
+
     // 5. Return full Order mapped to frontend shape
     return this._mapRowToOrder(orderRow, insertedItems);
   }
@@ -387,11 +428,15 @@ export class SupabaseOrderRepository implements OrderRepository {
     // Fetch current order to preserve notes
     const { data: current } = await supabase
       .from("orders")
-      .select("notes")
+      .select("id, status, notes")
       .eq("reference", orderId)
       .single();
 
-    const existingNotes = current?.notes ?? "";
+    if (!current) throw new Error("Pedido no encontrado");
+
+    const previousStatus = current.status;
+    const internalOrderId = current.id;
+    const existingNotes = current.notes ?? "";
     const validationNote = `Validado por ${session.name} el ${new Date().toLocaleString("es-ES")}`;
     const mergedNotes = existingNotes
       ? `${existingNotes}\n---\n${validationNote}`
@@ -414,6 +459,25 @@ export class SupabaseOrderRepository implements OrderRepository {
             `,
       )
       .single();
+
+    if (error || !updated) {
+      console.error(
+        "[SupabaseOrderRepo] ❌ validateOrder failed:",
+        error?.message,
+      );
+      throw new Error(
+        `Error validando pedido: ${error?.message ?? "Pedido no encontrado"}`,
+      );
+    }
+    
+    // Insert into order_state_history
+    await supabase.from("order_state_history").insert({
+      order_id: internalOrderId,
+      from_status: previousStatus,
+      to_status: "confirmed",
+      changed_by: session.actorId,
+      notes: validationNote
+    });
 
     if (error || !updated) {
       console.error(
@@ -447,11 +511,16 @@ export class SupabaseOrderRepository implements OrderRepository {
     // Validate transition
     const { data: currentRow } = await supabase
       .from("orders")
-      .select("status")
+      .select("id, status")
       .eq("reference", orderId)
       .single();
 
+    let previousStatus: string | null = null;
+    let internalOrderId = "";
+
     if (currentRow) {
+      internalOrderId = currentRow.id;
+      previousStatus = currentRow.status;
       const currentStatus = currentRow.status as OrderStatus;
       const allowed = VALID_TRANSITIONS[currentStatus] ?? [];
       if (!allowed.includes(status)) {
@@ -486,6 +555,15 @@ export class SupabaseOrderRepository implements OrderRepository {
       throw new Error(
         `Error actualizando estado: ${error?.message ?? "Pedido no encontrado"}`,
       );
+    }
+
+    if (internalOrderId) {
+      await supabase.from("order_state_history").insert({
+        order_id: internalOrderId,
+        from_status: previousStatus,
+        to_status: status,
+        changed_by: session.actorId,
+      });
     }
 
     console.log(
@@ -547,7 +625,7 @@ export class SupabaseOrderRepository implements OrderRepository {
       delivery: deliveryDetails,
       items: items.map((item) => {
         const product = item.products as Record<string, unknown> | null | undefined;
-        const name = (product?.name as string) ?? "";
+        const name = (item.name as string) ?? (product?.name as string) ?? "";
         return {
           id: item.id as string,
           name,
