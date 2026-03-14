@@ -92,10 +92,7 @@ async function resolveActor(
       return {
         actorId: fallbackData.id,
         role: fallbackData.role as ActorRole,
-        tenantId:
-          appConfig.mode === "development"
-            ? "a0000000-0000-0000-0000-000000000001"
-            : fallbackData.tenant_id,
+        tenantId: fallbackData.tenant_id, // Always use the real tenant_id from the DB
         name: fallbackData.name,
         email,
       };
@@ -114,17 +111,10 @@ async function resolveActor(
     data.role,
   );
 
-  // Force tenant separation based on Data Mode (Dev Tool)
-  let effectiveTenantId = data.tenant_id;
-
-  if (appConfig.mode === "development") {
-    effectiveTenantId = "a0000000-0000-0000-0000-000000000001";
-  }
-
   return {
     actorId: data.id,
     role: data.role as ActorRole,
-    tenantId: effectiveTenantId,
+    tenantId: data.tenant_id, // Always use the real tenant_id from the DB
     name: data.name,
     email,
     customerId: data.customer_id, // Include the linked customer ID

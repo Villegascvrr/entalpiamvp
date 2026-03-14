@@ -106,6 +106,15 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       company: clientName,
     };
 
+    // ── DEBUG: Task 1 — log full frontend payload before sending to repo
+    const computedTotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    console.log("ORDER SUBMIT PAYLOAD", {
+      items,
+      shippingDetails,
+      total: computedTotal,
+      orderPayload,
+    });
+
     // If a persist function was provided, call it (real Supabase write)
     let result: Order | null = null;
     if (persistFn) {

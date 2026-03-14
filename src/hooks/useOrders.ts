@@ -61,20 +61,44 @@ export function useOrders(): UseOrdersResult {
       setError(null);
 
       try {
-        // Fetch all data in parallel
-        const [admin, recent, active, archived, history] = await Promise.all([
-          orderRepository.getAdminOrders(session),
-          orderRepository.getRecentOrders(session),
-          orderRepository.getActiveOrders(session),
-          orderRepository.getArchivedOrders(session),
-          orderRepository.getCustomerHistory(session, "current-user"),
-        ]);
-
+        console.log("[useOrders] session:", session);
+        const admin = await orderRepository.getAdminOrders(session);
+        console.log("[useOrders] getAdminOrders returned:", admin.length, "orders");
         setAdminOrders(admin);
-        setRecentOrders(recent);
+
+        // Derive active and archived using frontend filtering
+        const active = admin.filter(o => o.status !== "delivered" && o.status !== "cancelled");
         setActiveOrders(active);
+
+        const archived = admin.filter(o => o.status === "delivered" || o.status === "cancelled");
         setArchivedOrders(archived);
-        setHistoryOrders(history);
+
+        // Map recent orders (limit to 10 latest)
+        setRecentOrders(admin.slice(0, 10).map(o => {
+          let priority: "low" | "medium" | "high" = "low";
+          if (o.total > 5000) priority = "high";
+          else if (o.total > 1000) priority = "medium";
+          
+          return {
+            id: o.id,
+            date: o.date,
+            status: o.status,
+            total: o.total,
+            customer: o.company || o.customer.name, // Display company ideally
+            time: o.date,
+            items: o.items.length,
+            priority,
+          };
+        }));
+
+        // Map customer history
+        setHistoryOrders(archived.map(o => ({
+          id: o.id,
+          date: o.date,
+          status: o.status,
+          items: o.items.length,
+          total: o.total,
+        })));
       } catch (err) {
         console.error("Failed to fetch orders:", err);
         setError("Error loading order data");

@@ -343,7 +343,7 @@ export function ProductSelector({
                       className={cn(
                         "group relative flex flex-col border rounded-lg bg-card transition-all duration-200 overflow-hidden cursor-pointer",
                         isSelected
-                          ? "border-primary bg-primary/10 shadow-md ring-1 ring-primary/20"
+                          ? "border-primary bg-primary/5 shadow-md ring-1 ring-primary/20"
                           : "border-border hover:border-primary/50 hover:shadow-md",
                       )}
                       onClick={() => !isSelected && onSelectProduct(product)}
@@ -366,19 +366,14 @@ export function ProductSelector({
                                 </div>
                               </div>
                             </TooltipTrigger>
-                            <TooltipContent
-                              side="top"
-                              className="text-xs max-w-[200px] bg-card border shadow-lg"
-                            >
-                              <p className="font-semibold text-destructive">
-                                Quitar del pedido
-                              </p>
+                            <TooltipContent side="top" className="text-xs max-w-[200px] bg-card border shadow-lg">
+                              <p className="font-semibold text-destructive">Quitar del pedido</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                       )}
 
-                      {/* 1) Large Product Image Area (Industrial View) */}
+                      {/* Product Image */}
                       <div className="aspect-[16/10] bg-white relative flex items-center justify-center border-b border-border/50 overflow-hidden">
                         {product.image ? (
                           <img
@@ -389,25 +384,16 @@ export function ProductSelector({
                         ) : (
                           <div className="flex flex-col items-center gap-2 opacity-20 grayscale group-hover:grayscale-0 group-hover:opacity-40 transition-all duration-500">
                             <Package className="h-12 w-12" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest">
-                              Image Placeholder
-                            </span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest">Image Placeholder</span>
                           </div>
                         )}
-
-                        {/* Industrial Detail Overlay */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent pointer-events-none" />
-
-                        {/* Detail Action "Ver Detalles" */}
                         <div className="absolute bottom-2 left-2 right-2 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300">
                           <Button
                             variant="secondary"
                             size="sm"
                             className="h-7 text-[10px] font-bold uppercase tracking-wider bg-background/90 backdrop-blur-sm border shadow-sm flex items-center gap-1.5"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDetailProduct(product);
-                            }}
+                            onClick={(e) => { e.stopPropagation(); setDetailProduct(product); }}
                           >
                             <Eye className="h-3 w-3 text-primary" />
                             Ver detalles
@@ -415,64 +401,44 @@ export function ProductSelector({
                         </div>
                       </div>
 
-                      <div className="p-4 flex flex-col flex-1 gap-3">
-                        {/* Reference Code & Specs Popover */}
-                        <div className="flex justify-end items-center h-5">
-
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6 text-muted-foreground/50 hover:text-primary transition-colors hover:bg-primary/5"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <Info className="h-3.5 w-3.5" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent
-                                side="top"
-                                className="text-xs max-w-[260px] bg-card border shadow-lg p-3 space-y-2"
-                              >
-                                <p className="font-bold text-primary text-[10px] uppercase tracking-wider">
-                                  Especificaciones Técnicas
-                                </p>
-                                {product.description && (
-                                  <p className="text-muted-foreground leading-relaxed">
-                                    {product.description}
-                                  </p>
-                                )}
-                                {product.features && Object.keys(product.features).length > 0 && (
-                                  <dl className="grid grid-cols-2 gap-x-2 gap-y-0.5 border-t border-border pt-2">
-                                    {Object.entries(product.features).map(([key, val]) => (
-                                      <>
-                                        <dt key={`k-${key}`} className="text-muted-foreground font-medium truncate">{key}</dt>
-                                        <dd key={`v-${key}`} className="font-mono text-foreground">{String(val)}</dd>
-                                      </>
-                                    ))}
-                                  </dl>
-                                )}
-                                {!product.description && !product.features && (
-                                  <p className="text-muted-foreground leading-relaxed">{product.specs}</p>
-                                )}
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                      {/* Card Body */}
+                      <div className="p-4 flex flex-col flex-1 space-y-2">
+                        {/* Title row + Info toggle */}
+                        <div className="flex items-start justify-between gap-2">
+                          <h3
+                            className={cn(
+                              "text-base font-semibold leading-snug line-clamp-2 flex-1 transition-colors",
+                              isSelected ? "text-primary" : "text-foreground",
+                            )}
+                          >
+                            {product.name}
+                          </h3>
+                          {(product.description || product.features || product.specs) && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDetailProduct(product);
+                              }}
+                              className={cn(
+                                "shrink-0 h-6 w-6 flex items-center justify-center rounded-full transition-colors",
+                                "text-muted-foreground/50 hover:text-primary hover:bg-primary/5"
+                              )}
+                            >
+                              <Info className="h-3.5 w-3.5" />
+                            </button>
+                          )}
                         </div>
 
-                        {/* Product Name */}
-                        <h3
-                          className={cn(
-                            "font-bold text-sm leading-tight line-clamp-2 transition-colors",
-                            isSelected ? "text-primary" : "text-foreground",
-                          )}
-                        >
-                          {product.name}
-                        </h3>
+                        {/* Short description (always visible, 2 lines max) */}
+                        {(product.description || product.specs) && (
+                          <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed">
+                            {product.description || product.specs}
+                          </p>
+                        )}
 
-                        {/* Lot size badge + Safety sheet link */}
-                        <div className="flex items-center gap-2 flex-wrap">
+                        {/* Badges row: min lot + safety sheet */}
+                        <div className="flex items-center gap-2 flex-wrap pt-1">
                           {product.minLots && product.minLots > 1 && (
                             <Badge variant="secondary" className="text-[9px] font-mono h-4 px-1.5">
                               {t("productSelector.minLot", { n: product.minLots })}
@@ -484,44 +450,38 @@ export function ProductSelector({
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
-                              className="inline-flex items-center gap-1 text-[9px] text-primary/70 hover:text-primary font-semibold underline underline-offset-2 transition-colors"
+                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline transition-colors"
                             >
-                              <Download className="h-2.5 w-2.5" />
+                              <Download className="h-3 w-3" />
                               {t("productSelector.safetySheet")}
                             </a>
                           )}
                         </div>
 
-                        {/* Price and Add/Controls Row */}
+                        {/* Footer: price left, add/qty right */}
                         <div className="mt-auto pt-2 border-t border-border/30">
                           <div className="flex items-center justify-between gap-2">
-                            <div className="flex flex-col">
-                              <div className="flex items-baseline gap-1">
-                                <span className="font-mono font-black text-lg text-foreground tracking-tighter tabular-nums">
-                                  €{product.price.toFixed(2)}
-                                </span>
-                                <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">
-                                  /{product.unit}
-                                </span>
-                              </div>
+                            <div className="flex items-baseline gap-1">
+                              <span className="font-mono font-black text-lg text-foreground tracking-tighter tabular-nums">
+                                €{product.price.toFixed(2)}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">
+                                /{product.unit}
+                              </span>
                             </div>
 
-                            {/* Selection / Quantity Controls */}
                             {isSelected ? (
                               <div className="flex items-center gap-1.5 animate-in slide-in-from-right-2 duration-300">
-                                <div className="flex items-center bg-primary/5 border border-primary/20 rounded-md p-0.5 shadow-sm transition-all h-8">
+                                <div className="flex items-center bg-primary/5 border border-primary/20 rounded-md p-0.5 shadow-sm h-8">
                                   <Button
-                                    variant="ghost"
-                                    size="icon"
+                                    variant="ghost" size="icon"
                                     className="h-7 w-7 rounded-sm transition-colors text-muted-foreground hover:bg-background hover:text-foreground"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      const min = Number(product.minLots || product.minOrder) || 1;
+                                      const min = Number(product.minLots) || 1;
                                       const lot = Number(product.lotSize) || 1;
                                       const newQ = selectedItem.quantity - lot;
-                                      if (newQ >= min) {
-                                        onUpdateQuantity(product.id, newQ);
-                                      }
+                                      if (newQ >= min) onUpdateQuantity(product.id, newQ);
                                     }}
                                   >
                                     <Minus className="h-3.5 w-3.5" />
@@ -530,15 +490,11 @@ export function ProductSelector({
                                     {selectedItem.quantity}
                                   </span>
                                   <Button
-                                    variant="ghost"
-                                    size="icon"
+                                    variant="ghost" size="icon"
                                     className="h-7 w-7 rounded-sm hover:bg-background hover:text-foreground text-muted-foreground"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      onUpdateQuantity(
-                                        product.id,
-                                        selectedItem.quantity + (product.lotSize || 1),
-                                      );
+                                      onUpdateQuantity(product.id, selectedItem.quantity + (product.lotSize || 1));
                                     }}
                                   >
                                     <Plus className="h-3.5 w-3.5" />

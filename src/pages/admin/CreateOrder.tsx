@@ -6,19 +6,24 @@ import { OrderSummaryPanel } from "@/components/orders/OrderSummaryPanel";
 import { ProductSelector } from "@/components/orders/ProductSelector";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { useActor } from "@/contexts/ActorContext";
 import { useOrder } from "@/contexts/OrderContext";
 import { cn } from "@/lib/utils";
+import { format, parseISO, isValid } from "date-fns";
 import {
   ArrowLeft,
+  CalendarIcon,
   Check,
   ChevronRight,
   FileSearch,
   Headset,
+  Info,
   Send,
   ShoppingCart,
   Truck,
@@ -45,6 +50,7 @@ export default function CreateOrder() {
     updateShipping,
     clearOrder,
     submitOrder,
+    orderTotal,
   } = useOrder();
 
   const backPath = isInterno ? "/admin/orders" : "/dashboard";
@@ -56,6 +62,117 @@ export default function CreateOrder() {
   const [copyClient, setCopyClient] = useState(true);
   const [copyInternal, setCopyInternal] = useState(true);
   const [stepTransition, setStepTransition] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+
+  // ─────────────────────────────────────────────────────────────
+  // DELIVERY VALIDATION
+  // ─────────────────────────────────────────────────────────────
+  const [deliveryErrors, setDeliveryErrors] = useState<Record<string, string>>({});
+
+  function validateDeliveryDetails(): { valid: boolean; errors: Record<string, string> } {
+    const errors: Record<string, string> = {};
+    const d = shippingDetails.delivery;
+    const todayStr = new Date().toISOString().split("T")[0];
+
+    // Required fields
+    if (!d.address?.trim())     errors.address     = "Este campo es obligatorio";
+    if (!d.city?.trim())        errors.city        = "Este campo es obligatorio";
+    if (!d.postalCode?.trim())  errors.postalCode  = "Este campo es obligatorio";
+    if (!d.province?.trim())    errors.province    = "Este campo es obligatorio";
+    if (!d.contactName?.trim()) errors.contactName = "Este campo es obligatorio";
+    if (!d.contactPhone?.trim()) errors.contactPhone = "Este campo es obligatorio";
+
+    // Delivery date required + not in the past
+    if (!shippingDetails.date || shippingDetails.date === "asap") {
+      // "ASAP" selection is allowed, skip date validation
+    } else if (shippingDetails.date < todayStr) {
+      errors.date = "La fecha de entrega no puede ser pasada";
+    }
+
+    // Phone format (optional but if filled must match)
+    if (d.contactPhone?.trim()) {
+      const phoneRegex = /^\+?[0-9\s]{7,15}$/;
+      if (!phoneRegex.test(d.contactPhone.trim())) {
+        errors.contactPhone = "Formato de teléfono inválido (ej: +34 600000000)";
+      }
+    }
+
+    // Email format (optional — only validate if filled)
+    if (d.contactEmail?.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(d.contactEmail.trim())) {
+        errors.contactEmail = "Formato de email no válido";
+      }
+    }
+
+    return { valid: Object.keys(errors).length === 0, errors };
+  }
+
+  // Re-run validation whenever shipping details change
+  useEffect(() => {
+    if (currentStep === 3) {
+      const { errors } = validateDeliveryDetails();
+      setDeliveryErrors(errors);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shippingDetails, currentStep]);
+
+  const isDeliveryValid = Object.keys(deliveryErrors).length === 0;
+
+  // ─────────────────────────────────────────────────────────────
+  // ORDER ITEMS VALIDATION BEFORE SUBMIT
+  // ─────────────────────────────────────────────────────────────
+  const [itemErrors, setItemErrors] = useState<Record<string, string>>({});
+  const [isValidatingItems, setIsValidatingItems] = useState(false);
+
+  const validateOrderItems = async (): Promise<boolean> => {
+    setIsValidatingItems(true);
+    const errors: Record<string, string> = {};
+    let hasError = false;
+
+    // 1. Min lots validation
+    for (const item of items) {
+      const lotSize = Number(item.lotSize) || 1;
+      const minLots = Number(item.minOrder) || 1;
+      const minQty = lotSize * minLots;
+      
+      if (item.quantity < minQty) {
+        errors[item.id] = `Minimum order quantity for this product is ${minQty} units.`;
+        hasError = true;
+      }
+    }
+
+    if (!hasError) {
+      try {
+        const { supabase } = await import("@/lib/supabaseClient");
+        // 2. Stock validation
+        const productIds = items.map((i) => i.id);
+        const { data: stockData } = await supabase
+          .from("stock")
+          .select("product_id, available_stock")
+          .in("product_id", productIds);
+
+        if (stockData) {
+          const stockMap = new Map(stockData.map((s) => [s.product_id, s.available_stock]));
+          for (const item of items) {
+            const available = stockMap.get(item.id);
+            if (available !== undefined && available !== null) {
+              if (item.quantity > available) {
+                errors[item.id] = `Requested quantity exceeds available stock (${available}).`;
+                hasError = true;
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Stock validation failed", e);
+      }
+    }
+
+    setItemErrors(errors);
+    setIsValidatingItems(false);
+    return !hasError;
+  };
 
   // Animate step transitions
   useEffect(() => {
@@ -92,8 +209,15 @@ export default function CreateOrder() {
     }
   };
 
-  const total =
-    items.reduce((sum, item) => sum + item.price * item.quantity, 0) * 1.21;
+  const subtotal = orderTotal;
+  const discountTotal = items.reduce((sum, item) => {
+    const lineTotal = item.price * item.quantity;
+    const itemDiscount = (item as any).discountPercentage || 0;
+    return sum + (lineTotal * itemDiscount) / 100;
+  }, 0);
+  const totalWithDiscount = subtotal - discountTotal;
+  const vatAmount = totalWithDiscount * 0.21;
+  const total = totalWithDiscount + vatAmount;
 
   // ─────────────────────────────────────────────────────────────
   // COMPACT STEPPER
@@ -273,7 +397,7 @@ export default function CreateOrder() {
                       </thead>
                       <tbody className="divide-y divide-border/40">
                         {items.map((item) => (
-                          <tr key={item.id} className="hover:bg-muted/10">
+                          <tr key={item.id} className={cn("hover:bg-muted/10", itemErrors[item.id] && "bg-destructive/5")}>
                             <td className="px-4 py-2">
                               <div className="font-medium text-foreground">
                                 {item.name}
@@ -281,6 +405,11 @@ export default function CreateOrder() {
                               <div className="text-[10px] text-muted-foreground font-mono">
                                 {item.id}
                               </div>
+                              {itemErrors[item.id] && (
+                                <p className="text-[11px] font-medium text-destructive mt-1 bg-destructive/10 inline-block px-1.5 py-0.5 rounded-sm">
+                                  {itemErrors[item.id]}
+                                </p>
+                              )}
                             </td>
                             <td className="px-4 py-2 text-center">
                               <Badge
@@ -304,35 +433,39 @@ export default function CreateOrder() {
                 <div className="w-full md:w-72 bg-muted/10 border-l border-border p-6 flex flex-col gap-6">
                   <div className="space-y-3">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      {t("createOrder.step2.subtotal")}
+                      {t("createOrder.step2.subtotal", "Order Summary")}
                     </h3>
                     <div className="flex justify-between text-sm">
-                      <span>{t("createOrder.step2.subtotal")}</span>
-                      <span className="font-mono">
-                        €{(total / 1.21).toFixed(2)}
-                      </span>
+                      <span>{t("createOrder.step2.subtotal", "Subtotal")}</span>
+                      <span className="font-mono">€{subtotal.toFixed(2)}</span>
                     </div>
+                    {discountTotal > 0 && (
+                      <div className="flex justify-between text-sm text-green-600 font-medium">
+                        <span>Descuento</span>
+                        <span className="font-mono">-€{discountTotal.toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>{t("createOrder.step2.vat")}</span>
-                      <span className="font-mono">
-                        €{(total - total / 1.21).toFixed(2)}
-                      </span>
+                      <span>{t("createOrder.step2.vat", "IVA (21%)")}</span>
+                      <span className="font-mono">€{vatAmount.toFixed(2)}</span>
                     </div>
                     <Separator />
                     <div className="flex justify-between text-lg font-bold">
-                      <span>{t("createOrder.step2.total")}</span>
-                      <span className="font-mono text-primary">
-                        €{total.toFixed(2)}
-                      </span>
+                      <span>{t("createOrder.step2.total", "Total")}</span>
+                      <span className="font-mono text-primary">€{total.toFixed(2)}</span>
                     </div>
                   </div>
 
                   <div className="mt-auto pt-4 space-y-3">
                     <Button
                       className="w-full font-bold shadow-md"
-                      onClick={() => setStep(3)}
+                      disabled={isValidatingItems}
+                      onClick={async () => {
+                        const valid = await validateOrderItems();
+                        if (valid) setStep(3);
+                      }}
                     >
-                      {t("createOrder.step2.continue")} <ChevronRight className="h-4 w-4 ml-1" />
+                      {isValidatingItems ? "..." : t("createOrder.step2.continue")} <ChevronRight className="h-4 w-4 ml-1" />
                     </Button>
                   </div>
                 </div>
@@ -353,51 +486,33 @@ export default function CreateOrder() {
 
                 <div className="p-6 grid gap-8">
                   {/* Section 1: Notes & Notifications */}
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-purple-500/60"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-500/60" />
                       {t("createOrder.step3.notesSection")}
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="space-y-2">
-                        <Label className="text-xs">
-                          {t("createOrder.step3.deliveryInstructions")}
-                        </Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">{t("createOrder.step3.deliveryInstructions")}</Label>
                         <textarea
-                          className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-ref"
+                          className="flex min-h-[76px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none"
                           placeholder={t("createOrder.step3.deliveryInstructionsPlaceholder")}
                           value={shippingDetails.delivery.instructions}
-                          onChange={(e) =>
-                            updateShipping({ instructions: e.target.value })
-                          }
+                          onChange={(e) => updateShipping({ instructions: e.target.value })}
                         />
                       </div>
-                      <div className="space-y-2">
+                      <div className="space-y-1.5">
                         <Label className="text-xs">{t("createOrder.step3.notifications")}</Label>
-                        <div className="flex flex-col gap-2 p-3 bg-muted/5 rounded-md border border-border">
+                        <div className="flex flex-col gap-2.5 p-3 bg-muted/5 rounded-md border border-border h-[76px] justify-center">
                           <div className="flex items-center gap-2">
-                            <Checkbox
-                              id="c1"
-                              checked={copyClient}
-                              onCheckedChange={(c) => setCopyClient(!!c)}
-                            />
-                            <Label
-                              htmlFor="c1"
-                              className="text-xs font-normal cursor-pointer"
-                            >
+                            <Checkbox id="c1" checked={copyClient} onCheckedChange={(c) => setCopyClient(!!c)} />
+                            <Label htmlFor="c1" className="text-xs font-normal cursor-pointer">
                               {t("createOrder.step3.copyClient")}
                             </Label>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Checkbox
-                              id="c2"
-                              checked={copyInternal}
-                              onCheckedChange={(c) => setCopyInternal(!!c)}
-                            />
-                            <Label
-                              htmlFor="c2"
-                              className="text-xs font-normal cursor-pointer"
-                            >
+                            <Checkbox id="c2" checked={copyInternal} onCheckedChange={(c) => setCopyInternal(!!c)} />
+                            <Label htmlFor="c2" className="text-xs font-normal cursor-pointer">
                               {t("createOrder.step3.copyInternal")}
                             </Label>
                           </div>
@@ -409,163 +524,225 @@ export default function CreateOrder() {
                   <Separator />
 
                   {/* Section 2: Address & Location */}
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary/60"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary/60" />
                       {t("createOrder.step3.locationSection")}
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2 md:col-span-2">
-                        <Label className="text-xs">{t("createOrder.step3.deliveryAddress")}</Label>
-                        <Input
-                          value={shippingDetails.delivery.address}
-                          onChange={(e) =>
-                            updateShipping({ address: e.target.value })
-                          }
-                          placeholder={t("createOrder.step3.addressPlaceholder")}
-                          className="h-9"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs">{t("createOrder.step3.cityLabel")}</Label>
+                    {/* Street address — full width */}
+                    <div className="space-y-1">
+                      <Label className="text-xs">
+                        {t("createOrder.step3.deliveryAddress")} <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        value={shippingDetails.delivery.address}
+                        onChange={(e) => updateShipping({ address: e.target.value })}
+                        placeholder={t("createOrder.step3.addressPlaceholder")}
+                        className={cn("h-9", deliveryErrors.address && "border-destructive focus-visible:ring-destructive/20")}
+                      />
+                      {deliveryErrors.address && <p className="text-[11px] text-destructive">{deliveryErrors.address}</p>}
+                    </div>
+                    {/* City / Postal / Province in one row */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">
+                          {t("createOrder.step3.cityLabel")} <span className="text-destructive">*</span>
+                        </Label>
                         <Input
                           value={shippingDetails.delivery.city}
-                          onChange={(e) =>
-                            updateShipping({ city: e.target.value })
-                          }
-                          className="h-9"
+                          onChange={(e) => updateShipping({ city: e.target.value })}
+                          className={cn("h-9", deliveryErrors.city && "border-destructive focus-visible:ring-destructive/20")}
                         />
+                        {deliveryErrors.city && <p className="text-[11px] text-destructive">{deliveryErrors.city}</p>}
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-xs">{t("createOrder.step3.postalCode")}</Label>
-                          <Input
-                            value={shippingDetails.delivery.postalCode}
-                            onChange={(e) =>
-                              updateShipping({ postalCode: e.target.value })
-                            }
-                            className="h-9"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-xs">{t("createOrder.step3.province")}</Label>
-                          <Input
-                            value={shippingDetails.delivery.province}
-                            onChange={(e) =>
-                              updateShipping({ province: e.target.value })
-                            }
-                            className="h-9"
-                          />
-                        </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">
+                          {t("createOrder.step3.postalCode")} <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          value={shippingDetails.delivery.postalCode}
+                          onChange={(e) => updateShipping({ postalCode: e.target.value })}
+                          className={cn("h-9", deliveryErrors.postalCode && "border-destructive focus-visible:ring-destructive/20")}
+                        />
+                        {deliveryErrors.postalCode && <p className="text-[11px] text-destructive">{deliveryErrors.postalCode}</p>}
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">
+                          {t("createOrder.step3.province")} <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          value={shippingDetails.delivery.province}
+                          onChange={(e) => updateShipping({ province: e.target.value })}
+                          className={cn("h-9", deliveryErrors.province && "border-destructive focus-visible:ring-destructive/20")}
+                        />
+                        {deliveryErrors.province && <p className="text-[11px] text-destructive">{deliveryErrors.province}</p>}
                       </div>
                     </div>
                   </div>
 
                   <Separator />
 
-                  {/* Section 2: Contact & Logistics */}
+                  {/* Section 3: Contact + Logistics (side by side) */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Contact */}
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500/60"></span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500/60" />
                         {t("createOrder.step3.contactSection")}
                       </h3>
-                      <div className="space-y-2">
-                        <Label className="text-xs">{t("createOrder.step3.contactName")}</Label>
+                      <div className="space-y-1">
+                        <Label className="text-xs">
+                          {t("createOrder.step3.contactName")} <span className="text-destructive">*</span>
+                        </Label>
                         <Input
                           value={shippingDetails.delivery.contactName}
-                          onChange={(e) =>
-                            updateShipping({ contactName: e.target.value })
-                          }
+                          onChange={(e) => updateShipping({ contactName: e.target.value })}
                           placeholder={t("createOrder.step3.contactNamePlaceholder")}
-                          className="h-9"
+                          className={cn("h-9", deliveryErrors.contactName && "border-destructive focus-visible:ring-destructive/20")}
                         />
+                        {deliveryErrors.contactName && <p className="text-[11px] text-destructive">{deliveryErrors.contactName}</p>}
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-xs">{t("createOrder.step3.phone")}</Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">
+                            {t("createOrder.step3.phone")} <span className="text-destructive">*</span>
+                          </Label>
                           <Input
                             value={shippingDetails.delivery.contactPhone}
-                            onChange={(e) =>
-                              updateShipping({ contactPhone: e.target.value })
-                            }
-                            className="h-9"
+                            onChange={(e) => updateShipping({ contactPhone: e.target.value })}
+                            className={cn("h-9", deliveryErrors.contactPhone && "border-destructive focus-visible:ring-destructive/20")}
                           />
+                          {deliveryErrors.contactPhone && <p className="text-[11px] text-destructive">{deliveryErrors.contactPhone}</p>}
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-1">
                           <Label className="text-xs">{t("createOrder.step3.emailOptional")}</Label>
                           <Input
                             value={shippingDetails.delivery.contactEmail}
-                            onChange={(e) =>
-                              updateShipping({ contactEmail: e.target.value })
-                            }
-                            className="h-9"
+                            onChange={(e) => updateShipping({ contactEmail: e.target.value })}
+                            className={cn("h-9", deliveryErrors.contactEmail && "border-destructive focus-visible:ring-destructive/20")}
                           />
+                          {deliveryErrors.contactEmail && <p className="text-[11px] text-destructive">{deliveryErrors.contactEmail}</p>}
                         </div>
                       </div>
                     </div>
 
                     {/* Logistics */}
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500/60"></span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500/60" />
                         {t("createOrder.step3.logisticsSection")}
                       </h3>
-                      <div className="space-y-4">
+
+                      {/* Delivery date mode — card-style radio buttons */}
+                      <div className="space-y-1.5">
                         <Label className="text-xs">{t("createOrder.step3.deliveryDate")}</Label>
-                        <div className="flex flex-col gap-3">
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="radio"
-                              name="datePreference"
-                              checked={shippingDetails.date === "asap"}
-                              onChange={() => updateShipping({ date: "asap" })}
-                              className="accent-primary"
-                            />
-                            <span className="text-sm">{t("createOrder.step3.asap")}</span>
-                          </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="radio"
-                              name="datePreference"
-                              checked={shippingDetails.date !== "asap"}
-                              onChange={() => {
+                        <div className="grid grid-cols-2 gap-2">
+                          {/* ASAP */}
+                          <button
+                            type="button"
+                            onClick={() => updateShipping({ date: "asap" })}
+                            className={cn(
+                              "flex flex-col items-start gap-0.5 rounded-md border px-3 py-2 text-left text-xs transition-all",
+                              shippingDetails.date === "asap"
+                                ? "border-primary bg-primary/5 text-primary font-semibold"
+                                : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:bg-muted/30"
+                            )}
+                          >
+                            <span className="font-semibold text-[11px] uppercase tracking-wide">Primera disponible</span>
+                            <span className="text-[10px] text-muted-foreground font-normal">Lo antes posible</span>
+                          </button>
+                          {/* Preferred date */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (shippingDetails.date === "asap") {
                                 updateShipping({ date: new Date().toISOString().split("T")[0] });
-                              }}
-                              className="accent-primary"
-                            />
-                            <span className="text-sm">{t("createOrder.step3.preferredDate")}</span>
-                          </label>
-                        </div>
-                        
-                        {shippingDetails.date !== "asap" && (
-                          <div className="pt-2 animate-in fade-in zoom-in-95 duration-200">
-                            <Input
-                              type="date"
-                              value={shippingDetails.date}
-                              onChange={(e) =>
-                                updateShipping({ date: e.target.value })
                               }
-                              className="h-9 w-full sm:w-1/2"
-                            />
-                            <p className="text-[10px] text-muted-foreground mt-1.5">
-                              {t("createOrder.step3.dateDisclaimer")}
-                            </p>
-                          </div>
-                        )}
+                            }}
+                            className={cn(
+                              "flex flex-col items-start gap-0.5 rounded-md border px-3 py-2 text-left text-xs transition-all",
+                              shippingDetails.date !== "asap"
+                                ? "border-primary bg-primary/5 text-primary font-semibold"
+                                : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:bg-muted/30"
+                            )}
+                          >
+                            <span className="font-semibold text-[11px] uppercase tracking-wide">Fecha preferida</span>
+                            <span className="text-[10px] text-muted-foreground font-normal">Elegir en calendario</span>
+                          </button>
+                        </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
+
+                      {/* Calendar date picker */}
+                      <div className="space-y-1">
+                        <Popover open={calendarOpen && shippingDetails.date !== "asap"} onOpenChange={(o) => {
+                          if (shippingDetails.date === "asap") return;
+                          setCalendarOpen(o);
+                        }}>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              disabled={shippingDetails.date === "asap"}
+                              className={cn(
+                                "w-full flex items-center gap-2 h-9 rounded-md border px-3 py-2 text-sm text-left shadow-sm transition-colors",
+                                "focus:outline-none focus:ring-1 focus:ring-ring",
+                                shippingDetails.date === "asap"
+                                  ? "bg-muted/40 border-border/40 text-muted-foreground/50 cursor-not-allowed opacity-60 pointer-events-none"
+                                  : cn(
+                                      "bg-background border-input hover:border-primary/50",
+                                      deliveryErrors.date && "border-destructive"
+                                    )
+                              )}
+                            >
+                              <CalendarIcon className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                              <span className={cn(
+                                "flex-1",
+                                shippingDetails.date === "asap" || !shippingDetails.date
+                                  ? "text-muted-foreground"
+                                  : "text-foreground"
+                              )}>
+                                {shippingDetails.date && shippingDetails.date !== "asap" && isValid(parseISO(shippingDetails.date))
+                                  ? format(parseISO(shippingDetails.date), "dd/MM/yyyy")
+                                  : "Seleccionar fecha"}
+                              </span>
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={shippingDetails.date && shippingDetails.date !== "asap" && isValid(parseISO(shippingDetails.date))
+                                ? parseISO(shippingDetails.date)
+                                : undefined
+                              }
+                              onSelect={(day) => {
+                                if (day) {
+                                  updateShipping({ date: format(day, "yyyy-MM-dd") });
+                                  setCalendarOpen(false);
+                                }
+                              }}
+                              disabled={{ before: new Date() }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        {deliveryErrors.date
+                          ? <p className="text-[11px] text-destructive">{deliveryErrors.date}</p>
+                          : shippingDetails.date !== "asap" && (
+                            <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                              <Info className="h-2.5 w-2.5" />
+                              La fecha preferida está sujeta a confirmación logística.
+                            </p>
+                          )
+                        }
+                      </div>
+
+                      {/* Time slot + Delivery type */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
                           <Label className="text-xs">{t("createOrder.step3.timeSlot")}</Label>
                           <select
-                            className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                             value={shippingDetails.delivery.timeSlot}
-                            onChange={(e) =>
-                              updateShipping({
-                                timeSlot: e.target.value as any,
-                              })
-                            }
+                            onChange={(e) => updateShipping({ timeSlot: e.target.value as any })}
                           >
                             <option value="all_day">{t("createOrder.step3.allDay")}</option>
                             <option value="morning">{t("createOrder.step3.morning")}</option>
@@ -573,14 +750,12 @@ export default function CreateOrder() {
                             <option value="custom">{t("createOrder.step3.custom")}</option>
                           </select>
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-1">
                           <Label className="text-xs">{t("createOrder.step3.deliveryType")}</Label>
                           <select
-                            className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                             value={shippingDetails.delivery.type}
-                            onChange={(e) =>
-                              updateShipping({ type: e.target.value as any })
-                            }
+                            onChange={(e) => updateShipping({ type: e.target.value as any })}
                           >
                             <option value="standard">{t("createOrder.step3.standard")}</option>
                             <option value="pickup">{t("createOrder.step3.pickup")}</option>
@@ -597,10 +772,23 @@ export default function CreateOrder() {
                     </Button>
                     <Button
                       size="lg"
-                      className="px-8 font-bold shadow-lg"
-                      onClick={() => setShowConfirmation(true)}
+                      className="px-8 font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={!isDeliveryValid || isValidatingItems}
+                      onClick={async () => {
+                        const { valid, errors } = validateDeliveryDetails();
+                        setDeliveryErrors(errors);
+                        if (!valid) return;
+
+                        const itemsValid = await validateOrderItems();
+                        if (!itemsValid) {
+                          setStep(2);
+                          return;
+                        }
+
+                        setShowConfirmation(true);
+                      }}
                     >
-                      {t("createOrder.step3.finalize")} <Send className="h-4 w-4 ml-2" />
+                      {isValidatingItems ? "..." : t("createOrder.step3.finalize")} <Send className="h-4 w-4 ml-2" />
                     </Button>
                   </div>
                 </div>

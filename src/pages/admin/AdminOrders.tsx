@@ -142,10 +142,14 @@ export default function AdminOrders() {
     return matchesSearch && matchesStatus;
   });
 
-  const pendingCount = orders.filter(
-    (o) => o.status === "pending_validation",
-  ).length;
-  const processingCount = orders.filter((o) => o.status === "confirmed" || o.status === "preparing").length;
+  const pendingOrders = orders.filter((o) => o.status === "pending_validation");
+  const confirmedOrders = orders.filter((o) => o.status === "confirmed");
+  const preparingOrders = orders.filter((o) => o.status === "preparing");
+  const shippedOrders = orders.filter((o) => o.status === "shipped");
+  const deliveredOrders = orders.filter((o) => o.status === "delivered");
+
+  const pendingCount = pendingOrders.length;
+  const processingCount = confirmedOrders.length + preparingOrders.length;
 
   const openOrderDetails = (order: Order) => {
     setSelectedOrder(order);

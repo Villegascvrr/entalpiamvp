@@ -4,6 +4,7 @@ import type {
   Order,
   OrderStatus,
   OrderSummary,
+  OrderTimelineEvent,
   RecentOrder,
 } from "@/data/types";
 import { supabase } from "@/lib/supabaseClient";
@@ -29,22 +30,45 @@ const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
 export class SupabaseOrderRepository implements OrderRepository {
   // ── Reads ──────────────────────────────────────────────
 
-  async getAdminOrders(_session: ActorSession): Promise<Order[]> {
+  async getAdminOrders(session: ActorSession): Promise<Order[]> {
+    console.log("[getAdminOrders] querying with tenant_id:", session.tenantId);
+
     const { data, error } = await supabase
       .from("orders")
       .select(
         `
-                id, reference, created_at, status, total, notes, actor_id,
-                shipping_address, shipping_date,
-                delivery_address, delivery_city, delivery_postal_code, delivery_province,
-                delivery_contact_name, delivery_contact_phone, delivery_contact_email,
-                delivery_time_slot, delivery_type, delivery_instructions,
-                delivery_requires_call_before, delivery_has_unloading_requirements, delivery_vehicle_access_notes,
-                actors ( name, customers ( name ) ),
-                order_items ( id, product_id, quantity, unit_price, line_total, products ( name, unit, category_id ) )
+                id,
+                reference,
+                created_at,
+                status,
+                total,
+                notes,
+                actor_id,
+                shipping_address,
+                shipping_date,
+                shipping_city,
+                shipping_postal_code,
+                shipping_province,
+                contact_name,
+                contact_phone,
+                contact_email,
+                shipping_time_slot,
+                delivery_type,
+                actors (
+                  id,
+                  name,
+                  customers (
+                    name
+                  )
+                ),
+                order_items ( id )
             `,
       )
+      .eq("tenant_id", session.tenantId)
       .order("created_at", { ascending: false });
+
+    console.log("[getAdminOrders] supabase error:", error);
+    console.log("[getAdminOrders] supabase data count:", data?.length ?? 0);
 
     if (error) {
       console.error(
@@ -54,10 +78,78 @@ export class SupabaseOrderRepository implements OrderRepository {
       return [];
     }
 
-    return (data ?? []).map((row) => this._mapRowToOrder(row));
+    return (data ?? []).map((row) => {
+      const actors = row.actors as { id?: string; name?: string; customers?: { name?: string } } | null | undefined;
+      const orderItems = (row.order_items ?? []) as Array<{ id: string }>;
+
+      const deliveryDetails = {
+        address: (row.shipping_address as string) || "",
+        city: (row.shipping_city as string) || "",
+        postalCode: (row.shipping_postal_code as string) || "",
+        province: (row.shipping_province as string) || "",
+        contactName: (row.contact_name as string) || "",
+        contactPhone: (row.contact_phone as string) || "",
+        contactEmail: (row.contact_email as string) || "",
+        timeSlot: (row.shipping_time_slot as any) || "all_day",
+        type: (row.delivery_type as any) || "standard",
+        instructions: "",
+        requiresCallBefore: false,
+        hasUnloadingRequirements: false,
+        vehicleAccessNotes: "",
+      };
+
+      return {
+        id: row.reference as string,
+        customer: {
+          id: (row.actor_id as string) ?? "",
+          name: actors?.name ?? "",
+        },
+        company: actors?.customers?.name ?? "",
+        date: new Date(row.created_at as string).toLocaleDateString("es-ES", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }),
+        status: row.status as OrderStatus,
+        total: Number(row.total),
+        notes: (row.notes as string) ?? undefined,
+        address: (row.shipping_address as string) ?? undefined,
+        shippingDate: (row.shipping_date as string) ?? undefined,
+        delivery: deliveryDetails,
+        // Item list for the admin table — only id available (no product details)
+        items: orderItems.map((item) => ({
+          id: item.id,
+          name: "",
+          quantity: 0,
+          price: 0,
+          total: 0,
+        })),
+      } as Order;
+    });
   }
 
-  async getRecentOrders(_session: ActorSession): Promise<RecentOrder[]> {
+  async getActiveOrders(session: ActorSession): Promise<Order[]> {
+    const allOrders = await this.getAdminOrders(session);
+    return allOrders.filter(
+      (o) => o.status !== "delivered" && o.status !== "cancelled",
+    );
+  }
+
+  async getArchivedOrders(session: ActorSession): Promise<Order[]> {
+    const allOrders = await this.getAdminOrders(session);
+    return allOrders.filter(
+      (o) => o.status === "delivered" || o.status === "cancelled",
+    );
+  }
+
+  async getOrderTimeline(
+    _session: ActorSession,
+    _orderId: string,
+  ): Promise<OrderTimelineEvent[]> {
+    return []; // Optional timeline implementation for later
+  }
+
+  async getRecentOrders(session: ActorSession): Promise<RecentOrder[]> {
     const { data, error } = await supabase
       .from("orders")
       .select(
@@ -70,6 +162,7 @@ export class SupabaseOrderRepository implements OrderRepository {
                 order_items ( id )
             `,
       )
+      .eq("tenant_id", session.tenantId)
       .order("created_at", { ascending: false })
       .limit(10); // Increased limit for Ops Queue
 
@@ -119,12 +212,13 @@ export class SupabaseOrderRepository implements OrderRepository {
   }
 
   async getCustomerHistory(
-    _session: ActorSession,
+    session: ActorSession,
     _customerId: string,
   ): Promise<OrderSummary[]> {
     const { data, error } = await supabase
       .from("orders")
       .select("reference, created_at, status, total, order_items(id)")
+      .eq("tenant_id", session.tenantId)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -156,6 +250,10 @@ export class SupabaseOrderRepository implements OrderRepository {
   ): Promise<Order> {
     console.log("[SupabaseOrderRepo] 🔄 createOrder called by:", session.name);
 
+    // ── DEBUG: Task 2 — log session and incoming orderData
+    console.log("CREATE ORDER SESSION", session);
+    console.log("CREATE ORDER DATA", orderData);
+
     // 1. Generate a collision-safe reference
     const year = new Date().getFullYear();
     const uid = crypto.randomUUID().slice(0, 8).toUpperCase();
@@ -180,39 +278,35 @@ export class SupabaseOrderRepository implements OrderRepository {
         status: "pending_validation",
         total,
         notes: orderData.notes ?? null,
-        // Legacy fields mapping
+        // Shipping / delivery fields — matched exactly to the DB schema
         shipping_address: delivery?.address ?? orderData.address ?? null,
-        shipping_date: orderData.shippingDate ?? null,
-        // New Detailed Delivery Fields
-        delivery_address: delivery?.address ?? null,
-        delivery_city: delivery?.city ?? null,
-        delivery_postal_code: delivery?.postalCode ?? null,
-        delivery_province: delivery?.province ?? null,
-        delivery_contact_name: delivery?.contactName ?? null,
-        delivery_contact_phone: delivery?.contactPhone ?? null,
-        delivery_contact_email: delivery?.contactEmail ?? null,
-        delivery_time_slot: delivery?.timeSlot ?? null,
+        shipping_date: orderData.shippingDate === "asap" ? null : orderData.shippingDate ?? null,
+        shipping_city: delivery?.city ?? null,
+        shipping_postal_code: delivery?.postalCode ?? null,
+        shipping_province: delivery?.province ?? null,
+        contact_name: delivery?.contactName ?? null,
+        contact_phone: delivery?.contactPhone ?? null,
+        contact_email: delivery?.contactEmail ?? null,
+        shipping_time_slot: delivery?.timeSlot ?? null,
         delivery_type: delivery?.type ?? null,
-        delivery_instructions: delivery?.instructions ?? null,
-        delivery_requires_call_before: delivery?.requiresCallBefore ?? false,
-        delivery_has_unloading_requirements:
-          delivery?.hasUnloadingRequirements ?? false,
-        delivery_vehicle_access_notes: delivery?.vehicleAccessNotes ?? null,
       })
       .select(
         `
                 id, reference, status, total, notes, created_at, actor_id,
                 shipping_address, shipping_date,
-                delivery_address, delivery_city, delivery_postal_code, delivery_province,
-                delivery_contact_name, delivery_contact_phone, delivery_contact_email,
-                delivery_time_slot, delivery_type, delivery_instructions,
-                delivery_requires_call_before, delivery_has_unloading_requirements, delivery_vehicle_access_notes,
+                shipping_city, shipping_postal_code, shipping_province,
+                contact_name, contact_phone, contact_email,
+                shipping_time_slot, delivery_type,
                 actors ( name, customers ( name ) )
             `,
       )
       .single();
 
+    // ── DEBUG: Task 3 — log orders insert result
+    console.log("ORDERS INSERT RESULT", orderRow, orderError);
+
     if (orderError || !orderRow) {
+      console.error("SUPABASE ORDER ERROR", orderError);
       console.error(
         "[SupabaseOrderRepo] ❌ Insert order failed:",
         orderError?.message,
@@ -238,15 +332,22 @@ export class SupabaseOrderRepository implements OrderRepository {
         product_id: item.id,
         unit_price: item.price,
         quantity: item.quantity,
-        discount_percentage: (item as any).discountPercentage ?? null,
+        discount_percentage: (item as any).discountPercentage ?? 0,
       }));
+
+      // ── DEBUG: Task 4 — log order_items payload before insert
+      console.log("ORDER ITEMS PAYLOAD", itemRows);
 
       const { data: itemsData, error: itemsError } = await supabase
         .from("order_items")
         .insert(itemRows)
         .select("id, quantity, unit_price, line_total");
 
+      // ── DEBUG: Task 4 — log order_items insert result
+      console.log("ORDER ITEMS INSERT RESULT", itemsData, itemsError);
+
       if (itemsError) {
+        console.error("SUPABASE ORDER ERROR", itemsError);
         console.error(
           "[SupabaseOrderRepo] ❌ Insert items failed:",
           itemsError.message,
@@ -410,24 +511,19 @@ export class SupabaseOrderRepository implements OrderRepository {
 
     // Construct DeliveryDetails from DB columns
     const deliveryDetails = {
-      address:
-        (row.delivery_address as string) ||
-        (row.shipping_address as string) ||
-        "",
-      city: (row.delivery_city as string) || "",
-      postalCode: (row.delivery_postal_code as string) || "",
-      province: (row.delivery_province as string) || "",
-      contactName: (row.delivery_contact_name as string) || "",
-      contactPhone: (row.delivery_contact_phone as string) || "",
-      contactEmail: (row.delivery_contact_email as string) || "",
-      timeSlot: (row.delivery_time_slot as any) || "all_day",
+      address: (row.shipping_address as string) || "",
+      city: (row.shipping_city as string) || "",
+      postalCode: (row.shipping_postal_code as string) || "",
+      province: (row.shipping_province as string) || "",
+      contactName: (row.contact_name as string) || "",
+      contactPhone: (row.contact_phone as string) || "",
+      contactEmail: (row.contact_email as string) || "",
+      timeSlot: (row.shipping_time_slot as any) || "all_day",
       type: (row.delivery_type as any) || "standard",
-      instructions: (row.delivery_instructions as string) || "",
-      requiresCallBefore:
-        (row.delivery_requires_call_before as boolean) || false,
-      hasUnloadingRequirements:
-        (row.delivery_has_unloading_requirements as boolean) || false,
-      vehicleAccessNotes: (row.delivery_vehicle_access_notes as string) || "",
+      instructions: "",
+      requiresCallBefore: false,
+      hasUnloadingRequirements: false,
+      vehicleAccessNotes: "",
     };
 
     const actors = row.actors as { name?: string; customers?: { name?: string } } | null | undefined;
