@@ -117,13 +117,12 @@ export default function AdminProducts() {
 
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
-            <PackageSearch className="w-8 h-8 text-primary" />
-            {t("adminProducts.title")}
+        <div className="flex flex-col gap-1">
+          <h1 className="text-[24px] font-[600] font-[Inter] text-foreground tracking-tight">
+            Products
           </h1>
-          <p className="text-muted-foreground mt-1">
-            {t("adminProducts.subtitle")}
+          <p className="text-[14px] text-muted-foreground font-[Inter]">
+            Manage the product catalog, translations and technical sheets.
           </p>
         </div>
         <Button
@@ -137,19 +136,19 @@ export default function AdminProducts() {
       </div>
 
       {/* ── Toolbar ────────────────────────────────────────── */}
-      <div className="flex items-center gap-4 p-4 border border-border/50 bg-card rounded-xl shadow-sm">
+      <div className="flex items-center justify-between">
         <div className="relative w-full max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             id="input-product-search"
             placeholder={t("adminProducts.searchPlaceholder")}
-            className="pl-9 bg-background/50 border-border/50 h-9"
+            className="pl-9 bg-white border-[#ECEFF3] h-10 rounded-[10px]"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <span className="text-xs text-muted-foreground whitespace-nowrap ml-auto">
-          {t("adminProducts.productCount", { count: filteredRows.length })}
+        <span className="text-[14px] text-muted-foreground font-[Inter] whitespace-nowrap">
+          {filteredRows.length} products
         </span>
       </div>
 
@@ -160,7 +159,7 @@ export default function AdminProducts() {
             <thead className="bg-muted/50 text-muted-foreground font-medium border-b border-border/50">
               <tr>
                 <th className="px-5 py-3.5 w-16">{t("adminProducts.columns.img")}</th>
-                <th className="px-5 py-3.5">{t("adminProducts.columns.code")}</th>
+                <th className="px-5 py-3.5">Product</th>
                 <th className="px-5 py-3.5">{t("adminProducts.columns.price")}</th>
                 <th className="px-5 py-3.5">{t("adminProducts.columns.unit")}</th>
                 <th className="px-5 py-3.5">{t("adminProducts.columns.category")}</th>
@@ -198,7 +197,7 @@ export default function AdminProducts() {
                 filteredRows.map((product) => (
                   <tr
                     key={product.id}
-                    className="hover:bg-muted/20 transition-colors group"
+                    className="hover:bg-[#F8FAFC] transition-colors group"
                   >
                     {/* Image */}
                     <td className="px-5 py-3">
@@ -217,9 +216,14 @@ export default function AdminProducts() {
                       </div>
                     </td>
 
-                    {/* Code */}
-                    <td className="px-5 py-3 font-semibold text-foreground tracking-wide">
-                      {product.code}
+                    {/* Product & SKU */}
+                    <td className="px-5 py-3">
+                      <div className="text-[14px] font-[500] font-[Inter] text-foreground tracking-tight line-clamp-1">
+                        {product.code}
+                      </div>
+                      <div className="text-[12px] font-[Inter] text-muted-foreground mt-0.5">
+                        {product.id}
+                      </div>
                     </td>
 
                     {/* Price */}
@@ -266,11 +270,11 @@ export default function AdminProducts() {
                           id={`btn-edit-${product.code}`}
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5"
+                          className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5 cursor-pointer transition-colors"
                           onClick={() =>
                             navigate(`/admin/products/${product.code}/edit`)
                           }
-                          title="Editar producto"
+                          title="Edit"
                         >
                           <Edit2 className="w-4 h-4" />
                         </Button>
@@ -282,8 +286,8 @@ export default function AdminProducts() {
                               id={`btn-delete-${product.code}`}
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/5"
-                              title="Eliminar producto"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/5 cursor-pointer transition-colors"
+                              title="Delete"
                               disabled={isDeletingId === product.id}
                             >
                               <Trash2 className="w-4 h-4" />

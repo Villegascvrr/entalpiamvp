@@ -349,7 +349,7 @@ const es = {
         subtitle: "Resumen de cartera comercial",
         searchPlaceholder: "Buscar por empresa, CIF o persona de contacto...",
         allProvinces: "Todas las Provincias",
-        newCustomer: "+ Nuevo Cliente",
+        newCustomer: "Nuevo Cliente",
         columns: {
             company: "Empresa",
             tier: "Tier",

@@ -268,67 +268,67 @@ export default function AdminPricing() {
   return (
     <AppLayout>
       <div className="flex flex-col h-full bg-background overflow-hidden">
-        {/* Header - Compact */}
-        <div className="flex-none flex items-center justify-between px-6 py-3 bg-muted/30 border-b border-border/60">
-          <div>
-            <h1 className="text-lg font-bold font-mono tracking-tight text-foreground/90 uppercase flex items-center gap-2">
-              <Calculator className="h-5 w-5 text-primary" />
-              {t("adminPricing.title")}
+        {/* PAGE HEADER */}
+        <div className="flex-none flex items-center justify-between px-6 py-6 bg-white border-b border-[#ECEFF3]">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-[24px] font-[600] font-[Inter] text-foreground tracking-tight">
+              Pricing
             </h1>
+            <p className="text-[14px] text-muted-foreground font-[Inter]">
+              Manage product pricing and margins.
+            </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              size="sm"
-              className="h-8 gap-2 text-xs"
+              className="h-10 px-4 rounded-[10px] gap-2 text-sm font-medium border-[#ECEFF3]"
               onClick={handleImportCSV}
               disabled={isImporting}
             >
               <Upload
-                className={cn("h-3.5 w-3.5", isImporting && "animate-bounce")}
+                className={cn("h-4 w-4", isImporting && "animate-bounce")}
               />
               {isImporting ? t("adminPricing.importing") : t("adminPricing.importCSV")}
             </Button>
 
             <Button
-              size="sm"
-              className="h-8 gap-2 text-xs"
+              className="h-10 px-4 rounded-[10px] gap-2 text-sm font-medium"
               disabled={!hasChanges}
               onClick={handlePublish}
             >
-              <Save className="h-3.5 w-3.5" />
+              <Save className="h-4 w-4" />
               {t("adminPricing.publishButton")}
             </Button>
           </div>
         </div>
 
-        {/* Sticky LME Section & Alerts */}
-        <div className="flex-none flex flex-col gap-2 p-4 pb-0">
+        {/* Market Data & Alerts */}
+        <div className="flex-none flex flex-col gap-4 p-6 pb-2">
           {hasChanges && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-sm bg-status-low/10 text-status-low border border-status-low/30 animate-pulse">
-              <AlertCircle className="h-3.5 w-3.5" />
-              <span className="text-xs font-medium">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-[10px] bg-amber-500/10 text-amber-600 border border-amber-500/20 animate-pulse">
+              <AlertCircle className="h-4 w-4" />
+              <span className="text-[14px] font-[Inter] font-medium">
                 {t("adminPricing.pendingChanges")}
               </span>
             </div>
           )}
 
-          <div className="flex items-center justify-between bg-card border border-border/60 rounded-sm p-3 shadow-sm">
-            <div className="flex items-center gap-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
               {/* LME Price Section */}
-              <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">
+              <div className="bg-white border border-[#ECEFF3] rounded-[10px] py-[12px] px-[16px] flex flex-col justify-center">
+                <p className="text-[12px] text-muted-foreground font-[Inter] mb-1">
                   {t("adminPricing.lmeCopperToday")}
                 </p>
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     <span className="font-mono text-lg text-foreground font-bold">
                       $
                     </span>
                     <Input
                       value={lmeInputValue}
                       onChange={(e) => setLmeInputValue(e.target.value)}
-                      className="w-24 h-8 font-mono font-bold text-lg px-2"
+                      className="w-24 h-8 font-mono font-bold text-lg px-2 border-[#ECEFF3]"
                       placeholder="0.00"
                     />
                   </div>
@@ -358,11 +358,9 @@ export default function AdminPricing() {
                 </div>
               </div>
 
-              <div className="h-8 w-px bg-border/60" />
-
               {/* FX Rate Section */}
-              <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">
+              <div className="bg-white border border-[#ECEFF3] rounded-[10px] py-[12px] px-[16px] flex flex-col justify-center">
+                <p className="text-[12px] text-muted-foreground font-[Inter] mb-1">
                   {t("adminPricing.usdEur")}
                 </p>
                 <div className="flex items-center gap-2">
@@ -371,16 +369,15 @@ export default function AdminPricing() {
                     step="0.01"
                     value={fxRateInputValue}
                     onChange={(e) => setFxRateInputValue(e.target.value)}
-                    className="w-20 h-8 font-mono font-bold text-lg px-2"
+                    className="w-20 h-8 font-mono font-bold text-lg px-2 border-[#ECEFF3]"
                   />
                 </div>
               </div>
 
               {/* Main Update Button */}
-              <div className="flex items-end h-[50px] pb-1 ml-4">
+              <div className="flex items-center h-full">
                 <Button
-                  size="default"
-                  className="font-bold px-6 py-2 shadow-sm gap-2"
+                  className="h-[40px] px-[20px] rounded-[10px] font-medium gap-2"
                   onClick={handleUpdatePrices}
                   disabled={isSyncing}
                 >
@@ -391,10 +388,10 @@ export default function AdminPricing() {
             </div>
 
             <div className="text-right">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
-                {t("adminPricing.lastUpdated")}
+              <p className="text-[12px] text-muted-foreground font-[Inter] flex items-center gap-1">
+                <span>{t("adminPricing.lastUpdated")}:</span>
+                <span>08:30 AM</span>
               </p>
-              <p className="text-xs font-mono">08:30 AM</p>
             </div>
           </div>
         </div>
@@ -438,11 +435,11 @@ export default function AdminPricing() {
                         key={entry.id}
                         className="border-b border-border/40 last:border-0 hover:bg-muted/20 transition-colors"
                       >
-                        <td className="px-3 py-1.5 align-middle">
-                          <div className="font-medium text-foreground/90 line-clamp-1">
+                        <td className="px-4 py-3 align-middle">
+                          <div className="text-[14px] font-[500] font-[Inter] text-foreground line-clamp-1">
                             {entry.name}
                           </div>
-                          <div className="text-[9px] text-muted-foreground font-mono mt-0.5">
+                          <div className="text-[12px] font-[Inter] text-muted-foreground mt-0.5">
                             {entry.id}
                           </div>
                         </td>

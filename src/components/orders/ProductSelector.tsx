@@ -515,19 +515,23 @@ export function ProductSelector({
                                     size="icon"
                                     className={cn(
                                       "h-7 w-7 rounded-sm transition-colors text-muted-foreground",
-                                      selectedItem.quantity === 1
+                                      selectedItem.quantity <= (product.minLots || 1)
                                         ? "hover:bg-red-50 hover:text-red-600"
                                         : "hover:bg-background hover:text-foreground",
                                     )}
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      onUpdateQuantity(
-                                        product.id,
-                                        selectedItem.quantity - 1,
-                                      );
+                                      if (selectedItem.quantity <= (product.minLots || 1)) {
+                                        onUpdateQuantity(product.id, 0);
+                                      } else {
+                                        onUpdateQuantity(
+                                          product.id,
+                                          selectedItem.quantity - (product.lotSize || 1),
+                                        );
+                                      }
                                     }}
                                   >
-                                    {selectedItem.quantity === 1 ? (
+                                    {selectedItem.quantity <= (product.minLots || 1) ? (
                                       <Trash2 className="h-3.5 w-3.5" />
                                     ) : (
                                       <Minus className="h-3.5 w-3.5" />
@@ -544,7 +548,7 @@ export function ProductSelector({
                                       e.stopPropagation();
                                       onUpdateQuantity(
                                         product.id,
-                                        selectedItem.quantity + 1,
+                                        selectedItem.quantity + (product.lotSize || 1),
                                       );
                                     }}
                                   >

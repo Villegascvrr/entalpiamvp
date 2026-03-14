@@ -183,7 +183,6 @@ export default function Customers() {
                 <TableRow>
                   <TableHead className="w-[300px]">{t("customers.columns.company")}</TableHead>
                   <TableHead>{t("customers.columns.tier")}</TableHead>
-                  <TableHead>{t("customers.columns.status")}</TableHead>
                   <TableHead>{t("customers.columns.province")}</TableHead>
                   <TableHead>{t("customers.columns.cif")}</TableHead>
                   <TableHead>{t("customers.columns.contact")}</TableHead>
@@ -252,9 +251,14 @@ export default function Customers() {
                               <span className="font-semibold text-sm text-foreground">
                                 {customer.name}
                               </span>
-                              <span className="text-[11px] text-muted-foreground">
-                                {t("customers.salePoints", { count: customer.sales_points })}
-                              </span>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[11px] text-muted-foreground">
+                                  {t("customers.salePoints", { count: customer.sales_points })}
+                                </span>
+                                {status !== "active" && (
+                                  <StatusBadge status={status} />
+                                )}
+                              </div>
                             </div>
                           </div>
                         </TableCell>
@@ -271,9 +275,6 @@ export default function Customers() {
                               -
                             </span>
                           )}
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge status={status} />
                         </TableCell>
                         <TableCell>
                           {customer.province ? (

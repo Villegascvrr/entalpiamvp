@@ -124,6 +124,7 @@ export interface OrderItem {
   category?: string;
   image?: string;
   minOrder?: number;
+  lotSize?: number;
 }
 
 /** A simplified order item (for admin views without unit) */

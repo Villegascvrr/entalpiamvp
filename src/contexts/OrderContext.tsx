@@ -122,23 +122,22 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     setItems((prev) => {
       const existing = prev.find((i) => i.id === product.id);
       if (existing) {
-        // toast.success(`Cantidad actualizada: ${product.name}`);
         return prev.map((i) =>
-          i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i,
+          i.id === product.id ? { ...i, quantity: i.quantity + (i.lotSize || 1) } : i,
         );
       }
-      // toast.success(`Producto añadido: ${product.name}`);
       return [
         ...prev,
         {
           id: product.id,
           name: product.name,
           price: product.price,
-          quantity: 1, // Default quantity
+          quantity: product.minLots || product.minOrder || 1, // Start at minOrder
           unit: product.unit,
           category: product.category,
           image: product.image,
-          minOrder: product.minOrder,
+          minOrder: product.minLots || product.minOrder || 1,
+          lotSize: product.lotSize || 1,
           notes: "",
         },
       ];
@@ -147,15 +146,31 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
   const removeItem = (id: string) => {
     setItems((prev) => prev.filter((i) => i.id !== id));
-    // toast.info("Producto eliminado del pedido");
   };
 
   const updateQuantity = (id: string, quantity: number) => {
-    if (quantity < 1) {
+    if (quantity <= 0) {
       removeItem(id);
       return;
     }
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, quantity } : i)));
+    setItems((prev) =>
+      prev.map((i) => {
+        if (i.id === id) {
+          const min = i.minOrder || 1;
+          const lot = i.lotSize || 1;
+          let newQ = quantity;
+
+          if (newQ < min) {
+            newQ = min;
+          } else if (newQ % lot !== 0) {
+            newQ = Math.ceil(newQ / lot) * lot;
+          }
+          
+          return { ...i, quantity: newQ };
+        }
+        return i;
+      })
+    );
   };
 
   const updateItemNotes = (id: string, notes: string) => {

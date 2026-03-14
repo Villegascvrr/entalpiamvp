@@ -565,7 +565,7 @@ export default function OrderBuilder() {
                           onClick={() =>
                             updateQuantity(
                               item.id,
-                              item.quantity - item.minOrder,
+                              item.quantity - (item.lotSize || 1),
                             )
                           }
                         >
@@ -589,7 +589,7 @@ export default function OrderBuilder() {
                           onClick={() =>
                             updateQuantity(
                               item.id,
-                              item.quantity + item.minOrder,
+                              item.quantity + (item.lotSize || 1),
                             )
                           }
                         >

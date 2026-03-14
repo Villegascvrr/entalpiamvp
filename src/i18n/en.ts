@@ -349,7 +349,7 @@ const en = {
         subtitle: "Commercial portfolio summary",
         searchPlaceholder: "Search by company, CIF or contact...",
         allProvinces: "All Provinces",
-        newCustomer: "+ New Customer",
+        newCustomer: "New Customer",
         columns: {
             company: "Company",
             tier: "Tier",

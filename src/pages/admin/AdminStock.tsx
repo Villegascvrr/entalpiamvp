@@ -319,13 +319,17 @@ export default function AdminStock() {
 
   return (
     <AppLayout>
-      <div className="flex flex-col h-full bg-background overflow-hidden">
+      <div className="flex flex-col h-full bg-background overflow-hidden p-6 gap-6">
         {/* ── Header ─────────────────────────────────────────── */}
-        <div className="flex-none flex items-center justify-between px-6 py-4 bg-muted/30 border-b border-border/60">
-          <h1 className="text-xl font-bold font-mono tracking-tight text-foreground/90 uppercase flex items-center gap-2">
-            <Warehouse className="h-5 w-5 text-primary" />
-            {t("adminStock.title")}
-          </h1>
+        <div className="flex-none flex items-start justify-between">
+          <div>
+            <h1 className="text-[24px] font-semibold font-sans text-foreground tracking-tight">
+              Inventory
+            </h1>
+            <p className="text-[14px] text-muted-foreground mt-1 font-sans">
+              Monitor product availability and stock alerts.
+            </p>
+          </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="gap-2 h-8 text-xs">
               <Upload className="h-3.5 w-3.5" />
@@ -347,36 +351,38 @@ export default function AdminStock() {
         </div>
 
         {/* ── Main Content ───────────────────────────────────── */}
-        <div className="flex-1 flex flex-col p-4 gap-4 overflow-hidden">
+        <div className="flex-1 flex flex-col gap-6 overflow-hidden">
           {/* KPI Cards */}
-          <div className="flex-none grid grid-cols-3 gap-3">
-            <DataCard
-              title={t("adminStock.kpis.totalProducts")}
-              className="shadow-sm border-border/60"
-            >
-              <p className="text-3xl font-mono font-bold">{products.length}</p>
-            </DataCard>
-            <DataCard
-              title={t("adminStock.kpis.stockAlerts")}
-              className="shadow-sm border-border/60"
-            >
-              <p className="text-3xl font-mono font-bold text-amber-500">
+          <div className="flex-none flex items-center gap-4">
+            <div className="bg-white border border-[#ECEFF3] rounded-[10px] p-[14px] flex flex-col justify-center min-w-[200px]">
+              <span className="text-[14px] text-muted-foreground mb-1">
+                {t("adminStock.kpis.totalProducts")}
+              </span>
+              <span className="text-[20px] font-semibold text-foreground">
+                {products.length}
+              </span>
+            </div>
+            <div className="bg-white border border-[#ECEFF3] rounded-[10px] p-[14px] flex flex-col justify-center min-w-[200px]">
+              <span className="text-[14px] text-muted-foreground mb-1">
+                {t("adminStock.kpis.stockAlerts")}
+              </span>
+              <span className="text-[20px] font-semibold text-amber-600">
                 {products.filter((p) => (p.available_stock || 0) < 50).length}
-              </p>
-            </DataCard>
-            <DataCard
-              title={t("adminStock.kpis.totalAvailable")}
-              className="shadow-sm border-border/60"
-            >
-              <p className="text-3xl font-mono font-bold">
+              </span>
+            </div>
+            <div className="bg-white border border-[#ECEFF3] rounded-[10px] p-[14px] flex flex-col justify-center min-w-[200px]">
+              <span className="text-[14px] text-muted-foreground mb-1">
+                {t("adminStock.kpis.totalAvailable")}
+              </span>
+              <span className="text-[20px] font-semibold text-foreground flex items-baseline gap-1">
                 {products
                   .reduce((acc, p) => acc + (p.available_stock || 0), 0)
                   .toLocaleString()}
-                <span className="text-sm font-normal text-muted-foreground ml-1">
+                <span className="text-[14px] font-normal text-muted-foreground">
                   uds
                 </span>
-              </p>
-            </DataCard>
+              </span>
+            </div>
           </div>
 
           {/* Toolbar */}
@@ -393,16 +399,16 @@ export default function AdminStock() {
             {stockAlertCount > 0 && (
               <Badge
                 variant="outline"
-                className="gap-1.5 text-amber-600 border-amber-200 bg-amber-50 text-xs whitespace-nowrap"
+                className="gap-2 text-amber-700 border-amber-300 bg-amber-50/80 px-3 py-1.5 text-sm font-medium whitespace-nowrap shadow-sm"
               >
-                <AlertTriangle className="h-3 w-3" />
+                <AlertCircle className="h-4 w-4 text-amber-500" />
                 {t("adminStock.alertsBadge", { count: stockAlertCount })}
               </Badge>
             )}
           </div>
 
           {/* Table */}
-          <div className="flex-1 bg-card border border-border/60 rounded-sm flex flex-col overflow-hidden shadow-sm">
+          <div className="flex-1 bg-white border border-[#ECEFF3] rounded-[10px] flex flex-col overflow-hidden shadow-sm">
             <div className="flex-1 overflow-y-auto scrollbar-thin">
               <table className="w-full text-xs">
                 <thead className="bg-muted/40 sticky top-0 z-10">
@@ -445,11 +451,11 @@ export default function AdminStock() {
                         )}
                       >
                         {/* Producto */}
-                        <td className="px-3 py-1.5 align-middle">
-                          <div className="font-medium text-foreground/90 line-clamp-1">
+                        <td className="px-3 py-2 align-middle">
+                          <div className="font-medium text-sm text-foreground line-clamp-1">
                             {entry.name}
                           </div>
-                          <div className="text-[9px] text-muted-foreground font-mono mt-0.5">
+                          <div className="text-xs text-muted-foreground mt-0.5">
                             {entry.id}
                           </div>
                         </td>
